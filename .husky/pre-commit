@@ -1,0 +1,2 @@
+echo "⚙️   Started pre-commit checks..."
+echo "✅  Finished pre-commit checks"
