@@ -1,0 +1,137 @@
+package cli
+
+import "image"
+
+type Record struct {
+	Magic  [4]byte
+	Length uint64
+	Data   []byte
+}
+
+type Records struct {
+	EFDF  EFDFRecord
+	EFRMs []EFRMRecord
+	EFTPs []EFTPRecord
+}
+
+type EFDFRecord struct {
+	Unknown1  [8]byte
+	Unknown2  [8]byte
+	Unknown3  [4]byte
+	Unknown4  [2]byte
+	CodeB     uint32
+	Year      uint16
+	Month     uint8
+	Day       uint8
+	Hour      uint8
+	Minute    uint8
+	Second    uint8
+	Unknown5  [1]byte
+	Exposures uint32
+	IsoDX     uint32
+	CodeA     uint32
+	FirstRow  uint8
+	PerRow    uint8
+	Unknown6  [128]byte
+	Title     [64]byte
+	Remarks   [256]byte
+}
+
+type EFRMRecord struct {
+	// Offset 0x10-0x4F (64 bytes from start of data)
+	Unknown1                  [4]byte // 0x10-0x13
+	Unknown2                  [4]byte // 0x14-0x17
+	FrameNumber               uint32  // 0x18-0x1B
+	FocalLength               uint32  // 0x1C-0x1F
+	MaxAperture               uint32  // 0x20-0x23
+	Tv                        int32   // 0x24-0x27
+	Av                        uint32  // 0x28-0x2B
+	IsoM                      uint32  // 0x2C-0x2F
+	ExposureCompenation       int32   // 0x30-0x33
+	FlashExposureCompensation int32   // 0x34-0x37
+	Year                      uint16  // 0x38-0x39
+	Month                     uint8   // 0x3A
+	Day                       uint8   // 0x3B
+	Hour                      uint8   // 0x3C
+	Minute                    uint8   // 0x3D
+	Second                    uint8   // 0x3E
+	Unknown3                  [1]byte // 0x3F (padding)
+	FlashMode                 uint32  // 0x40-0x43
+	FilmAdvanceMode           uint32  // 0x44-0x47
+	MultipleExposure          uint32  // 0x48-0x4B
+	Unknown4                  uint32  // 0x4C-0x4F
+
+	// Offset 0x50-0x8F (64 bytes)
+	Unknown5         uint32  // 0x50-0x53
+	MeteringMode     uint32  // 0x54-0x57
+	ShootingMode     uint32  // 0x58-0x5B
+	AFMode           uint32  // 0x5C-0x5F
+	Unknown6         uint32  // 0x60-0x63
+	CustomFunction0  uint8   // 0x64
+	CustomFunction1  uint8   // 0x65
+	CustomFunction2  uint8   // 0x66
+	CustomFunction3  uint8   // 0x67
+	CustomFunction4  uint8   // 0x68
+	CustomFunction5  uint8   // 0x69
+	CustomFunction6  uint8   // 0x6A
+	CustomFunction7  uint8   // 0x6B
+	CustomFunction8  uint8   // 0x6C
+	CustomFunction9  uint8   // 0x6D
+	CustomFunction10 uint8   // 0x6E
+	CustomFunction11 uint8   // 0x6F
+	CustomFunction12 uint8   // 0x70
+	CustomFunction13 uint8   // 0x71
+	CustomFunction14 uint8   // 0x72
+	CustomFunction15 uint8   // 0x73
+	CustomFunction16 uint8   // 0x74
+	CustomFunction17 uint8   // 0x75
+	CustomFunction18 uint8   // 0x76
+	CustomFunction19 uint8   // 0x77
+	Unknown7         [2]byte // 0x78-0x79
+	FocusPoints1     uint8   // 0x7A  7 bits used
+	FocusPoints2     uint8   // 0x7B  2 bits used
+	FocusPoints3     uint8   // 0x7C  8 bits used
+	FocusPoints4     uint8   // 0x7D  3 bits used
+	FocusPoints5     uint8   // 0x7E  8 bits used
+	FocusPoints6     uint8   // 0x7F  2 bits used
+	FocusPoints7     uint8   // 0x80  8 bits used
+	Unknown8         uint8   // 0x81  not used?
+	FocusPoints8     uint8   // 0x82  7 bits used
+	Unknown9         [8]byte // 0x83-0x8A
+	BatteryYear      uint16  // 0x8B-0x8C
+	BatteryMonth     uint8   // 0x8D
+	BatteryDay       uint8   // 0x8E
+	BatteryHour      uint8   // 0x8F
+
+	// Offset 0x90-0xCF (64 bytes)
+	BatteryMinute uint8    // 0x90
+	BatterySecond uint8    // 0x91
+	Unknown10     [9]byte  // 0x92-0x9A (unused/padding)
+	FocusingPoint uint32   // 0x9B-0x9E
+	Unknown11     [3]byte  // 0x9F-0xA1
+	CodeB         uint32   // 0xA2-0xA5
+	CodeA         uint32   // 0xA6-0xA9
+	IsoDX         uint32   // 0xAA-0xAD
+	RollYear      uint16   // 0xAE-0xAF
+	RollMonth     uint8    // 0xB0
+	RollDay       uint8    // 0xB1
+	RollHour      uint8    // 0xB2
+	RollMinute    uint8    // 0xB3
+	RollSecond    uint8    // 0xB4
+	Unknown12     [1]byte  // 0xB5
+	Unknown13     [10]byte // 0xB6-0xBF
+	Unknown14     [64]byte // 0xC0-0xFF
+
+	// Offset 0x100-0x1FF (256 bytes)
+	Remarks [256]byte // 0x100-0x1FF
+}
+
+type EFTPRecord struct {
+	// Offset 0x10-0x4F (64 bytes from start of data)
+	Unknown1  [4]byte   // 0x10-0x13
+	Width     uint16    // 0x14-0x15
+	Height    uint16    // 0x16-0x17
+	Unknown2  [8]byte   // 0x18-0x1F
+	Filepath  [256]byte // 0x20-0x11F
+	Thumbnail *image.RGBA
+}

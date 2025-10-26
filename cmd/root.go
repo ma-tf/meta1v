@@ -1,4 +1,6 @@
 /*
+Package cmd implements the command line interface for meta1v.
+
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 */
 package cmd
@@ -9,7 +11,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli"
 )
 
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // cobra boilerplate
 var rootCmd = cli.NewCommand()
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -21,7 +23,7 @@ func Execute() {
 	}
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // cobra boilerplate
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
