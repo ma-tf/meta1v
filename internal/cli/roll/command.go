@@ -1,9 +1,10 @@
-package cli
+package roll
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/spf13/cobra"
@@ -11,11 +12,17 @@ import (
 
 func NewCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "meta1v",
-		Short: "Provides a way to interact with Canon's EFD files.",
+		Use:   "roll <filename>",
+		Short: "Prints all roll information to stdout.",
+		Long: `A longer description that spans multiple lines and likely contains
+examples and usage of using your application. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return ErrNoFilenameProvided
+				return cli.ErrNoFilenameProvided
 			}
 
 			file, err := os.Open(args[0])

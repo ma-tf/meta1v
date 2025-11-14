@@ -34,13 +34,21 @@ func NewFilmID(prefix, suffix uint32) (FilmID, error) {
 
 type DisplayableDatetime string
 
-func NewDateTime(year uint16, month, day, hour, minute, second uint8) (DisplayableDatetime, error) {
+func NewDateTime(
+	year uint16,
+	month,
+	day,
+	hour,
+	minute,
+	second uint8,
+) (DisplayableDatetime, error) {
 	if year == math.MaxUint16 && month&day&hour&minute&second == math.MaxUint8 {
 		return "", nil
 	}
 
 	// manual says year limit is 2000 - 2099, I won't validate this for now
-	rawDate := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second)
+	rawDate := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d",
+		year, month, day, hour, minute, second)
 
 	t, err := time.Parse(time.DateTime, rawDate) // performs validation
 	if err != nil || t.IsZero() {
@@ -81,7 +89,11 @@ func NewTv(tv int32) (Tv, error) {
 
 	val, ok := tvs[tv]
 	if !ok {
-		return "", fmt.Errorf("%w: Tv %d is invalid. Please check valid Tv values", ErrInvalidTv, tv)
+		return "", fmt.Errorf(
+			"%w: Tv %d is invalid. Please check valid Tv values",
+			ErrInvalidTv,
+			tv,
+		)
 	}
 
 	return val, nil
@@ -96,7 +108,11 @@ func NewAv(av uint32) (Av, error) {
 
 	val, ok := avs[av]
 	if !ok {
-		return "", fmt.Errorf("%w: Av %d is invalid. Please check valid Av values", ErrInvalidAv, av)
+		return "", fmt.Errorf(
+			"%w: Av %d is invalid. Please check valid Av values",
+			ErrInvalidAv,
+			av,
+		)
 	}
 
 	return val, nil
@@ -246,8 +262,14 @@ func NewCustomFunctions(r records.EFRM) (DisplayableCustomFunctions, error) {
 	values := make([]string, len(cfs))
 	for i, cf := range cfs {
 		if cf != math.MaxUint8 && (cf < cfMin || cf > cfMaxRanges[i]) {
-			return DisplayableCustomFunctions{}, fmt.Errorf("%w %d: out of range (%d-%d): %d",
-				ErrInvalidCustomFunction, i, cfMin, cfMaxRanges[i], cf)
+			return DisplayableCustomFunctions{}, fmt.Errorf(
+				"%w %d: out of range (%d-%d): %d",
+				ErrInvalidCustomFunction,
+				i,
+				cfMin,
+				cfMaxRanges[i],
+				cf,
+			)
 		}
 
 		if cf == math.MaxUint8 {

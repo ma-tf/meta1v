@@ -79,7 +79,8 @@ func (s *recordservice) RecordsFromFile(file *os.File) (records.Root, error) {
 
 			eftps = append(eftps, *r)
 		default:
-			return records.Root{}, fmt.Errorf("%w: %s", ErrUnknownRecordType, magic)
+			return records.Root{},
+				fmt.Errorf("%w: %s", ErrUnknownRecordType, magic)
 		}
 	}
 
@@ -124,7 +125,10 @@ func efdfFromRecord(record records.Raw) (records.EFDF, error) {
 		&r,
 	)
 	if err != nil {
-		return records.EFDF{}, fmt.Errorf("failed to parse EFDF record: %w", err)
+		return records.EFDF{}, fmt.Errorf(
+			"failed to parse EFDF record: %w",
+			err,
+		)
 	}
 
 	return r, nil
@@ -139,7 +143,10 @@ func efrmFromRecord(record records.Raw) (records.EFRM, error) {
 		&r,
 	)
 	if err != nil {
-		return records.EFRM{}, fmt.Errorf("failed to parse EFRM record: %w", err)
+		return records.EFRM{}, fmt.Errorf(
+			"failed to parse EFRM record: %w",
+			err,
+		)
 	}
 
 	return r, nil

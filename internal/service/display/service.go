@@ -33,17 +33,11 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 		return displayableRoll{}, err
 	}
 
-	firstRow, perRow := uint(r.EFDF.FirstRow), uint(r.EFDF.FirstRow-r.EFDF.PerRow)
-	title := NewTitle(r.EFDF.Title)
-
 	filmLoadedDate, err := NewDateTime(r.EFDF.Year, r.EFDF.Month, r.EFDF.Day,
 		r.EFDF.Hour, r.EFDF.Minute, r.EFDF.Second)
 	if err != nil {
 		return displayableRoll{}, err
 	}
-
-	isoDx := NewIso(r.EFDF.IsoDX)
-	remarks := NewRemarks(r.EFDF.Remarks)
 
 	thumbnails := make(map[uint16]*DisplayableThumbnail, len(r.EFTPs))
 	for _, eftp := range r.EFTPs {
@@ -62,7 +56,8 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 	for i, frame := range r.EFRMs {
 		idx := i + 1
 		if idx < 0 || idx > math.MaxUint16 {
-			return displayableRoll{}, fmt.Errorf("%w: index %d", ErrFrameIndexOutOfRange, i+1)
+			return displayableRoll{},
+				fmt.Errorf("%w: index %d", ErrFrameIndexOutOfRange, i+1)
 		}
 
 		var pt *DisplayableThumbnail
@@ -70,7 +65,11 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 			pt = t
 		}
 
-		framePF, errPF := newDisplayableFrame(frame, pt)
+		framePF, errPF := newFrameBuilder(frame, pt).
+			WithBasicInfoAndModes().
+			WithCameraModesAndFlashInfo().
+			WithCustomFunctionsAndFocusPoints().
+			Build()
 		if errPF != nil {
 			return displayableRoll{}, errPF
 		}
@@ -80,18 +79,24 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 
 	return displayableRoll{
 		FilmID:         fid,
-		FirstRow:       firstRow,
-		PerRow:         perRow,
-		Title:          title,
+		FirstRow:       uint(r.EFDF.PerRow - r.EFDF.FirstRow),
+		PerRow:         uint(r.EFDF.PerRow),
+		Title:          NewTitle(r.EFDF.Title),
 		FilmLoadedDate: filmLoadedDate,
 		FrameCount:     uint(r.EFDF.FrameCount),
-		IsoDX:          isoDx,
-		Remarks:        remarks,
+		IsoDX:          NewIso(r.EFDF.IsoDX),
+		Remarks:        NewRemarks(r.EFDF.Remarks),
 		Frames:         frames,
 	}, nil
 }
 
 func (r displayableRoll) Display() error {
+	r.DisplayRoll()
+
+	return r.DisplayFrames()
+}
+
+func (r displayableRoll) DisplayRoll() {
 	s := fmt.Sprintf(
 		"Roll information:\n"+
 			" Film ID: %v\n"+
@@ -113,7 +118,9 @@ func (r displayableRoll) Display() error {
 	)
 
 	fmt.Fprintln(os.Stdout, s)
+}
 
+func (r displayableRoll) DisplayFrames() error {
 	for _, f := range r.Frames {
 		err := r.displayFrame(f)
 		if err != nil {
@@ -164,7 +171,7 @@ func (r displayableRoll) displayFrame(f displayableFrame) error {
 		f.Tv,
 		f.Av,
 		f.IsoM,
-		f.ExposureCompenation,
+		f.ExposureCompensation,
 		f.FlashExposureComp,
 		f.FlashMode,
 		f.MeteringMode,
@@ -255,11 +262,11 @@ type displayableFrame struct {
 	Av          Av
 	IsoM        Iso
 
-	ExposureCompenation ExposureCompenation
-	FlashExposureComp   ExposureCompenation
-	FlashMode           FlashMode
-	MeteringMode        MeteringMode
-	ShootingMode        ShootingMode
+	ExposureCompensation ExposureCompenation
+	FlashExposureComp    ExposureCompenation
+	FlashMode            FlashMode
+	MeteringMode         MeteringMode
+	ShootingMode         ShootingMode
 
 	FilmAdvanceMode  FilmAdvanceMode
 	AFMode           AutoFocusMode
@@ -277,154 +284,6 @@ type displayableFrame struct {
 	Thumbnail *DisplayableThumbnail
 }
 
-//nolint:funlen // necessary complexity
-func newDisplayableFrame(r records.EFRM, t *DisplayableThumbnail) (displayableFrame, error) {
-	filmID, err := NewFilmID(r.CodeA, r.CodeB)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	filmLoadedDate, err := NewDateTime(r.Year, r.Month, r.Day, r.Hour, r.Minute, r.Second)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	isoDx := NewIso(r.IsoDX)
-	focalLength := NewFocalLength(r.FocalLength)
-
-	maxAperture, err := NewAv(r.MaxAperture)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	tv, err := NewTv(r.Tv)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	av, err := NewAv(r.Av)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	isoM := NewIso(r.IsoM)
-
-	exposureCompentation, err := NewExposureCompensation(r.ExposureCompenation)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	flashExpostureComp, err := NewExposureCompensation(r.FlashExposureCompensation)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	flashMode, err := NewFlashMode(r.FlashMode)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	meteringMode, err := NewMeteringMode(r.MeteringMode)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	shootingMode, err := NewShootingMode(r.ShootingMode)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	filmAdvanceMode, err := NewFilmAdvanceMode(r.FilmAdvanceMode)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	afMode, err := NewAutoFocusMode(r.AFMode)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	var bulbExposureTime BulbExposureTime
-	if tv == "Bulb" {
-		bulbExposureTime, err = NewBulbExposureTime(r.BulbExposureTime)
-		if err != nil {
-			return displayableFrame{}, err
-		}
-	}
-
-	takenAt, err := NewDateTime(r.Year, r.Month, r.BatteryDay, r.Hour, r.Minute, r.Second)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	multipleExposure, err := NewMultipleExposure(r.MultipleExposure)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	batteryLoadedAt, err := NewDateTime(r.BatteryYear, r.BatteryMonth, r.BatteryDay,
-		r.BatteryHour, r.BatteryMinute, r.BatterySecond)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	cfs, err := NewCustomFunctions(r)
-	if err != nil {
-		return displayableFrame{}, err
-	}
-
-	remarks := NewRemarks(r.Remarks)
-	focusPoints := DisplayableFocusPoints{
-		Selection: uint(r.FocusingPoint),
-		Points: [8]byte{
-			r.FocusPoints1,
-			r.FocusPoints2,
-			r.FocusPoints3,
-			r.FocusPoints4,
-			r.FocusPoints5,
-			r.FocusPoints6,
-			r.FocusPoints7,
-			r.FocusPoints8,
-		},
-	}
-
-	return displayableFrame{
-		FrameNumber:  uint(r.FrameNumber),
-		FilmID:       filmID,
-		FilmLoadedAt: filmLoadedDate,
-		IsoDX:        isoDx,
-
-		UserModifiedRecord: r.IsModifiedRecord != 0,
-
-		FocalLength: focalLength,
-		MaxAperture: maxAperture,
-		Tv:          tv,
-		Av:          av,
-		IsoM:        isoM,
-
-		ExposureCompenation: exposureCompentation,
-		FlashExposureComp:   flashExpostureComp,
-		FlashMode:           flashMode,
-		MeteringMode:        meteringMode,
-		ShootingMode:        shootingMode,
-
-		FilmAdvanceMode:  filmAdvanceMode,
-		AFMode:           afMode,
-		BulbExposureTime: bulbExposureTime,
-		TakenAt:          takenAt,
-
-		MultipleExposure: multipleExposure,
-		BatteryLoadedAt:  batteryLoadedAt,
-
-		CustomFunctions: cfs,
-		Remarks:         remarks,
-
-		FocusingPoints: focusPoints,
-
-		Thumbnail: t,
-	}, nil
-}
-
 type DisplayableThumbnail struct {
 	Thumbnail string
 	Filepath  string
@@ -440,7 +299,8 @@ func newDisplayableThumbnail(eftp records.EFTP) DisplayableThumbnail {
 
 	options.FixedHeight = int(eftp.Height / heightRatio)
 
-	ascii := convert.NewImageConverter().Image2ASCIIString(eftp.Thumbnail, &options)
+	ascii := convert.NewImageConverter().
+		Image2ASCIIString(eftp.Thumbnail, &options)
 
 	return DisplayableThumbnail{
 		Thumbnail: ascii,
