@@ -1,43 +1,43 @@
-package cli
+package records
 
 import "image"
 
-type Record struct {
+type Raw struct {
 	Magic  [4]byte
 	Length uint64
 	Data   []byte
 }
 
-type Records struct {
-	EFDF  EFDFRecord
-	EFRMs []EFRMRecord
-	EFTPs []EFTPRecord
+type Root struct {
+	EFDF  EFDF
+	EFRMs []EFRM
+	EFTPs []EFTP
 }
 
-type EFDFRecord struct {
-	Unknown1  [8]byte
-	Unknown2  [8]byte
-	Unknown3  [4]byte
-	Unknown4  [2]byte
-	CodeB     uint32
-	Year      uint16
-	Month     uint8
-	Day       uint8
-	Hour      uint8
-	Minute    uint8
-	Second    uint8
-	Unknown5  [1]byte
-	Exposures uint32
-	IsoDX     uint32
-	CodeA     uint32
-	FirstRow  uint8
-	PerRow    uint8
-	Unknown6  [128]byte
-	Title     [64]byte
-	Remarks   [256]byte
+type EFDF struct {
+	Unknown1   [8]byte
+	Unknown2   [8]byte
+	Unknown3   [4]byte
+	Unknown4   [2]byte
+	CodeB      uint32
+	Year       uint16
+	Month      uint8
+	Day        uint8
+	Hour       uint8
+	Minute     uint8
+	Second     uint8
+	Unknown5   [1]byte
+	FrameCount uint32
+	IsoDX      uint32
+	CodeA      uint32
+	FirstRow   uint8
+	PerRow     uint8
+	Unknown6   [128]byte
+	Title      [64]byte
+	Remarks    [256]byte
 }
 
-type EFRMRecord struct {
+type EFRM struct {
 	// Offset 0x10-0x4F (64 bytes from start of data)
 	Unknown1                  [4]byte // 0x10-0x13
 	Unknown2                  [4]byte // 0x14-0x17
@@ -104,34 +104,38 @@ type EFRMRecord struct {
 	BatteryHour      uint8   // 0x8F
 
 	// Offset 0x90-0xCF (64 bytes)
-	BatteryMinute uint8    // 0x90
-	BatterySecond uint8    // 0x91
-	Unknown10     [9]byte  // 0x92-0x9A (unused/padding)
-	FocusingPoint uint32   // 0x9B-0x9E
-	Unknown11     [3]byte  // 0x9F-0xA1
-	CodeB         uint32   // 0xA2-0xA5
-	CodeA         uint32   // 0xA6-0xA9
-	IsoDX         uint32   // 0xAA-0xAD
-	RollYear      uint16   // 0xAE-0xAF
-	RollMonth     uint8    // 0xB0
-	RollDay       uint8    // 0xB1
-	RollHour      uint8    // 0xB2
-	RollMinute    uint8    // 0xB3
-	RollSecond    uint8    // 0xB4
-	Unknown12     [1]byte  // 0xB5
-	Unknown13     [10]byte // 0xB6-0xBF
-	Unknown14     [64]byte // 0xC0-0xFF
+	BatteryMinute    uint8    // 0x90
+	BatterySecond    uint8    // 0x91
+	Unknown10        [5]byte  // 0x92-0x96 (unused/padding)
+	BulbExposureTime uint32   // 0x97-0x9A
+	FocusingPoint    uint32   // 0x9B-0x9E
+	IsModifiedRecord uint8    // 0x9F
+	Unknown11        [2]byte  // 0xA0-0xA1
+	CodeB            uint32   // 0xA2-0xA5
+	CodeA            uint32   // 0xA6-0xA9
+	IsoDX            uint32   // 0xAA-0xAD
+	RollYear         uint16   // 0xAE-0xAF
+	RollMonth        uint8    // 0xB0
+	RollDay          uint8    // 0xB1
+	RollHour         uint8    // 0xB2
+	RollMinute       uint8    // 0xB3
+	RollSecond       uint8    // 0xB4
+	Unknown12        [1]byte  // 0xB5
+	Unknown13        [10]byte // 0xB6-0xBF
+	Unknown14        [64]byte // 0xC0-0xFF
 
 	// Offset 0x100-0x1FF (256 bytes)
 	Remarks [256]byte // 0x100-0x1FF
 }
 
-type EFTPRecord struct {
+type EFTP struct {
 	// Offset 0x10-0x4F (64 bytes from start of data)
-	Unknown1  [4]byte   // 0x10-0x13
+	Index     uint16    // 0x10-0x11
+	Unknown1  uint8     // 0x12
+	Unknown2  uint8     // 0x13
 	Width     uint16    // 0x14-0x15
 	Height    uint16    // 0x16-0x17
-	Unknown2  [8]byte   // 0x18-0x1F
+	Unknown3  [8]byte   // 0x18-0x1F
 	Filepath  [256]byte // 0x20-0x11F
 	Thumbnail *image.RGBA
 }
