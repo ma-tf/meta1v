@@ -8,12 +8,23 @@ package cmd
 import (
 	"os"
 
-	"github.com/ma-tf/meta1v/internal/cli"
+	"github.com/ma-tf/meta1v/internal/cli/customfunctions"
+	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
+	"github.com/ma-tf/meta1v/internal/cli/frame"
 	"github.com/ma-tf/meta1v/internal/cli/roll"
+	"github.com/ma-tf/meta1v/internal/cli/thumbnail"
+	"github.com/spf13/cobra"
 )
 
 //nolint:gochecknoglobals // cobra boilerplate
-var rootCmd = cli.NewCommand()
+var rootCmd = &cobra.Command{
+	Use:   "meta1v",
+	Short: "Provides a way to interact with Canon's EFD files.",
+	Long: `meta1v is a command line tool to interact with Canon's EFD files.
+
+You can print out information to stdout about the film roll, including focus
+points, custom functions, roll information, thumbnail previews, and more.`,
+}
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -37,4 +48,8 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.AddCommand(roll.NewCommand())
+	rootCmd.AddCommand((customfunctions.NewCommand()))
+	rootCmd.AddCommand(focusingpoints.NewCommand())
+	rootCmd.AddCommand(frame.NewCommand())
+	rootCmd.AddCommand(thumbnail.NewCommand())
 }

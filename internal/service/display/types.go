@@ -50,7 +50,7 @@ func NewDateTime(
 	rawDate := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d",
 		year, month, day, hour, minute, second)
 
-	t, err := time.Parse(time.DateTime, rawDate) // performs validation
+	t, err := time.Parse(time.DateTime, rawDate) // performs format validation
 	if err != nil || t.IsZero() {
 		return "", errors.Join(ErrInvalidFilmLoadDate, err)
 	}
@@ -82,18 +82,22 @@ func NewFocalLength(fl uint32) FocalLength {
 
 type Tv string
 
-func NewTv(tv int32) (Tv, error) {
+func NewTv(tv int32, strict bool) (Tv, error) {
 	if tv == -1 {
 		return "", nil
 	}
 
 	val, ok := tvs[tv]
 	if !ok {
-		return "", fmt.Errorf(
-			"%w: Tv %d is invalid. Please check valid Tv values",
-			ErrInvalidTv,
-			tv,
-		)
+		if strict {
+			return "", fmt.Errorf(
+				"%w: Tv %d is invalid. Please check valid Tv values",
+				ErrInvalidTv,
+				tv,
+			)
+		}
+
+		val = Tv(strconv.Itoa(int(tv)))
 	}
 
 	return val, nil
@@ -101,18 +105,22 @@ func NewTv(tv int32) (Tv, error) {
 
 type Av string
 
-func NewAv(av uint32) (Av, error) {
+func NewAv(av uint32, strict bool) (Av, error) {
 	if av == math.MaxUint32 {
 		return "", nil
 	}
 
 	val, ok := avs[av]
 	if !ok {
-		return "", fmt.Errorf(
-			"%w: Av %d is invalid. Please check valid Av values",
-			ErrInvalidAv,
-			av,
-		)
+		if strict {
+			return "", fmt.Errorf(
+				"%w: Av %d is invalid. Please check valid Av values",
+				ErrInvalidAv,
+				av,
+			)
+		}
+
+		val = Av(strconv.Itoa(int(av)))
 	}
 
 	return val, nil
@@ -130,17 +138,33 @@ func NewIso(iso uint32) Iso {
 
 type ExposureCompenation string
 
-func NewExposureCompensation(ec int32) (ExposureCompenation, error) {
+func NewExposureCompensation(
+	ec int32,
+	strict bool,
+) (ExposureCompenation, error) {
 	if ec == -1 {
 		return "", nil
 	}
 
 	val, ok := exposureComps[ec]
 	if !ok {
-		return "", fmt.Errorf(
-			"%w: exposure compensation %d is invalid. "+
-				"Please check valid exposure compensation values",
-			ErrUnknownExposureComp, ec,
+		if strict {
+			return "", fmt.Errorf(
+				"%w: exposure compensation %d is invalid. "+
+					"Please check valid exposure compensation values",
+				ErrUnknownExposureComp, ec,
+			)
+		}
+
+		prefix := "+"
+		if ec&1 == 1 {
+			prefix = "-"
+		}
+
+		const divisor = 10
+
+		val = ExposureCompenation(
+			prefix + fmt.Sprintf("%.1f", float64(ec)/divisor),
 		)
 	}
 
@@ -233,7 +257,10 @@ func NewMultipleExposure(me uint32) (MultipleExposure, error) {
 
 type DisplayableCustomFunctions []string
 
-func NewCustomFunctions(r records.EFRM) (DisplayableCustomFunctions, error) {
+func NewCustomFunctions(
+	r records.EFRM,
+	strict bool,
+) (DisplayableCustomFunctions, error) {
 	const cfMin = 0
 
 	cfs := [20]byte{
@@ -262,14 +289,16 @@ func NewCustomFunctions(r records.EFRM) (DisplayableCustomFunctions, error) {
 	values := make([]string, len(cfs))
 	for i, cf := range cfs {
 		if cf != math.MaxUint8 && (cf < cfMin || cf > cfMaxRanges[i]) {
-			return DisplayableCustomFunctions{}, fmt.Errorf(
-				"%w %d: out of range (%d-%d): %d",
-				ErrInvalidCustomFunction,
-				i,
-				cfMin,
-				cfMaxRanges[i],
-				cf,
-			)
+			if strict {
+				return DisplayableCustomFunctions{}, fmt.Errorf(
+					"%w %d: out of range (%d-%d): %d",
+					ErrInvalidCustomFunction,
+					i,
+					cfMin,
+					cfMaxRanges[i],
+					cf,
+				)
+			}
 		}
 
 		if cf == math.MaxUint8 {

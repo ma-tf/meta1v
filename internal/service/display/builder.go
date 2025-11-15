@@ -3,13 +3,14 @@ package display
 import "github.com/ma-tf/meta1v/pkg/records"
 
 type frameBuilder struct {
-	efrm  records.EFRM
-	frame displayableFrame
-	err   error
+	strict bool
+	efrm   records.EFRM
+	frame  displayableFrame
+	err    error
 }
 
 type step1FrameBuilder interface {
-	WithBasicInfoAndModes() step2FrameBuilder
+	WithBasicInfo() step2FrameBuilder
 }
 
 type step2FrameBuilder interface {
@@ -23,11 +24,13 @@ type step3FrameBuilder interface {
 func newFrameBuilder(
 	r records.EFRM,
 	t *DisplayableThumbnail,
+	strict bool,
 ) step1FrameBuilder {
 	fb := &frameBuilder{
-		efrm:  r,
-		frame: displayableFrame{}, //nolint:exhaustruct // will be built step by step
-		err:   nil,
+		strict: strict,
+		efrm:   r,
+		frame:  displayableFrame{}, //nolint:exhaustruct // will be built step by step
+		err:    nil,
 	}
 
 	fb.frame.FilmID, fb.err = NewFilmID(r.CodeA, r.CodeB)
@@ -62,19 +65,19 @@ func newFrameBuilder(
 	return fb
 }
 
-func (fb *frameBuilder) WithBasicInfoAndModes() step2FrameBuilder {
+func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 	if fb.err != nil {
 		return fb
 	}
 
 	fb.frame.FocalLength = NewFocalLength(fb.efrm.FocalLength)
 
-	fb.frame.MaxAperture, fb.err = NewAv(fb.efrm.MaxAperture)
+	fb.frame.MaxAperture, fb.err = NewAv(fb.efrm.MaxAperture, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.Tv, fb.err = NewTv(fb.efrm.Tv)
+	fb.frame.Tv, fb.err = NewTv(fb.efrm.Tv, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
@@ -88,7 +91,7 @@ func (fb *frameBuilder) WithBasicInfoAndModes() step2FrameBuilder {
 		}
 	}
 
-	fb.frame.Av, fb.err = NewAv(fb.efrm.Av)
+	fb.frame.Av, fb.err = NewAv(fb.efrm.Av, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
@@ -97,6 +100,7 @@ func (fb *frameBuilder) WithBasicInfoAndModes() step2FrameBuilder {
 
 	fb.frame.ExposureCompensation, fb.err = NewExposureCompensation(
 		fb.efrm.ExposureCompenation,
+		fb.strict,
 	)
 	if fb.err != nil {
 		return fb
@@ -131,6 +135,7 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo() step3FrameBuilder {
 
 	fb.frame.FlashExposureComp, fb.err = NewExposureCompensation(
 		fb.efrm.FlashExposureCompensation,
+		fb.strict,
 	)
 	if fb.err != nil {
 		return fb
@@ -171,7 +176,7 @@ func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() *frameBuilder {
 		return fb
 	}
 
-	fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm)
+	fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm, fb.strict)
 	if fb.err != nil {
 		return fb
 	}

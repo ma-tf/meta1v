@@ -5,13 +5,55 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/ma-tf/meta1v/pkg/records"
 	"github.com/qeesung/image2ascii/convert"
 )
 
+const (
+	filmIDWidth       = 8
+	firstRowWidth     = 9
+	perRowWidth       = 14
+	titleWidth        = 20
+	filmLoadedAtWidth = 20
+	frameCountWidth   = 11
+	isoDxWidth        = 8
+	remarksWidth      = 30
+
+	frameNumberWidth       = 9
+	focusingPointsWidth    = 21
+	focusingPointsPadding  = filmIDWidth + frameNumberWidth + 2
+	focalLengthWidth       = 12
+	maxApertureWidth       = 12
+	tvWidth                = 7
+	avWidth                = 7
+	isoMWidth              = 7
+	exposureCompWidth      = 15
+	flashExposureCompWidth = 20
+	flashModeWidth         = 15
+	meteringModeWidth      = 15
+	shootingModeWidth      = 15
+	filmAdvanceModeWidth   = 17
+	afModeWidth            = 12
+	bulbExposureTimeWidth  = 20
+	takenAtWidth           = 20
+	multipleExposureWidth  = 20
+	batteryLoadedAtWidth   = 20
+	customFunctionsWidth   = 2
+
+	imageFileWidth   = 64
+	thumbnailWidth   = 64
+	thumbnailPadding = filmIDWidth + frameNumberWidth + imageFileWidth + 3
+)
+
 type Service interface {
-	Display() error
+	DisplayRoll()
+	DisplayCustomFunctions()
+	DisplayFocusingPoints() error
+	DisplayFrames() error
+	DisplayThumbnails()
 }
 
 type displayableRoll struct {
@@ -65,8 +107,8 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 			pt = t
 		}
 
-		framePF, errPF := newFrameBuilder(frame, pt).
-			WithBasicInfoAndModes().
+		framePF, errPF := newFrameBuilder(frame, pt, false).
+			WithBasicInfo().
 			WithCameraModesAndFlashInfo().
 			WithCustomFunctionsAndFocusPoints().
 			Build()
@@ -90,162 +132,271 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 	}, nil
 }
 
-func (r displayableRoll) Display() error {
-	r.DisplayRoll()
-
-	return r.DisplayFrames()
-}
-
 func (r displayableRoll) DisplayRoll() {
-	s := fmt.Sprintf(
-		"Roll information:\n"+
-			" Film ID: %v\n"+
-			" Frames in first row: %v\n"+
-			" Frames per row: %v\n"+
-			" Title: %v\n"+
-			" Film load date: %v\n"+
-			" Frame count: %v\n"+
-			" ISO (DX): %v\n"+
-			" Remarks: %v",
-		r.FilmID,
-		r.FirstRow,
-		r.PerRow,
-		r.Title,
-		r.FilmLoadedDate,
-		r.FrameCount,
-		r.IsoDX,
-		r.Remarks,
+	s := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
+		filmIDWidth, "FILM ID",
+		firstRowWidth, "FIRST ROW",
+		perRowWidth, "FRAMES PER ROW",
+		titleWidth, "TITLE",
+		filmLoadedAtWidth, "FILM LOADED AT",
+		frameCountWidth, "FRAME COUNT",
+		isoDxWidth, "ISO (DX)",
+		remarksWidth, "REMARKS",
 	)
-
 	fmt.Fprintln(os.Stdout, s)
+	fmt.Fprintln(os.Stdout, strings.Repeat("-", len(s)))
+
+	row := fmt.Sprintf("%-*s %-*d %-*d %-*s %-*s %-*d %-*s %-*s",
+		filmIDWidth, r.FilmID,
+		firstRowWidth, r.FirstRow,
+		perRowWidth, r.PerRow,
+		titleWidth, truncate(r.Title, titleWidth),
+		filmLoadedAtWidth, r.FilmLoadedDate,
+		frameCountWidth, r.FrameCount,
+		isoDxWidth, r.IsoDX,
+		remarksWidth, truncate(r.Remarks, remarksWidth),
+	)
+	fmt.Fprintln(os.Stdout, row)
 }
 
 func (r displayableRoll) DisplayFrames() error {
-	for _, f := range r.Frames {
-		err := r.displayFrame(f)
+	//nolint:golines // more readable this way
+	s := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
+		filmIDWidth, "FILM ID",
+		frameNumberWidth, "FRAME NO.",
+		filmLoadedAtWidth, "FILM LOADED AT",
+		isoDxWidth, "ISO (DX)",
+		focalLengthWidth, "FOCAL LENGTH",
+		maxApertureWidth, "MAX APERTURE",
+		tvWidth, "TV",
+		avWidth, "AV",
+		isoMWidth, "ISO (M)",
+		exposureCompWidth, "EXPOSURE COMP.",
+		flashExposureCompWidth, "FLASH EXPOSURE COMP.",
+		flashModeWidth, "FLASH MODE",
+		meteringModeWidth, "METERING MODE",
+		shootingModeWidth, "SHOOTING MODE",
+		filmAdvanceModeWidth, "FILM ADVANCE MODE",
+		afModeWidth, "AF MODE",
+		bulbExposureTimeWidth, "BULB EXPOSURE TIME",
+		takenAtWidth, "TAKEN AT",
+		multipleExposureWidth, "MULTIPLE EXPOSURE",
+		batteryLoadedAtWidth, "BATTERY LOADED AT",
+		remarksWidth, "REMARKS",
+	)
+	fmt.Fprintln(os.Stdout, s)
+	fmt.Fprintln(os.Stdout, strings.Repeat("-", len(s)))
+
+	for _, fr := range r.Frames {
+		row := r.renderFrame(fr)
+		fmt.Fprintln(os.Stdout, row)
+	}
+
+	return nil
+}
+
+func (r displayableRoll) renderFrame(fr displayableFrame) string {
+	//nolint:golines // more readable this way
+	row := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
+		filmIDWidth, fr.FilmID,
+		frameNumberWidth, r.renderFrameNumber(fr),
+		filmLoadedAtWidth, fr.FilmLoadedAt,
+		isoDxWidth, fr.IsoDX,
+		focalLengthWidth, fr.FocalLength,
+		maxApertureWidth, fr.MaxAperture,
+		tvWidth, fr.Tv,
+		avWidth, fr.Av,
+		isoMWidth, fr.IsoM,
+		exposureCompWidth, fr.ExposureCompensation,
+		flashExposureCompWidth, fr.FlashExposureComp,
+		flashModeWidth, fr.FlashMode,
+		meteringModeWidth, fr.MeteringMode,
+		shootingModeWidth, fr.ShootingMode,
+		filmAdvanceModeWidth, fr.FilmAdvanceMode,
+		afModeWidth, fr.AFMode,
+		bulbExposureTimeWidth, fr.BulbExposureTime,
+		takenAtWidth, fr.TakenAt,
+		multipleExposureWidth, fr.MultipleExposure,
+		batteryLoadedAtWidth, fr.BatteryLoadedAt,
+		remarksWidth, truncate(fr.Remarks, remarksWidth),
+	)
+
+	return row
+}
+
+func (r displayableRoll) DisplayCustomFunctions() {
+	//nolint:golines // more readable this way
+	s := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
+		filmIDWidth, "FILM ID",
+		frameNumberWidth, "FRAME NO.",
+		customFunctionsWidth, "#",
+		customFunctionsWidth, "1",
+		customFunctionsWidth, "2",
+		customFunctionsWidth, "3",
+		customFunctionsWidth, "4",
+		customFunctionsWidth, "5",
+		customFunctionsWidth, "6",
+		customFunctionsWidth, "7",
+		customFunctionsWidth, "8",
+		customFunctionsWidth, "9",
+		customFunctionsWidth, "10",
+		customFunctionsWidth, "11",
+		customFunctionsWidth, "12",
+		customFunctionsWidth, "13",
+		customFunctionsWidth, "14",
+		customFunctionsWidth, "15",
+		customFunctionsWidth, "16",
+		customFunctionsWidth, "17",
+		customFunctionsWidth, "18",
+		customFunctionsWidth, "19",
+		customFunctionsWidth, "20",
+	)
+	fmt.Fprintln(os.Stdout, s)
+	fmt.Fprintln(os.Stdout, strings.Repeat("-", len(s)))
+
+	for _, fr := range r.Frames {
+		row := r.renderCustomFunctions(fr)
+		fmt.Fprintln(os.Stdout, row)
+	}
+}
+
+func (r displayableRoll) renderCustomFunctions(fr displayableFrame) string {
+	//nolint:golines // more readable this way
+	row := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
+		filmIDWidth, fr.FilmID,
+		frameNumberWidth, r.renderFrameNumber(fr),
+		customFunctionsWidth, "#",
+		customFunctionsWidth, fr.CustomFunctions[0],
+		customFunctionsWidth, fr.CustomFunctions[1],
+		customFunctionsWidth, fr.CustomFunctions[2],
+		customFunctionsWidth, fr.CustomFunctions[3],
+		customFunctionsWidth, fr.CustomFunctions[4],
+		customFunctionsWidth, fr.CustomFunctions[5],
+		customFunctionsWidth, fr.CustomFunctions[6],
+		customFunctionsWidth, fr.CustomFunctions[7],
+		customFunctionsWidth, fr.CustomFunctions[8],
+		customFunctionsWidth, fr.CustomFunctions[9],
+		customFunctionsWidth, fr.CustomFunctions[10],
+		customFunctionsWidth, fr.CustomFunctions[11],
+		customFunctionsWidth, fr.CustomFunctions[12],
+		customFunctionsWidth, fr.CustomFunctions[13],
+		customFunctionsWidth, fr.CustomFunctions[14],
+		customFunctionsWidth, fr.CustomFunctions[15],
+		customFunctionsWidth, fr.CustomFunctions[16],
+		customFunctionsWidth, fr.CustomFunctions[17],
+		customFunctionsWidth, fr.CustomFunctions[18],
+		customFunctionsWidth, fr.CustomFunctions[19],
+	)
+
+	return row
+}
+
+func (r displayableRoll) DisplayFocusingPoints() error {
+	rows := make([]string, len(r.Frames))
+	for i, fr := range r.Frames {
+		row, err := r.renderFocusPoints(fr)
 		if err != nil {
 			return err
 		}
+
+		rows[i] = row
 	}
 
-	return nil
-}
-
-func (r displayableRoll) displayFrame(f displayableFrame) error {
-	fmt.Fprintln(os.Stdout, "\nFrame information:")
-
-	err := r.displayFocusPoints(f.FocusingPoints)
-	if err != nil {
-		return err
-	}
-
-	s := fmt.Sprintf(
-		" Is user modified record: %v\n"+
-			" Frame Number: %v\n"+
-			" Film ID: %v\n"+
-			" Film loaded at: %v\n"+
-			" ISO (DX): %v\n"+
-			" Focal Length: %v\n"+
-			" Max Aperture: %v\n"+
-			" Tv: %v\n"+
-			" Av: %v\n"+
-			" ISO (M): %v\n"+
-			" Exposure Compensation: %v\n"+
-			" Flash Exposure Compensation: %v\n"+
-			" Flash Mode: %v\n"+
-			" Metering Mode: %v\n"+
-			" Shooting Mode: %v\n"+
-			" Film Advance Mode: %v\n"+
-			" AF Mode: %v\n"+
-			" Bulb Exposure Time: %v\n"+
-			" Taken At: %v\n"+
-			" Multiple Exposure: %v\n"+
-			" Battery Loaded At: %v",
-		f.UserModifiedRecord,
-		f.FrameNumber,
-		f.FilmID,
-		f.FilmLoadedAt,
-		f.IsoDX,
-		f.FocalLength,
-		f.MaxAperture,
-		f.Tv,
-		f.Av,
-		f.IsoM,
-		f.ExposureCompensation,
-		f.FlashExposureComp,
-		f.FlashMode,
-		f.MeteringMode,
-		f.ShootingMode,
-		f.FilmAdvanceMode,
-		f.AFMode,
-		f.BulbExposureTime,
-		f.TakenAt,
-		f.MultipleExposure,
-		f.BatteryLoadedAt,
+	s := fmt.Sprintf("%-*s %-*s %-*s",
+		filmIDWidth, "FILM ID",
+		frameNumberWidth, "FRAME NO.",
+		focusingPointsWidth, "FOCUSING POINTS",
 	)
 	fmt.Fprintln(os.Stdout, s)
-	r.displayCustomFunctions(f.CustomFunctions)
-	fmt.Fprintln(os.Stdout, " Remarks:", f.Remarks)
+	fmt.Fprintln(os.Stdout, strings.Repeat("-", len(s)))
 
-	if f.Thumbnail != nil {
-		r.displayThumbnail(f.Thumbnail)
+	for _, row := range rows {
+		fmt.Fprintln(os.Stdout, row)
 	}
 
 	return nil
 }
 
-func (r displayableRoll) displayCustomFunctions(cf DisplayableCustomFunctions) {
-	table := " Custom Functions:\n" +
-		"  #  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20\n" +
-		"     %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s\n"
+func (r displayableRoll) renderFocusPoints(
+	f displayableFrame,
+) (string, error) {
+	pf := f.FocusingPoints
 
-	values := make([]any, len(cf))
-	for i, v := range cf {
-		values[i] = v
-	}
-
-	fmt.Fprintf(os.Stdout, table, values...)
-}
-
-func (r displayableRoll) displayFocusPoints(pf DisplayableFocusPoints) error {
 	if pf.Selection == math.MaxUint32 {
-		empty := " Focusing Points:\n" +
-			"      \033[30m\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			"   \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			"  \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			"   \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			"      \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\033[0m\n"
-		fmt.Fprintln(os.Stdout, empty)
+		empty := "    \033[30m\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+			" \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+			"\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+			" \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+			"    \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\033[0m\n"
 
-		return nil
+		s := fmt.Sprintf("%-*s %-*d %-*s",
+			filmIDWidth, f.FilmID,
+			frameNumberWidth, f.FrameNumber,
+			focusingPointsWidth, pad(empty, focusingPointsPadding),
+		)
+
+		return s, nil
 	}
 
 	p := make([]string, len(fpBits))
 	for i, fpBit := range fpBits {
 		b, err := byteToBox(pf.Points[i], fpBit)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		p[i] = b
 	}
 
-	printableFocusPoints := " Focusing Points:\n" +
-		"      " + p[0] + "\n" +
-		"   " + p[2] + p[1] + "\n" +
-		"  " + p[4] + p[3] + "\n" +
-		"   " + p[6] + p[5] + "\n" +
-		"      " + p[7] + "\n"
+	printableFocusPoints := "    " + p[0] + "\n" +
+		" " + p[2] + p[1] + "\n" +
+		p[4] + p[3] + "\n" +
+		" " + p[6] + p[5] + "\n" +
+		"    " + p[7] + "\n"
 
-	fmt.Fprintln(os.Stdout, printableFocusPoints)
+	s := fmt.Sprintf("%-*s %-*d %-*s",
+		filmIDWidth, f.FilmID,
+		frameNumberWidth, f.FrameNumber,
+		focusingPointsWidth, pad(printableFocusPoints, focusingPointsPadding),
+	)
 
-	return nil
+	return s, nil
 }
 
-func (r displayableRoll) displayThumbnail(t *DisplayableThumbnail) {
-	s := "\n Path:" + t.Filepath +
-		"\n Thumbnail:\n" + t.Thumbnail
+func (r displayableRoll) DisplayThumbnails() {
+	s := fmt.Sprintf("%-*s %-*s %-*s %-*s",
+		filmIDWidth, "FILM ID",
+		frameNumberWidth, "FRAME NO.",
+		imageFileWidth, "IMAGE FILE",
+		thumbnailWidth, "THUMBNAIL",
+	)
 	fmt.Fprintln(os.Stdout, s)
+	fmt.Fprintln(os.Stdout, strings.Repeat("-", len(s)))
+
+	for _, fr := range r.Frames {
+		r.displayThumbnail(fr)
+	}
+}
+
+func (r displayableRoll) displayThumbnail(fr displayableFrame) {
+	t := DisplayableThumbnail{
+		Filepath:  "",
+		Thumbnail: "",
+	}
+
+	if fr.Thumbnail != nil {
+		t = *fr.Thumbnail
+	}
+
+	if fr.Thumbnail != nil {
+		s := fmt.Sprintf("%-*s %-*d %-*s %-*s",
+			filmIDWidth, fr.FilmID,
+			frameNumberWidth, fr.FrameNumber,
+			imageFileWidth, truncate(t.Filepath, imageFileWidth),
+			thumbnailWidth, pad(t.Thumbnail, thumbnailPadding),
+		)
+		fmt.Fprint(os.Stdout, s)
+	}
 }
 
 type displayableFrame struct {
@@ -306,4 +457,33 @@ func newDisplayableThumbnail(eftp records.EFTP) DisplayableThumbnail {
 		Thumbnail: ascii,
 		Filepath:  filepath,
 	}
+}
+
+func (r displayableRoll) renderFrameNumber(fr displayableFrame) string {
+	if !fr.UserModifiedRecord {
+		return strconv.FormatUint(uint64(fr.FrameNumber), 10)
+	}
+
+	return fmt.Sprintf("%d*", fr.FrameNumber)
+}
+
+func truncate[S ~string](s S, l int) S {
+	if len(s) <= l {
+		return s
+	}
+
+	return s[:l-3] + "..."
+}
+
+func pad[S ~string](s S, p int) S {
+	lines := strings.Split(string(s), "\n")
+
+	var sb strings.Builder
+	sb.WriteString(lines[0] + "\n")
+
+	for i := 1; i < len(lines); i++ {
+		sb.WriteString(strings.Repeat(" ", p) + lines[i] + "\n")
+	}
+
+	return S(sb.String())
 }
