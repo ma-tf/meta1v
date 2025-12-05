@@ -2,12 +2,14 @@ package display
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/ma-tf/meta1v/pkg/domain"
 	"github.com/ma-tf/meta1v/pkg/records"
 	"github.com/qeesung/image2ascii/convert"
 )
@@ -48,6 +50,11 @@ const (
 	thumbnailPadding = filmIDWidth + frameNumberWidth + imageFileWidth + 3
 )
 
+var (
+	ErrMultipleThumbnailsForFrame = errors.New("frame has multiple thumbnails")
+	ErrFrameIndexOutOfRange       = errors.New("frame index out of range")
+)
+
 type Service interface {
 	DisplayRoll()
 	DisplayCustomFunctions()
@@ -57,48 +64,82 @@ type Service interface {
 }
 
 type displayableRoll struct {
-	FilmID         FilmID
+	FilmID         domain.FilmID
 	FirstRow       uint
 	PerRow         uint
-	Title          Title
-	FilmLoadedDate DisplayableDatetime
+	Title          domain.Title
+	FilmLoadedDate domain.ValidatedDatetime
 	FrameCount     uint
-	IsoDX          Iso
-	Remarks        Remarks // film name, location, push/pull, etc.
+	IsoDX          domain.Iso
+	Remarks        domain.Remarks // film name, location, push/pull, etc.
 
-	Frames []displayableFrame
+	Frames []DisplayableFrame
 }
 
 func NewDisplayableRoll(r records.Root) (Service, error) {
-	fid, err := NewFilmID(r.EFDF.CodeA, r.EFDF.CodeB)
+	fid, err := domain.NewFilmID(r.EFDF.CodeA, r.EFDF.CodeB)
 	if err != nil {
-		return displayableRoll{}, err
+		return displayableRoll{},
+			fmt.Errorf("failed to parse roll data: %w", err)
 	}
 
-	filmLoadedDate, err := NewDateTime(r.EFDF.Year, r.EFDF.Month, r.EFDF.Day,
+	filmLoadedDate, err := domain.NewDateTime(
+		r.EFDF.Year, r.EFDF.Month, r.EFDF.Day,
 		r.EFDF.Hour, r.EFDF.Minute, r.EFDF.Second)
 	if err != nil {
-		return displayableRoll{}, err
+		return displayableRoll{},
+			fmt.Errorf("failed to parse roll data: %w", err)
 	}
 
+	thumbnails, err := getThumbnails(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// r.EFRMs != rr.Exposures ∵ multiple exposures? untested with real world frames
+	frames, err := getFrames(r, thumbnails)
+	if err != nil {
+		return nil, err
+	}
+
+	return displayableRoll{
+		FilmID:         fid,
+		FirstRow:       uint(r.EFDF.PerRow - r.EFDF.FirstRow),
+		PerRow:         uint(r.EFDF.PerRow),
+		Title:          domain.NewTitle(r.EFDF.Title),
+		FilmLoadedDate: filmLoadedDate,
+		FrameCount:     uint(r.EFDF.FrameCount),
+		IsoDX:          domain.NewIso(r.EFDF.IsoDX),
+		Remarks:        domain.NewRemarks(r.EFDF.Remarks),
+		Frames:         frames,
+	}, nil
+}
+
+func getThumbnails(r records.Root) (map[uint16]*DisplayableThumbnail, error) {
 	thumbnails := make(map[uint16]*DisplayableThumbnail, len(r.EFTPs))
 	for _, eftp := range r.EFTPs {
 		thumbnail := newDisplayableThumbnail(eftp)
 
 		if thumbnails[eftp.Index] != nil {
-			return displayableRoll{}, fmt.Errorf("%w: frame number %d",
+			return nil, fmt.Errorf("%w: frame number %d",
 				ErrMultipleThumbnailsForFrame, eftp.Index)
 		}
 
 		thumbnails[eftp.Index] = &thumbnail
 	}
 
-	// r.EFRMs != rr.Exposures ∵ multiple exposures? untested with real world frames
-	frames := make([]displayableFrame, 0, len(r.EFRMs))
+	return thumbnails, nil
+}
+
+func getFrames(
+	r records.Root,
+	thumbnails map[uint16]*DisplayableThumbnail,
+) ([]DisplayableFrame, error) {
+	frames := make([]DisplayableFrame, 0, len(r.EFRMs))
 	for i, frame := range r.EFRMs {
 		idx := i + 1
 		if idx < 0 || idx > math.MaxUint16 {
-			return displayableRoll{},
+			return nil,
 				fmt.Errorf("%w: index %d", ErrFrameIndexOutOfRange, i+1)
 		}
 
@@ -113,23 +154,13 @@ func NewDisplayableRoll(r records.Root) (Service, error) {
 			WithCustomFunctionsAndFocusPoints().
 			Build()
 		if errPF != nil {
-			return displayableRoll{}, errPF
+			return nil, errPF
 		}
 
 		frames = append(frames, framePF)
 	}
 
-	return displayableRoll{
-		FilmID:         fid,
-		FirstRow:       uint(r.EFDF.PerRow - r.EFDF.FirstRow),
-		PerRow:         uint(r.EFDF.PerRow),
-		Title:          NewTitle(r.EFDF.Title),
-		FilmLoadedDate: filmLoadedDate,
-		FrameCount:     uint(r.EFDF.FrameCount),
-		IsoDX:          NewIso(r.EFDF.IsoDX),
-		Remarks:        NewRemarks(r.EFDF.Remarks),
-		Frames:         frames,
-	}, nil
+	return frames, nil
 }
 
 func (r displayableRoll) DisplayRoll() {
@@ -195,7 +226,7 @@ func (r displayableRoll) DisplayFrames() error {
 	return nil
 }
 
-func (r displayableRoll) renderFrame(fr displayableFrame) string {
+func (r displayableRoll) renderFrame(fr DisplayableFrame) string {
 	//nolint:golines // more readable this way
 	row := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, fr.FilmID,
@@ -260,7 +291,7 @@ func (r displayableRoll) DisplayCustomFunctions() {
 	}
 }
 
-func (r displayableRoll) renderCustomFunctions(fr displayableFrame) string {
+func (r displayableRoll) renderCustomFunctions(fr DisplayableFrame) string {
 	//nolint:golines // more readable this way
 	row := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, fr.FilmID,
@@ -318,7 +349,7 @@ func (r displayableRoll) DisplayFocusingPoints() error {
 }
 
 func (r displayableRoll) renderFocusPoints(
-	f displayableFrame,
+	f DisplayableFrame,
 ) (string, error) {
 	pf := f.FocusingPoints
 
@@ -378,7 +409,7 @@ func (r displayableRoll) DisplayThumbnails() {
 	}
 }
 
-func (r displayableRoll) displayThumbnail(fr displayableFrame) {
+func (r displayableRoll) displayThumbnail(fr DisplayableFrame) {
 	t := DisplayableThumbnail{
 		Filepath:  "",
 		Thumbnail: "",
@@ -399,36 +430,36 @@ func (r displayableRoll) displayThumbnail(fr displayableFrame) {
 	}
 }
 
-type displayableFrame struct {
+type DisplayableFrame struct {
 	FrameNumber  uint
-	FilmID       FilmID
-	FilmLoadedAt DisplayableDatetime
-	IsoDX        Iso
+	FilmID       domain.FilmID
+	FilmLoadedAt domain.ValidatedDatetime
+	IsoDX        domain.Iso
 
 	UserModifiedRecord bool
 
-	FocalLength FocalLength
-	MaxAperture Av
-	Tv          Tv
-	Av          Av
-	IsoM        Iso
+	FocalLength domain.FocalLength
+	MaxAperture domain.Av
+	Tv          domain.Tv
+	Av          domain.Av
+	IsoM        domain.Iso
 
-	ExposureCompensation ExposureCompenation
-	FlashExposureComp    ExposureCompenation
-	FlashMode            FlashMode
-	MeteringMode         MeteringMode
-	ShootingMode         ShootingMode
+	ExposureCompensation domain.ExposureCompenation
+	FlashExposureComp    domain.ExposureCompenation
+	FlashMode            domain.FlashMode
+	MeteringMode         domain.MeteringMode
+	ShootingMode         domain.ShootingMode
 
-	FilmAdvanceMode  FilmAdvanceMode
-	AFMode           AutoFocusMode
-	BulbExposureTime BulbExposureTime
-	TakenAt          DisplayableDatetime
+	FilmAdvanceMode  domain.FilmAdvanceMode
+	AFMode           domain.AutoFocusMode
+	BulbExposureTime domain.BulbExposureTime
+	TakenAt          domain.ValidatedDatetime
 
-	MultipleExposure MultipleExposure
-	BatteryLoadedAt  DisplayableDatetime
+	MultipleExposure domain.MultipleExposure
+	BatteryLoadedAt  domain.ValidatedDatetime
 
 	CustomFunctions DisplayableCustomFunctions
-	Remarks         Remarks
+	Remarks         domain.Remarks
 
 	FocusingPoints DisplayableFocusPoints
 
@@ -459,7 +490,7 @@ func newDisplayableThumbnail(eftp records.EFTP) DisplayableThumbnail {
 	}
 }
 
-func (r displayableRoll) renderFrameNumber(fr displayableFrame) string {
+func (r displayableRoll) renderFrameNumber(fr DisplayableFrame) string {
 	if !fr.UserModifiedRecord {
 		return strconv.FormatUint(uint64(fr.FrameNumber), 10)
 	}

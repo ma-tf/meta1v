@@ -1,4 +1,4 @@
-package display
+package domain
 
 import "errors"
 
@@ -21,5 +21,4 @@ var (
 	ErrUnknownAutoFocusMode    = errors.New("unknown auto focus mode")
 	ErrInvalidBulbTime         = errors.New("invalid bulb exposure time")
 	ErrUnknownMultipleExposure = errors.New("unknown multiple exposure value")
-	ErrInvalidCustomFunction   = errors.New("invalid custom function")
 )

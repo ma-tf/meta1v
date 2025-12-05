@@ -1,11 +1,19 @@
 package display
 
-import "github.com/ma-tf/meta1v/pkg/records"
+import (
+	"errors"
+	"fmt"
+	"math"
+	"strconv"
+
+	"github.com/ma-tf/meta1v/pkg/domain"
+	"github.com/ma-tf/meta1v/pkg/records"
+)
 
 type frameBuilder struct {
 	strict bool
 	efrm   records.EFRM
-	frame  displayableFrame
+	frame  DisplayableFrame
 	err    error
 }
 
@@ -29,22 +37,22 @@ func newFrameBuilder(
 	fb := &frameBuilder{
 		strict: strict,
 		efrm:   r,
-		frame:  displayableFrame{}, //nolint:exhaustruct // will be built step by step
+		frame:  DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
 		err:    nil,
 	}
 
-	fb.frame.FilmID, fb.err = NewFilmID(r.CodeA, r.CodeB)
+	fb.frame.FilmID, fb.err = domain.NewFilmID(r.CodeA, r.CodeB)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.FilmLoadedAt, fb.err = NewDateTime(r.Year, r.Month, r.Day,
+	fb.frame.FilmLoadedAt, fb.err = domain.NewDateTime(r.Year, r.Month, r.Day,
 		r.Hour, r.Minute, r.Second)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.BatteryLoadedAt, fb.err = NewDateTime(
+	fb.frame.BatteryLoadedAt, fb.err = domain.NewDateTime(
 		r.BatteryYear,
 		r.BatteryMonth,
 		r.BatteryDay,
@@ -56,9 +64,9 @@ func newFrameBuilder(
 		return fb
 	}
 
-	fb.frame.IsoDX = NewIso(r.IsoDX)
+	fb.frame.IsoDX = domain.NewIso(r.IsoDX)
 	fb.frame.FrameNumber = uint(r.FrameNumber)
-	fb.frame.Remarks = NewRemarks(r.Remarks)
+	fb.frame.Remarks = domain.NewRemarks(r.Remarks)
 	fb.frame.Thumbnail = t
 	fb.frame.UserModifiedRecord = r.IsModifiedRecord != 0
 
@@ -70,20 +78,20 @@ func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 		return fb
 	}
 
-	fb.frame.FocalLength = NewFocalLength(fb.efrm.FocalLength)
+	fb.frame.FocalLength = domain.NewFocalLength(fb.efrm.FocalLength)
 
-	fb.frame.MaxAperture, fb.err = NewAv(fb.efrm.MaxAperture, fb.strict)
+	fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.Tv, fb.err = NewTv(fb.efrm.Tv, fb.strict)
+	fb.frame.Tv, fb.err = domain.NewTv(fb.efrm.Tv, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
 
 	if fb.frame.Tv == "Bulb" {
-		fb.frame.BulbExposureTime, fb.err = NewBulbExposureTime(
+		fb.frame.BulbExposureTime, fb.err = domain.NewBulbExposureTime(
 			fb.efrm.BulbExposureTime,
 		)
 		if fb.err != nil {
@@ -91,14 +99,14 @@ func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 		}
 	}
 
-	fb.frame.Av, fb.err = NewAv(fb.efrm.Av, fb.strict)
+	fb.frame.Av, fb.err = domain.NewAv(fb.efrm.Av, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.IsoM = NewIso(fb.efrm.IsoM)
+	fb.frame.IsoM = domain.NewIso(fb.efrm.IsoM)
 
-	fb.frame.ExposureCompensation, fb.err = NewExposureCompensation(
+	fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(
 		fb.efrm.ExposureCompenation,
 		fb.strict,
 	)
@@ -106,7 +114,7 @@ func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 		return fb
 	}
 
-	fb.frame.TakenAt, fb.err = NewDateTime(
+	fb.frame.TakenAt, fb.err = domain.NewDateTime(
 		fb.efrm.Year,
 		fb.efrm.Month,
 		fb.efrm.BatteryDay,
@@ -118,7 +126,7 @@ func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 		return fb
 	}
 
-	fb.frame.MultipleExposure, fb.err = NewMultipleExposure(
+	fb.frame.MultipleExposure, fb.err = domain.NewMultipleExposure(
 		fb.efrm.MultipleExposure,
 	)
 	if fb.err != nil {
@@ -133,7 +141,7 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo() step3FrameBuilder {
 		return fb
 	}
 
-	fb.frame.FlashExposureComp, fb.err = NewExposureCompensation(
+	fb.frame.FlashExposureComp, fb.err = domain.NewExposureCompensation(
 		fb.efrm.FlashExposureCompensation,
 		fb.strict,
 	)
@@ -141,29 +149,29 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo() step3FrameBuilder {
 		return fb
 	}
 
-	fb.frame.FlashMode, fb.err = NewFlashMode(fb.efrm.FlashMode)
+	fb.frame.FlashMode, fb.err = domain.NewFlashMode(fb.efrm.FlashMode)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.MeteringMode, fb.err = NewMeteringMode(fb.efrm.MeteringMode)
+	fb.frame.MeteringMode, fb.err = domain.NewMeteringMode(fb.efrm.MeteringMode)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.ShootingMode, fb.err = NewShootingMode(fb.efrm.ShootingMode)
+	fb.frame.ShootingMode, fb.err = domain.NewShootingMode(fb.efrm.ShootingMode)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.FilmAdvanceMode, fb.err = NewFilmAdvanceMode(
+	fb.frame.FilmAdvanceMode, fb.err = domain.NewFilmAdvanceMode(
 		fb.efrm.FilmAdvanceMode,
 	)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.AFMode, fb.err = NewAutoFocusMode(fb.efrm.AFMode)
+	fb.frame.AFMode, fb.err = domain.NewAutoFocusMode(fb.efrm.AFMode)
 	if fb.err != nil {
 		return fb
 	}
@@ -198,6 +206,95 @@ func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() *frameBuilder {
 	return fb
 }
 
-func (fb *frameBuilder) Build() (displayableFrame, error) {
+func (fb *frameBuilder) Build() (DisplayableFrame, error) {
 	return fb.frame, fb.err
+}
+
+// --------------------------
+
+var ErrInvalidCustomFunction = errors.New("invalid custom function")
+
+//nolint:gochecknoglobals,mnd // not exported anyway, magic numbers are defined by manual
+var cfMaxRanges = map[int]byte{
+	0:  1,
+	1:  3,
+	2:  1,
+	3:  1,
+	4:  3,
+	5:  3,
+	6:  2,
+	7:  2,
+	8:  2,
+	9:  3,
+	10: 3,
+	11: 3,
+	12: 1,
+	13: 3,
+	14: 1,
+	15: 1,
+	16: 1,
+	17: 2,
+	18: 2,
+	19: 5,
+}
+
+type DisplayableCustomFunctions []string
+
+func NewCustomFunctions(
+	r records.EFRM,
+	strict bool,
+) (DisplayableCustomFunctions, error) {
+	const cfMin = 0
+
+	cfs := [20]byte{
+		r.CustomFunction0,
+		r.CustomFunction1,
+		r.CustomFunction2,
+		r.CustomFunction3,
+		r.CustomFunction4,
+		r.CustomFunction5,
+		r.CustomFunction6,
+		r.CustomFunction7,
+		r.CustomFunction8,
+		r.CustomFunction9,
+		r.CustomFunction10,
+		r.CustomFunction11,
+		r.CustomFunction12,
+		r.CustomFunction13,
+		r.CustomFunction14,
+		r.CustomFunction15,
+		r.CustomFunction16,
+		r.CustomFunction17,
+		r.CustomFunction18,
+		r.CustomFunction19,
+	}
+
+	values := make([]string, len(cfs))
+	for i, cf := range cfs {
+		if cf != math.MaxUint8 && (cf < cfMin || cf > cfMaxRanges[i]) {
+			if strict {
+				return DisplayableCustomFunctions{}, fmt.Errorf(
+					"%w %d: out of range (%d-%d): %d",
+					ErrInvalidCustomFunction,
+					i,
+					cfMin,
+					cfMaxRanges[i],
+					cf,
+				)
+			}
+		}
+
+		if cf == math.MaxUint8 {
+			values[i] = " "
+		} else {
+			values[i] = strconv.Itoa(int(cf))
+		}
+	}
+
+	return values, nil
+}
+
+type DisplayableFocusPoints struct {
+	Selection uint
+	Points    [8]byte
 }

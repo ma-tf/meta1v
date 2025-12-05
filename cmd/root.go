@@ -6,9 +6,11 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions"
+	"github.com/ma-tf/meta1v/internal/cli/dng"
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
 	"github.com/ma-tf/meta1v/internal/cli/frame"
 	"github.com/ma-tf/meta1v/internal/cli/roll"
@@ -41,14 +43,21 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
+	//nolint:exhaustruct // slog boilerplate
+	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	logger := slog.New(handler)
+
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.meta1v.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+	rootCmd.AddCommand(dng.NewCommand(logger))
 	rootCmd.AddCommand(roll.NewCommand())
-	rootCmd.AddCommand((customfunctions.NewCommand()))
+	rootCmd.AddCommand(customfunctions.NewCommand())
 	rootCmd.AddCommand(focusingpoints.NewCommand())
 	rootCmd.AddCommand(frame.NewCommand())
 	rootCmd.AddCommand(thumbnail.NewCommand())

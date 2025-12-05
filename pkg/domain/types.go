@@ -1,4 +1,4 @@
-package display
+package domain
 
 import (
 	"bytes"
@@ -7,9 +7,10 @@ import (
 	"math"
 	"strconv"
 	"time"
-
-	"github.com/ma-tf/meta1v/pkg/records"
 )
+
+//nolint:gochecknoglobals // global defaultMaps is acceptable here
+var defaultMaps = NewMapProvider()
 
 type FilmID string
 
@@ -32,7 +33,7 @@ func NewFilmID(prefix, suffix uint32) (FilmID, error) {
 	return FilmID(s), nil
 }
 
-type DisplayableDatetime string
+type ValidatedDatetime string
 
 func NewDateTime(
 	year uint16,
@@ -41,7 +42,7 @@ func NewDateTime(
 	hour,
 	minute,
 	second uint8,
-) (DisplayableDatetime, error) {
+) (ValidatedDatetime, error) {
 	if year == math.MaxUint16 && month&day&hour&minute&second == math.MaxUint8 {
 		return "", nil
 	}
@@ -55,7 +56,7 @@ func NewDateTime(
 		return "", errors.Join(ErrInvalidFilmLoadDate, err)
 	}
 
-	return DisplayableDatetime(t.Format(time.DateTime)), nil
+	return ValidatedDatetime(t.Format(time.DateTime)), nil
 }
 
 type Title string
@@ -87,7 +88,7 @@ func NewTv(tv int32, strict bool) (Tv, error) {
 		return "", nil
 	}
 
-	val, ok := tvs[tv]
+	val, ok := defaultMaps.GetTv(tv)
 	if !ok {
 		if strict {
 			return "", fmt.Errorf(
@@ -110,7 +111,7 @@ func NewAv(av uint32, strict bool) (Av, error) {
 		return "", nil
 	}
 
-	val, ok := avs[av]
+	val, ok := defaultMaps.GetAv(av)
 	if !ok {
 		if strict {
 			return "", fmt.Errorf(
@@ -146,7 +147,7 @@ func NewExposureCompensation(
 		return "", nil
 	}
 
-	val, ok := exposureComps[ec]
+	val, ok := defaultMaps.GetExposureCompenation(ec)
 	if !ok {
 		if strict {
 			return "", fmt.Errorf(
@@ -174,7 +175,7 @@ func NewExposureCompensation(
 type FlashMode string
 
 func NewFlashMode(fm uint32) (FlashMode, error) {
-	val, ok := flashModes[fm]
+	val, ok := defaultMaps.GetFlashMode(fm)
 	if !ok {
 		return "", ErrUnknownFlashMode
 	}
@@ -185,7 +186,7 @@ func NewFlashMode(fm uint32) (FlashMode, error) {
 type MeteringMode string
 
 func NewMeteringMode(mm uint32) (MeteringMode, error) {
-	val, ok := meteringModes[mm]
+	val, ok := defaultMaps.GetMeteringMode(mm)
 	if !ok {
 		return "", ErrUnknownMeteringMode
 	}
@@ -196,7 +197,7 @@ func NewMeteringMode(mm uint32) (MeteringMode, error) {
 type ShootingMode string
 
 func NewShootingMode(sm uint32) (ShootingMode, error) {
-	val, ok := shootingModes[sm]
+	val, ok := defaultMaps.GetShootingMode(sm)
 	if !ok {
 		return "", ErrUnknownShootingMode
 	}
@@ -207,7 +208,7 @@ func NewShootingMode(sm uint32) (ShootingMode, error) {
 type FilmAdvanceMode string
 
 func NewFilmAdvanceMode(fam uint32) (FilmAdvanceMode, error) {
-	val, ok := filmAdvanceModes[fam]
+	val, ok := defaultMaps.GetFilmAdvanceMode(fam)
 	if !ok {
 		return "", ErrUnknownFilmAdvanceMode
 	}
@@ -218,7 +219,7 @@ func NewFilmAdvanceMode(fam uint32) (FilmAdvanceMode, error) {
 type AutoFocusMode string
 
 func NewAutoFocusMode(afm uint32) (AutoFocusMode, error) {
-	val, ok := afModes[afm]
+	val, ok := defaultMaps.GetAutoFocusMode(afm)
 	if !ok {
 		return "", ErrUnknownAutoFocusMode
 	}
@@ -247,71 +248,10 @@ func NewBulbExposureTime(bd uint32) (BulbExposureTime, error) {
 type MultipleExposure string
 
 func NewMultipleExposure(me uint32) (MultipleExposure, error) {
-	val, ok := multipleExposures[me]
+	val, ok := defaultMaps.GetMultipleExposure(me)
 	if !ok {
 		return "", ErrUnknownMultipleExposure
 	}
 
 	return val, nil
-}
-
-type DisplayableCustomFunctions []string
-
-func NewCustomFunctions(
-	r records.EFRM,
-	strict bool,
-) (DisplayableCustomFunctions, error) {
-	const cfMin = 0
-
-	cfs := [20]byte{
-		r.CustomFunction0,
-		r.CustomFunction1,
-		r.CustomFunction2,
-		r.CustomFunction3,
-		r.CustomFunction4,
-		r.CustomFunction5,
-		r.CustomFunction6,
-		r.CustomFunction7,
-		r.CustomFunction8,
-		r.CustomFunction9,
-		r.CustomFunction10,
-		r.CustomFunction11,
-		r.CustomFunction12,
-		r.CustomFunction13,
-		r.CustomFunction14,
-		r.CustomFunction15,
-		r.CustomFunction16,
-		r.CustomFunction17,
-		r.CustomFunction18,
-		r.CustomFunction19,
-	}
-
-	values := make([]string, len(cfs))
-	for i, cf := range cfs {
-		if cf != math.MaxUint8 && (cf < cfMin || cf > cfMaxRanges[i]) {
-			if strict {
-				return DisplayableCustomFunctions{}, fmt.Errorf(
-					"%w %d: out of range (%d-%d): %d",
-					ErrInvalidCustomFunction,
-					i,
-					cfMin,
-					cfMaxRanges[i],
-					cf,
-				)
-			}
-		}
-
-		if cf == math.MaxUint8 {
-			values[i] = " "
-		} else {
-			values[i] = strconv.Itoa(int(cf))
-		}
-	}
-
-	return values, nil
-}
-
-type DisplayableFocusPoints struct {
-	Selection uint
-	Points    [8]byte
 }
