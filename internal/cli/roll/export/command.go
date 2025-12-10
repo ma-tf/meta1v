@@ -2,6 +2,7 @@ package export
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -9,16 +10,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewCommand(log *slog.Logger) *cobra.Command {
 	return &cobra.Command{
 		Use:   "export [filename]",
 		Short: "Export roll information in csv format to stdout or specified file.",
 		Long: `Information about the film roll, including film ID, title, load date,
 frame count, ISO and user provided remarks.`,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			if len(args) != 1 {
 				return cli.ErrNoFilenameProvided
 			}
+
+			log.DebugContext(ctx, "arguments:",
+				slog.String("filename", args[0]),
+			)
 
 			file, err := os.Open(args[0])
 			if err != nil {
@@ -26,16 +33,11 @@ frame count, ISO and user provided remarks.`,
 			}
 			defer file.Close()
 
-			rs := efd.NewService()
+			uc := NewRollExportUseCase(
+				efd.NewService(log),
+			)
 
-			_, err = rs.RecordsFromFile(file)
-			if err != nil {
-				return fmt.Errorf("failed read file: %w", err)
-			}
-
-			// export to csv
-
-			return nil
+			return uc.Export(ctx, file)
 		},
 	}
 }

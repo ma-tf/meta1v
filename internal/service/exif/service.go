@@ -1,4 +1,4 @@
-package dng
+package exif
 
 import (
 	"bytes"
@@ -12,27 +12,33 @@ import (
 )
 
 type Service interface {
-	WriteEXIF(ctx context.Context, targetFile string) error
+	WriteEXIF(
+		ctx context.Context,
+		r records.Root,
+		frameNumber int,
+		targetFile string,
+	) error
 }
 
 type service struct {
-	log         *slog.Logger
-	r           records.Root
-	frameNumber int
+	log *slog.Logger
 }
 
-func NewService(log *slog.Logger, r records.Root, i int) Service {
+func NewService(log *slog.Logger) Service {
 	return service{
-		log:         log,
-		r:           r,
-		frameNumber: i,
+		log: log,
 	}
 }
 
 // WriteEXIF runs exiftool with a user-defined config. It avoids shells and
 // temporary files by streaming the config over an anonymous pipe and passing
 // the read end as fd 3 to the child process (accessible as /proc/self/fd/3).
-func (s service) WriteEXIF(ctx context.Context, targetFile string) error {
+func (s service) WriteEXIF(
+	ctx context.Context,
+	r records.Root,
+	frameNumber int,
+	targetFile string,
+) error {
 	const cfg = `%Image::ExifTool::UserDefined = (
         'Image::ExifTool::XMP::Main' => {
             AnalogueData => {
@@ -58,7 +64,7 @@ func (s service) WriteEXIF(ctx context.Context, targetFile string) error {
     1;
     `
 
-	emf, err := newDNGBuilder(s.r, s.frameNumber, false).
+	emf, err := newExifBuilder(r, frameNumber, false).
 		WithAvs().
 		WithTv().
 		WithFocalLengthAndIsoAndRemarks().

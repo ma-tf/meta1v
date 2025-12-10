@@ -1,11 +1,13 @@
 package customfunctions
 
 import (
+	"log/slog"
+
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewCommand(log *slog.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "customfunctions <command>",
 		Short: "Custom functions used by the frames for a specified file.",
@@ -16,7 +18,7 @@ Canon EOS-1V manual.`,
 		Aliases: []string{"cf"},
 	}
 
-	cmd.AddCommand(list.NewCommand())
+	cmd.AddCommand(list.NewCommand(log))
 
 	return cmd
 }

@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -10,17 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewCommand(log *slog.Logger) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
 		Short: "Prints embedded thumbnails as ascii to stdout.",
 		Long: `Information about the thumbnail, including the path, as well as the
 thumbnail converted to ascii.`,
 		Aliases: []string{"ls"},
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			if len(args) != 1 {
 				return cli.ErrNoFilenameProvided
 			}
+
+			log.DebugContext(ctx, "arguments:",
+				slog.String("filename", args[0]))
 
 			file, err := os.Open(args[0])
 			if err != nil {
@@ -28,21 +34,16 @@ thumbnail converted to ascii.`,
 			}
 			defer file.Close()
 
-			rs := efd.NewService()
+			log.DebugContext(ctx, "opened file:",
+				slog.String("filename", args[0]))
 
-			records, err := rs.RecordsFromFile(file)
-			if err != nil {
-				return fmt.Errorf("failed read file: %w", err)
-			}
+			uc := NewThumbnailListUseCase(
+				efd.NewService(log),
+				display.NewDisplayableRollFactory(),
+				display.NewService(),
+			)
 
-			dr, err := display.NewDisplayableRoll(records)
-			if err != nil {
-				return fmt.Errorf("failed parse file: %w", err)
-			}
-
-			dr.DisplayThumbnails()
-
-			return nil
+			return uc.DisplayThumbnails(ctx, file)
 		},
 	}
 }

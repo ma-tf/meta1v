@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -10,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewCommand(log *slog.Logger) *cobra.Command {
 	return &cobra.Command{
 		Use:   "ls <filename>",
 		Short: "Print custom functions used by the frames for a specified file.",
@@ -18,10 +19,15 @@ func NewCommand() *cobra.Command {
 
 For the meaning of each custom function and its respective value, check the
 Canon EOS-1V manual.`,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			if len(args) != 1 {
 				return cli.ErrNoFilenameProvided
 			}
+
+			log.DebugContext(ctx, "arguments:",
+				slog.String("filename", args[0]))
 
 			file, err := os.Open(args[0])
 			if err != nil {
@@ -29,21 +35,16 @@ Canon EOS-1V manual.`,
 			}
 			defer file.Close()
 
-			rs := efd.NewService()
+			log.DebugContext(ctx, "opened file:",
+				slog.String("filename", args[0]))
 
-			records, err := rs.RecordsFromFile(file)
-			if err != nil {
-				return fmt.Errorf("failed read file: %w", err)
-			}
+			uc := NewCustomFunctionsListUseCase(
+				efd.NewService(log),
+				display.NewDisplayableRollFactory(),
+				display.NewService(),
+			)
 
-			dr, err := display.NewDisplayableRoll(records)
-			if err != nil {
-				return fmt.Errorf("failed parse file: %w", err)
-			}
-
-			dr.DisplayCustomFunctions()
-
-			return nil
+			return uc.DisplayCustomFunctions(ctx, file)
 		},
 	}
 }

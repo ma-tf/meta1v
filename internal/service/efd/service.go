@@ -1,28 +1,35 @@
+//go:generate mockgen -destination=./mocks/service_mock.go -package=efd_test github.com/ma-tf/meta1v/internal/service/efd Service
+
 package efd
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"image"
 	"image/color"
 	"io"
-	"os"
+	"log/slog"
 
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-var _ RecordService = &recordservice{}
+var _ Service = &service{log: nil}
 
-type RecordService interface {
-	RecordsFromFile(*os.File) (records.Root, error)
+type Service interface {
+	RecordsFromFile(ctx context.Context, r io.Reader) (records.Root, error)
 }
 
-type recordservice struct{}
+type service struct {
+	log *slog.Logger
+}
 
-func NewService() RecordService {
-	return &recordservice{}
+func NewService(log *slog.Logger) Service {
+	return &service{
+		log: log,
+	}
 }
 
 var (
@@ -34,7 +41,10 @@ var (
 
 const bytesPerPixel = 3 // RGB
 
-func (s *recordservice) RecordsFromFile(file *os.File) (records.Root, error) {
+func (s *service) RecordsFromFile(
+	ctx context.Context,
+	r io.Reader,
+) (records.Root, error) {
 	var (
 		efdf  *records.EFDF
 		efrms []records.EFRM
@@ -42,7 +52,7 @@ func (s *recordservice) RecordsFromFile(file *os.File) (records.Root, error) {
 	)
 
 	for {
-		record, errRaw := recordFromFile(file)
+		record, errRaw := s.recordFromFile(ctx, r)
 		if errRaw != nil {
 			if errors.Is(errRaw, io.EOF) {
 				break // done
@@ -58,21 +68,21 @@ func (s *recordservice) RecordsFromFile(file *os.File) (records.Root, error) {
 				return records.Root{}, ErrMultipleEFDFRecords
 			}
 
-			r, err := efdfFromRecord(record)
+			r, err := s.efdfFromRecord(ctx, record)
 			if err != nil {
 				return records.Root{}, err
 			}
 
 			efdf = &r
 		case "EFRM":
-			r, err := efrmFromRecord(record)
+			r, err := s.efrmFromRecord(ctx, record)
 			if err != nil {
 				return records.Root{}, err
 			}
 
 			efrms = append(efrms, r)
 		case "EFTP":
-			r, err := eftpFromRecord(bytes.NewReader(record.Data))
+			r, err := s.eftpFromRecord(ctx, record)
 			if err != nil {
 				return records.Root{}, err
 			}
@@ -84,6 +94,10 @@ func (s *recordservice) RecordsFromFile(file *os.File) (records.Root, error) {
 		}
 	}
 
+	s.log.DebugContext(ctx, "efd records parsed",
+		slog.Int("efrms", len(efrms)),
+		slog.Int("eftps", len(eftps)))
+
 	return records.Root{
 		EFDF:  *efdf,
 		EFRMs: efrms,
@@ -91,7 +105,10 @@ func (s *recordservice) RecordsFromFile(file *os.File) (records.Root, error) {
 	}, nil
 }
 
-func recordFromFile(r *os.File) (records.Raw, error) {
+func (s *service) recordFromFile(
+	ctx context.Context,
+	r io.Reader,
+) (records.Raw, error) {
 	var magicAndLength [16]byte
 	if err := binary.Read(r, binary.LittleEndian, &magicAndLength); err != nil {
 		return records.Raw{}, errors.Join(ErrFailedToReadRecord, err)
@@ -109,6 +126,11 @@ func recordFromFile(r *os.File) (records.Raw, error) {
 		return records.Raw{}, errors.Join(ErrFailedToReadRecord, err)
 	}
 
+	s.log.DebugContext(ctx, "record read",
+		slog.String("magic", string(magic)),
+		slog.Uint64("length", l),
+	)
+
 	return records.Raw{
 		Magic:  [4]byte(magic),
 		Length: l,
@@ -116,7 +138,10 @@ func recordFromFile(r *os.File) (records.Raw, error) {
 	}, nil
 }
 
-func efdfFromRecord(record records.Raw) (records.EFDF, error) {
+func (s *service) efdfFromRecord(
+	ctx context.Context,
+	record records.Raw,
+) (records.EFDF, error) {
 	var r records.EFDF
 
 	err := binary.Read(
@@ -131,10 +156,18 @@ func efdfFromRecord(record records.Raw) (records.EFDF, error) {
 		)
 	}
 
+	s.log.DebugContext(ctx, "efdf parsed",
+		slog.Uint64("frameCount", uint64(r.FrameCount)),
+		slog.Int("length", len(record.Data)),
+	)
+
 	return r, nil
 }
 
-func efrmFromRecord(record records.Raw) (records.EFRM, error) {
+func (s *service) efrmFromRecord(
+	ctx context.Context,
+	record records.Raw,
+) (records.EFRM, error) {
 	var r records.EFRM
 
 	err := binary.Read(
@@ -149,20 +182,27 @@ func efrmFromRecord(record records.Raw) (records.EFRM, error) {
 		)
 	}
 
+	s.log.DebugContext(ctx, "efrm parsed",
+		slog.Int("length", len(record.Data)),
+		slog.Int("frameNumber", int(r.FrameNumber)),
+	)
+
 	return r, nil
 }
 
-func eftpFromRecord(r io.Reader) (*records.EFTP, error) {
-	order := binary.LittleEndian
+func (s *service) eftpFromRecord(
+	ctx context.Context,
+	record records.Raw,
+) (*records.EFTP, error) {
+	var (
+		order  = binary.LittleEndian
+		header [16]byte
+	)
 
-	var header [16]byte
+	r := bytes.NewReader(record.Data)
 	if err := binary.Read(r, order, &header); err != nil {
 		return nil, errors.Join(ErrFailedToParseThumbnail, err)
 	}
-
-	frameNumber := order.Uint16(header[0:2])
-	unknown1 := header[2]
-	unknown2 := header[3]
 
 	var filepath [256]byte
 	if err := binary.Read(r, order, &filepath); err != nil {
@@ -174,30 +214,43 @@ func eftpFromRecord(r io.Reader) (*records.EFTP, error) {
 		return nil, errors.Join(ErrFailedToParseThumbnail, err)
 	}
 
-	w := order.Uint16(header[4:6])
-	h := order.Uint16(header[6:8])
-	width := int(w)
-	height := int(h)
+	w, h := order.Uint16(header[4:6]), order.Uint16(header[6:8])
+	width, height := int(w), int(h)
 
 	thumbnail := image.NewRGBA(image.Rect(0, 0, width, height))
-	for y := range height {
-		for x := range width {
-			idx := (y*width + x) * bytesPerPixel
-			if idx+2 >= len(data) {
-				break
-			}
+	// for y := range height {
+	// 	for x := range width {
+	// 		idx := (y*width + x) * bytesPerPixel
+	// 		if idx+2 >= len(data) {
+	// 			break
+	// 		}
 
-			b := data[idx]
-			g := data[idx+1]
-			r := data[idx+2]
-			thumbnail.Set(x, y, color.RGBA{r, g, b, 255}) // opaque alpha
-		}
+	// 		thumbnail.Set(x, y, color.RGBA{data[idx+2], data[idx+1], data[idx], 255}) // opaque alpha
+	// 	}
+	// }
+
+	for i := 0; i+2 < len(data); i += bytesPerPixel {
+		idx := i / bytesPerPixel
+		thumbnail.SetRGBA(
+			idx%width,
+			idx/height,
+			color.RGBA{
+				data[idx+2], data[idx+1], data[idx], 255, // opaque alpha
+			},
+		)
 	}
+
+	thumbnailSize := height * width * bytesPerPixel
+	frameNumber := order.Uint16(header[0:2])
+	s.log.DebugContext(ctx, "eftp parsed",
+		slog.Int("length", thumbnailSize),
+		slog.Int("frameNumber", int(frameNumber)),
+	)
 
 	return &records.EFTP{
 		Index:     frameNumber,
-		Unknown1:  unknown1,
-		Unknown2:  unknown2,
+		Unknown1:  header[2],
+		Unknown2:  header[3],
 		Width:     w,
 		Height:    h,
 		Unknown3:  [8]byte(header[8:16]),

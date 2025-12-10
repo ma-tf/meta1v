@@ -1,4 +1,4 @@
-package dng
+package exif
 
 import (
 	"fmt"
@@ -7,22 +7,22 @@ import (
 	"strconv"
 
 	"github.com/ma-tf/meta1v/internal/cli"
-	"github.com/ma-tf/meta1v/internal/service/dng"
 	"github.com/ma-tf/meta1v/internal/service/efd"
+	"github.com/ma-tf/meta1v/internal/service/exif"
 	"github.com/spf13/cobra"
 )
 
 func NewCommand(log *slog.Logger) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dng <efd_file> <frame_number> <dng_file>",
-		Short: "Export EXIF data of a frame to a dng file for a specified file.",
+		Use:   "exif <efd_file> <frame_number> <target_file>",
+		Short: "Use the specified EFD file to write EXIF data to the target file.",
 		RunE: func(command *cobra.Command, args []string) error {
 			ctx := command.Context()
 
-			log.DebugContext(ctx, "arguments:",
+			log.DebugContext(ctx, "exif arguments:",
 				slog.String("efd_file", args[0]),
 				slog.String("frame_number", args[1]),
-				slog.String("dng_file", args[2]))
+				slog.String("target_file", args[2]))
 
 			const requiredArgs = 3
 			if len(args) != requiredArgs {
@@ -35,28 +35,17 @@ func NewCommand(log *slog.Logger) *cobra.Command {
 			}
 			defer file.Close()
 
-			rs := efd.NewService()
-
-			records, err := rs.RecordsFromFile(file)
-			if err != nil {
-				return fmt.Errorf("failed to interpret file content: %w", err)
-			}
-
-			fn, err := strconv.Atoi(args[1])
+			frame, err := strconv.Atoi(args[1])
 			if err != nil {
 				return fmt.Errorf("invalid specified frame number: %w", err)
 			}
 
-			s := dng.NewService(log, records, fn)
+			uc := NewUseCase(
+				efd.NewService(log),
+				exif.NewService(log),
+			)
 
-			target := "./test_files/20251011_Japan 1_0.dng"
-
-			err = s.WriteEXIF(ctx, target)
-			if err != nil {
-				return fmt.Errorf("write exif failed: %w", err)
-			}
-
-			return nil
+			return uc.ExportExif(ctx, file, frame)
 		},
 	}
 

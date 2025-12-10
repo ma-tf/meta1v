@@ -1,4 +1,4 @@
-package dng
+package exif
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 
 var ErrMultipleFrames = errors.New("multiple frames with same number found")
 
-type dngBuilder struct {
+type exifBuilder struct {
 	strict      bool
 	efrm        records.EFRM
 	frameNumber int
@@ -31,10 +31,10 @@ type step2FrameBuilder interface {
 }
 
 type step3FrameBuilder interface {
-	WithFocalLengthAndIsoAndRemarks() *dngBuilder
+	WithFocalLengthAndIsoAndRemarks() *exifBuilder
 }
 
-func newDNGBuilder(
+func newExifBuilder(
 	r records.Root,
 	frameNumber int,
 	strict bool,
@@ -57,7 +57,7 @@ func newDNGBuilder(
 		}
 	}
 
-	return &dngBuilder{
+	return &exifBuilder{
 		strict:      strict,
 		efrm:        r.EFRMs[frameNumber],
 		frameNumber: frameNumber,
@@ -66,7 +66,7 @@ func newDNGBuilder(
 	}
 }
 
-func (b *dngBuilder) WithAvs() step2FrameBuilder {
+func (b *exifBuilder) WithAvs() step2FrameBuilder {
 	if b.err != nil {
 		return b
 	}
@@ -113,7 +113,7 @@ func (b *dngBuilder) WithAvs() step2FrameBuilder {
 	return b
 }
 
-func (b *dngBuilder) WithTv() step3FrameBuilder {
+func (b *exifBuilder) WithTv() step3FrameBuilder {
 	if b.err != nil {
 		return b
 	}
@@ -155,7 +155,7 @@ func (b *dngBuilder) WithTv() step3FrameBuilder {
 	return b
 }
 
-func (b *dngBuilder) WithFocalLengthAndIsoAndRemarks() *dngBuilder {
+func (b *exifBuilder) WithFocalLengthAndIsoAndRemarks() *exifBuilder {
 	f := b.efrm
 
 	b.frame.DcDescription = string(domain.NewRemarks(f.Remarks))
@@ -173,7 +173,7 @@ func (b *dngBuilder) WithFocalLengthAndIsoAndRemarks() *dngBuilder {
 	return b
 }
 
-func (b *dngBuilder) Build() (Exportable, error) {
+func (b *exifBuilder) Build() (Exportable, error) {
 	return &b.frame, b.err
 }
 

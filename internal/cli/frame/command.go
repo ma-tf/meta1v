@@ -1,11 +1,13 @@
 package frame
 
 import (
+	"log/slog"
+
 	"github.com/ma-tf/meta1v/internal/cli/frame/list"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewCommand(log *slog.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "frame <command>",
 		Short: "Frame information for a specified file.",
@@ -14,7 +16,7 @@ exposure compensation, focus points, custom functions, and more.`,
 		Aliases: []string{"f"},
 	}
 
-	cmd.AddCommand(list.NewCommand())
+	cmd.AddCommand(list.NewCommand(log))
 
 	return cmd
 }
