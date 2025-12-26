@@ -1,17 +1,19 @@
 package list
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
-	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
-	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand(log *slog.Logger) *cobra.Command {
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/customfunctions/list UseCase
+type UseCase interface {
+	List(ctx context.Context, filename string) error
+}
+
+func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "ls <filename>",
 		Short: "Print custom functions used by the frames for a specified file.",
@@ -29,22 +31,7 @@ Canon EOS-1V manual.`,
 			log.DebugContext(ctx, "arguments:",
 				slog.String("filename", args[0]))
 
-			file, err := os.Open(args[0])
-			if err != nil {
-				return fmt.Errorf("failed to open file: %w", err)
-			}
-			defer file.Close()
-
-			log.DebugContext(ctx, "opened file:",
-				slog.String("filename", args[0]))
-
-			uc := NewCustomFunctionsListUseCase(
-				efd.NewService(log),
-				display.NewDisplayableRollFactory(),
-				display.NewService(),
-			)
-
-			return uc.DisplayCustomFunctions(ctx, file)
+			return uc.List(ctx, args[0])
 		},
 	}
 }

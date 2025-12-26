@@ -1,49 +1,57 @@
-package list
+package frame
 
 import (
 	"context"
-	"fmt"
-	"io"
+	"errors"
 	"os"
 
+	"github.com/ma-tf/meta1v/internal/cli/frame/list"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 )
 
-type FrameListUseCase struct {
+var (
+	ErrFailedToReadFile  = errors.New("failed read file for frames")
+	ErrFailedToParseFile = errors.New(
+		"failed to parse file for frames",
+	)
+	ErrFailedToList = errors.New("failed to list frames")
+)
+
+type listUseCase struct {
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
 	displayService         display.Service
 }
 
-func NewFrameListUseCase(
+func NewListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) FrameListUseCase {
-	return FrameListUseCase{
+) list.UseCase {
+	return listUseCase{
 		efdService:             efdService,
 		displayableRollFactory: displayableRollFactory,
 		displayService:         displayService,
 	}
 }
 
-func (uc FrameListUseCase) DisplayFrames(
+func (uc listUseCase) List(
 	ctx context.Context,
-	r io.Reader,
+	filename string,
 ) error {
-	records, err := uc.efdService.RecordsFromFile(ctx, r)
+	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
-		return fmt.Errorf("failed read file: %w", err)
+		return errors.Join(ErrFailedToReadFile, err)
 	}
 
 	dr, err := uc.displayableRollFactory.Create(records)
 	if err != nil {
-		return fmt.Errorf("failed parse file: %w", err)
+		return errors.Join(ErrFailedToParseFile, err)
 	}
 
 	if err = uc.displayService.DisplayFrames(os.Stdout, dr); err != nil {
-		return fmt.Errorf("failed to display frame: %w", err)
+		return errors.Join(ErrFailedToList, err)
 	}
 
 	return nil

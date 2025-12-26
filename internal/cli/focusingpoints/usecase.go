@@ -1,11 +1,11 @@
-package list
+package focusingpoints
 
 import (
 	"context"
 	"errors"
-	"io"
 	"os"
 
+	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 )
@@ -18,29 +18,29 @@ var (
 	ErrFailedToList = errors.New("failed to list focusing points")
 )
 
-type FocusingPointsListUseCase struct {
+type listUseCase struct {
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
 	displayService         display.Service
 }
 
-func NewFocusingPointsListUseCase(
+func NewListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) FocusingPointsListUseCase {
-	return FocusingPointsListUseCase{
+) list.UseCase {
+	return listUseCase{
 		efdService:             efdService,
 		displayableRollFactory: displayableRollFactory,
 		displayService:         displayService,
 	}
 }
 
-func (uc FocusingPointsListUseCase) DisplayFocusingPoints(
+func (uc listUseCase) List(
 	ctx context.Context,
-	r io.Reader,
+	filename string,
 ) error {
-	records, err := uc.efdService.RecordsFromFile(ctx, r)
+	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
 		return errors.Join(ErrFailedToReadFile, err)
 	}

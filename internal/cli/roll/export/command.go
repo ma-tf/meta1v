@@ -1,16 +1,19 @@
 package export
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
-	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
-	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand(log *slog.Logger) *cobra.Command {
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=export_test github.com/ma-tf/meta1v/internal/cli/roll/export UseCase
+type UseCase interface {
+	Export(ctx context.Context, filename string) error
+}
+
+func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "export [filename]",
 		Short: "Export roll information in csv format to stdout or specified file.",
@@ -27,17 +30,7 @@ frame count, ISO and user provided remarks.`,
 				slog.String("filename", args[0]),
 			)
 
-			file, err := os.Open(args[0])
-			if err != nil {
-				return fmt.Errorf("failed to open file: %w", err)
-			}
-			defer file.Close()
-
-			uc := NewRollExportUseCase(
-				efd.NewService(log),
-			)
-
-			return uc.Export(ctx, file)
+			return uc.Export(ctx, args[0])
 		},
 	}
 }

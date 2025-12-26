@@ -5,14 +5,16 @@ all: tidy generate lint build test
 generate:
 	go generate ./...
 
+PKGS := $(shell go list ./... 2>/dev/null | grep -Ev '(/test|/mocks)$$')
+
 .PHONY: test
 test:
-	go test -race -v ./...
+	go test -race $(PKGS)
 
 .PHONY: coverage
 coverage:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
+	@go test -covermode=count -coverprofile=coverage.out $(PKGS)
+	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report saved to coverage.html"
 
 .PHONY: build

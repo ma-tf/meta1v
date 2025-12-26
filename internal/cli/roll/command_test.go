@@ -1,0 +1,33 @@
+package roll_test
+
+import (
+	"bytes"
+	"log/slog"
+	"testing"
+
+	"github.com/ma-tf/meta1v/internal/cli/roll"
+)
+
+//nolint:exhaustruct // for testcase struct literals
+func Test_NewCommand(t *testing.T) {
+	t.Parallel()
+
+	buf := &bytes.Buffer{}
+	logger := slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+
+	cmd := roll.NewCommand(logger)
+
+	const expectedSubcommands = 2
+	if len(cmd.Commands()) != expectedSubcommands {
+		t.Fatalf("expected %d subcommand to be registered, got %d",
+			expectedSubcommands, len(cmd.Commands()))
+	}
+}

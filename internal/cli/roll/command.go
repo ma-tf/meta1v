@@ -5,6 +5,10 @@ import (
 
 	"github.com/ma-tf/meta1v/internal/cli/roll/export"
 	"github.com/ma-tf/meta1v/internal/cli/roll/list"
+	"github.com/ma-tf/meta1v/internal/service/csv"
+	"github.com/ma-tf/meta1v/internal/service/display"
+	"github.com/ma-tf/meta1v/internal/service/efd"
+	"github.com/ma-tf/meta1v/internal/service/osfs"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +21,29 @@ frame count, ISO and user provided remarks.`,
 		Aliases: []string{"r"},
 	}
 
-	cmd.AddCommand(list.NewCommand(log))
-	cmd.AddCommand(export.NewCommand(log))
+	fs := osfs.NewFileSystem()
+	b := efd.NewRootBuilder(log)
+	listUseCase := NewListUseCase(
+		efd.NewService(
+			log,
+			b,
+			fs,
+		),
+		display.NewDisplayableRollFactory(),
+		display.NewService(),
+	)
+
+	exportUseCase := NewExportUseCase(
+		efd.NewService(
+			log,
+			b,
+			fs,
+		),
+		csv.NewService(),
+	)
+
+	cmd.AddCommand(list.NewCommand(log, listUseCase))
+	cmd.AddCommand(export.NewCommand(log, exportUseCase))
 
 	return cmd
 }

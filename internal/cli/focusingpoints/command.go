@@ -4,6 +4,9 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
+	"github.com/ma-tf/meta1v/internal/service/display"
+	"github.com/ma-tf/meta1v/internal/service/efd"
+	"github.com/ma-tf/meta1v/internal/service/osfs"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +21,17 @@ For the setting focusing points on the camera, check the Canon EOS-1V manual.`,
 		Aliases: []string{"fp"},
 	}
 
-	cmd.AddCommand(list.NewCommand(log))
+	uc := NewListUseCase(
+		efd.NewService(
+			log,
+			efd.NewRootBuilder(log),
+			osfs.NewFileSystem(),
+		),
+		display.NewDisplayableRollFactory(),
+		display.NewService(),
+	)
+
+	cmd.AddCommand(list.NewCommand(log, uc))
 
 	return cmd
 }

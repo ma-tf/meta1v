@@ -1,48 +1,55 @@
-package list
+package customfunctions
 
 import (
 	"context"
-	"fmt"
-	"io"
+	"errors"
 	"os"
 
+	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 )
 
-type ThumbnailListUseCase struct {
+var (
+	ErrFailedToReadFile  = errors.New("failed read file for custom functions")
+	ErrFailedToParseFile = errors.New(
+		"failed to parse file for custom functions",
+	)
+)
+
+type listUseCase struct {
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
 	displayService         display.Service
 }
 
-func NewThumbnailListUseCase(
+func NewListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) ThumbnailListUseCase {
-	return ThumbnailListUseCase{
+) list.UseCase {
+	return listUseCase{
 		efdService:             efdService,
 		displayableRollFactory: displayableRollFactory,
 		displayService:         displayService,
 	}
 }
 
-func (uc ThumbnailListUseCase) DisplayThumbnails(
+func (uc listUseCase) List(
 	ctx context.Context,
-	r io.Reader,
+	filename string,
 ) error {
-	records, err := uc.efdService.RecordsFromFile(ctx, r)
+	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
-		return fmt.Errorf("failed read file: %w", err)
+		return errors.Join(ErrFailedToReadFile, err)
 	}
 
 	dr, err := uc.displayableRollFactory.Create(records)
 	if err != nil {
-		return fmt.Errorf("failed parse file: %w", err)
+		return errors.Join(ErrFailedToParseFile, err)
 	}
 
-	uc.displayService.DisplayThumbnails(os.Stdout, dr)
+	uc.displayService.DisplayCustomFunctions(os.Stdout, dr)
 
 	return nil
 }

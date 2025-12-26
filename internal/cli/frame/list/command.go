@@ -1,17 +1,19 @@
 package list
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
-	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
-	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand(log *slog.Logger) *cobra.Command {
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/frame/list UseCase
+type UseCase interface {
+	List(ctx context.Context, filename string) error
+}
+
+func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
 		Short: "Prints frame information to stdout.",
@@ -28,22 +30,7 @@ exposure compensation, focus points, custom functions, and more.`,
 			log.DebugContext(ctx, "arguments:",
 				slog.String("filename", args[0]))
 
-			file, err := os.Open(args[0])
-			if err != nil {
-				return fmt.Errorf("failed to open file: %w", err)
-			}
-			defer file.Close()
-
-			log.DebugContext(ctx, "opened file:",
-				slog.String("filename", args[0]))
-
-			uc := NewFrameListUseCase(
-				efd.NewService(log),
-				display.NewDisplayableRollFactory(),
-				display.NewService(),
-			)
-
-			return uc.DisplayFrames(ctx, file)
+			return uc.List(ctx, args[0])
 		},
 	}
 }

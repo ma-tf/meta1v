@@ -1,11 +1,13 @@
-package list
+package roll
 
 import (
 	"context"
 	"errors"
-	"io"
 	"os"
 
+	"github.com/ma-tf/meta1v/internal/cli/roll/export"
+	"github.com/ma-tf/meta1v/internal/cli/roll/list"
+	"github.com/ma-tf/meta1v/internal/service/csv"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 )
@@ -15,26 +17,29 @@ var (
 	ErrFailedToParseFile = errors.New("failed to parse file for roll")
 )
 
-type RollListUseCase struct {
+type listUseCase struct {
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
 	displayService         display.Service
 }
 
-func NewRollListUseCase(
+func NewListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) RollListUseCase {
-	return RollListUseCase{
+) list.UseCase {
+	return listUseCase{
 		efdService:             efdService,
 		displayableRollFactory: displayableRollFactory,
 		displayService:         displayService,
 	}
 }
 
-func (uc RollListUseCase) DisplayRoll(ctx context.Context, r io.Reader) error {
-	records, err := uc.efdService.RecordsFromFile(ctx, r)
+func (uc listUseCase) List(
+	ctx context.Context,
+	filename string,
+) error {
+	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
 		return errors.Join(ErrFailedToReadFile, err)
 	}
@@ -45,6 +50,32 @@ func (uc RollListUseCase) DisplayRoll(ctx context.Context, r io.Reader) error {
 	}
 
 	uc.displayService.DisplayRoll(os.Stdout, dr)
+
+	return nil
+}
+
+type exportUseCase struct {
+	efdService efd.Service
+	csvService csv.Service
+}
+
+func NewExportUseCase(
+	efdService efd.Service,
+	csvService csv.Service,
+) export.UseCase {
+	return exportUseCase{
+		efdService: efdService,
+		csvService: csvService,
+	}
+}
+
+func (uc exportUseCase) Export(ctx context.Context, filename string) error {
+	_, err := uc.efdService.RecordsFromFile(ctx, filename)
+	if err != nil {
+		return errors.Join(ErrFailedToReadFile, err)
+	}
+
+	uc.csvService.ExportRoll()
 
 	return nil
 }

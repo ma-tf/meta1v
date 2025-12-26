@@ -4,6 +4,9 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli/thumbnail/list"
+	"github.com/ma-tf/meta1v/internal/service/display"
+	"github.com/ma-tf/meta1v/internal/service/efd"
+	"github.com/ma-tf/meta1v/internal/service/osfs"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +19,17 @@ thumbnail converted to ascii.`,
 		Aliases: []string{"t", "thumb"},
 	}
 
-	cmd.AddCommand(list.NewCommand(log))
+	uc := NewThumbnailListUseCase(
+		efd.NewService(
+			log,
+			efd.NewRootBuilder(log),
+			osfs.NewFileSystem(),
+		),
+		display.NewDisplayableRollFactory(),
+		display.NewService(),
+	)
+
+	cmd.AddCommand(list.NewCommand(log, uc))
 
 	return cmd
 }

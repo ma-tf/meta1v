@@ -1,12 +1,11 @@
-package list_test
+package roll_test
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"testing"
 
-	"github.com/ma-tf/meta1v/internal/cli/roll/list"
+	"github.com/ma-tf/meta1v/internal/cli/roll"
+	csv_test "github.com/ma-tf/meta1v/internal/service/csv/mocks"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
@@ -17,7 +16,90 @@ import (
 var errExample = errors.New("example error")
 
 //nolint:exhaustruct // for testcase struct literals
-func Test_DisplayRoll(t *testing.T) {
+func Test_Export(t *testing.T) {
+	t.Parallel()
+
+	type testcase struct {
+		name   string
+		expect func(
+			efd_test.MockService,
+			testcase,
+		)
+		filename      string
+		expectedError error
+	}
+
+	tests := []testcase{
+		{
+			name: "failed to read file",
+			expect: func(
+				mockEFDService efd_test.MockService,
+				tt testcase,
+			) {
+				mockEFDService.EXPECT().
+					RecordsFromFile(gomock.Any(), tt.filename).
+					Return(
+						records.Root{},
+						errExample,
+					)
+			},
+			filename:      "file.efd",
+			expectedError: roll.ErrFailedToReadFile,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			ctx := t.Context()
+
+			mockEFDService := efd_test.NewMockService(mockCtrl)
+			mockCSVService := csv_test.NewMockService(mockCtrl)
+
+			tt.expect(
+				*mockEFDService,
+				tt,
+			)
+
+			uc := roll.NewExportUseCase(
+				mockEFDService,
+				mockCSVService,
+			)
+
+			err := uc.Export(
+				ctx,
+				tt.filename,
+			)
+
+			if tt.expectedError != nil {
+				if err == nil {
+					t.Fatalf("expected error %v, got nil", tt.expectedError)
+				}
+
+				if !errors.Is(err, tt.expectedError) {
+					t.Fatalf(
+						"expected error %v to be in chain, got %v",
+						tt.expectedError,
+						err,
+					)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+//nolint:exhaustruct // for testcase struct literals
+func Test_List(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -28,7 +110,7 @@ func Test_DisplayRoll(t *testing.T) {
 			display_test.MockService,
 			testcase,
 		)
-		file          io.Reader
+		filename      string
 		records       records.Root
 		roll          display.DisplayableRoll
 		expectedError error
@@ -44,14 +126,14 @@ func Test_DisplayRoll(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						records.Root{},
 						errExample,
 					)
 			},
-			file:          bytes.NewReader([]byte("data")),
-			expectedError: list.ErrFailedToReadFile,
+			filename:      "file.efd",
+			expectedError: roll.ErrFailedToReadFile,
 		},
 		{
 			name: "failed to parse file",
@@ -62,7 +144,7 @@ func Test_DisplayRoll(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
@@ -75,13 +157,13 @@ func Test_DisplayRoll(t *testing.T) {
 						errExample,
 					)
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
 				EFDF: records.EFDF{
 					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
 				},
 			},
-			expectedError: list.ErrFailedToParseFile,
+			expectedError: roll.ErrFailedToParseFile,
 		},
 		{
 			name: "successfully display roll",
@@ -92,7 +174,7 @@ func Test_DisplayRoll(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
@@ -108,7 +190,7 @@ func Test_DisplayRoll(t *testing.T) {
 				mockDisplayService.EXPECT().
 					DisplayRoll(gomock.Any(), tt.roll)
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
 				EFDF: records.EFDF{
 					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
@@ -143,15 +225,15 @@ func Test_DisplayRoll(t *testing.T) {
 				tt,
 			)
 
-			uc := list.NewRollListUseCase(
+			uc := roll.NewListUseCase(
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
 			)
 
-			err := uc.DisplayRoll(
+			err := uc.List(
 				ctx,
-				tt.file,
+				tt.filename,
 			)
 
 			if tt.expectedError != nil {

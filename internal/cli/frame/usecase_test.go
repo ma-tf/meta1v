@@ -1,12 +1,10 @@
-package list_test
+package frame_test
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"testing"
 
-	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
+	"github.com/ma-tf/meta1v/internal/cli/frame"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
@@ -17,7 +15,7 @@ import (
 var errExample = errors.New("example error")
 
 //nolint:exhaustruct // for testcase struct literals
-func Test_FocusingPointsListUseCase(t *testing.T) {
+func Test_FrameListUseCase(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -28,7 +26,7 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 			display_test.MockService,
 			testcase,
 		)
-		file          io.Reader
+		filename      string
 		records       records.Root
 		roll          display.DisplayableRoll
 		expectedError error
@@ -44,14 +42,14 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						records.Root{},
 						errExample,
 					)
 			},
-			file:          bytes.NewReader([]byte("data")),
-			expectedError: list.ErrFailedToReadFile,
+			filename:      "file.efd",
+			expectedError: frame.ErrFailedToReadFile,
 		},
 		{
 			name: "failed to parse file",
@@ -62,7 +60,7 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
@@ -75,16 +73,18 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 						errExample,
 					)
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
-				EFDF: records.EFDF{
-					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
+				EFRMs: []records.EFRM{
+					{
+						Remarks: [256]byte{'r', 'e', 'm', 'a', 'r', 'k', 's'},
+					},
 				},
 			},
-			expectedError: list.ErrFailedToParseFile,
+			expectedError: frame.ErrFailedToParseFile,
 		},
 		{
-			name: "failed to list focusing points",
+			name: "failed to list frames",
 			expect: func(
 				mockEFDService efd_test.MockService,
 				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
@@ -92,7 +92,7 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
@@ -106,22 +106,24 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 					)
 
 				mockDisplayService.EXPECT().
-					DisplayFocusingPoints(gomock.Any(), tt.roll).
+					DisplayFrames(gomock.Any(), tt.roll).
 					Return(
 						errExample,
 					)
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
-				EFDF: records.EFDF{
-					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
+				EFRMs: []records.EFRM{
+					{
+						Remarks: [256]byte{'r', 'e', 'm', 'a', 'r', 'k', 's'},
+					},
 				},
 			},
 			roll:          display.DisplayableRoll{},
-			expectedError: list.ErrFailedToList,
+			expectedError: frame.ErrFailedToList,
 		},
 		{
-			name: "successfully display focusing points",
+			name: "successfully display frames",
 			expect: func(
 				mockEFDService efd_test.MockService,
 				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
@@ -129,31 +131,39 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
 					)
+
 				mockDisplayableRollFactory.EXPECT().
 					Create(tt.records).
 					Return(
 						tt.roll,
 						nil,
 					)
+
 				mockDisplayService.EXPECT().
-					DisplayFocusingPoints(gomock.Any(), tt.roll).
+					DisplayFrames(gomock.Any(), tt.roll).
 					Return(
 						nil,
 					)
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
-				EFDF: records.EFDF{
-					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
+				EFRMs: []records.EFRM{
+					{
+						Remarks: [256]byte{'r', 'e', 'm', 'a', 'r', 'k', 's'},
+					},
 				},
 			},
 			roll: display.DisplayableRoll{
-				Title: "title",
+				Frames: []display.DisplayableFrame{
+					{
+						Remarks: "remarks",
+					},
+				},
 			},
 		},
 	}
@@ -182,13 +192,13 @@ func Test_FocusingPointsListUseCase(t *testing.T) {
 				)
 			}
 
-			uc := list.NewFocusingPointsListUseCase(
+			uc := frame.NewListUseCase(
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
 			)
 
-			err := uc.DisplayFocusingPoints(ctx, tt.file)
+			err := uc.List(ctx, tt.filename)
 
 			if tt.expectedError != nil {
 				if err == nil {

@@ -3,7 +3,6 @@ package exif
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
@@ -26,10 +25,10 @@ func NewUseCase(
 
 func (uc UseCase) ExportExif(
 	ctx context.Context,
-	r io.Reader,
+	filename string,
 	frame int,
 ) error {
-	records, err := uc.efdService.RecordsFromFile(ctx, r)
+	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
 		return fmt.Errorf("failed to interpret file content: %w", err)
 	}

@@ -3,12 +3,12 @@ package exif
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 
 	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
+	"github.com/ma-tf/meta1v/internal/service/osfs"
 	"github.com/spf13/cobra"
 )
 
@@ -29,23 +29,21 @@ func NewCommand(log *slog.Logger) *cobra.Command {
 				return cli.ErrNoFilenameProvided
 			}
 
-			file, err := os.Open(args[0])
-			if err != nil {
-				return fmt.Errorf("failed to open file: %w", err)
-			}
-			defer file.Close()
-
 			frame, err := strconv.Atoi(args[1])
 			if err != nil {
 				return fmt.Errorf("invalid specified frame number: %w", err)
 			}
 
 			uc := NewUseCase(
-				efd.NewService(log),
+				efd.NewService(
+					log,
+					efd.NewRootBuilder(log),
+					osfs.NewFileSystem(),
+				),
 				exif.NewService(log),
 			)
 
-			return uc.ExportExif(ctx, file, frame)
+			return uc.ExportExif(ctx, args[0], frame /*args[2]*/)
 		},
 	}
 

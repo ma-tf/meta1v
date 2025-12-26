@@ -1,12 +1,10 @@
-package list_test
+package customfunctions_test
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"testing"
 
-	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
+	"github.com/ma-tf/meta1v/internal/cli/customfunctions"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
@@ -17,7 +15,7 @@ import (
 var errExample = errors.New("example error")
 
 //nolint:exhaustruct // for testcase struct literals
-func Test_DisplayCustomFunctions(t *testing.T) {
+func Test_List(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -28,7 +26,7 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 			display_test.MockService,
 			testcase,
 		)
-		file          io.Reader
+		filename      string
 		records       records.Root
 		roll          display.DisplayableRoll
 		expectedError error
@@ -44,14 +42,14 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						records.Root{},
 						errExample,
 					)
 			},
-			file:          bytes.NewReader([]byte("data")),
-			expectedError: list.ErrFailedToReadFile,
+			filename:      "file.efd",
+			expectedError: customfunctions.ErrFailedToReadFile,
 		},
 		{
 			name: "failed to parse file",
@@ -62,7 +60,7 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
@@ -75,13 +73,13 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 						errExample,
 					)
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
 				EFDF: records.EFDF{
 					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
 				},
 			},
-			expectedError: list.ErrFailedToParseFile,
+			expectedError: customfunctions.ErrFailedToParseFile,
 		},
 		{
 			name: "successfully display custom functions",
@@ -92,7 +90,7 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.file).
+					RecordsFromFile(gomock.Any(), tt.filename).
 					Return(
 						tt.records,
 						nil,
@@ -107,7 +105,7 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 					DisplayCustomFunctions(gomock.Any(), tt.roll).
 					Return()
 			},
-			file: bytes.NewReader([]byte("data")),
+			filename: "file.efd",
 			records: records.Root{
 				EFDF: records.EFDF{
 					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
@@ -143,13 +141,13 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 				)
 			}
 
-			uc := list.NewCustomFunctionsListUseCase(
+			uc := customfunctions.NewListUseCase(
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
 			)
 
-			err := uc.DisplayCustomFunctions(ctx, tt.file)
+			err := uc.List(ctx, tt.filename)
 
 			if tt.expectedError != nil {
 				if err == nil {
