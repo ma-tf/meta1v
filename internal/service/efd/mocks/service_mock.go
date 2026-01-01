@@ -11,7 +11,6 @@ package efd_test
 
 import (
 	context "context"
-	io "io"
 	reflect "reflect"
 
 	records "github.com/ma-tf/meta1v/pkg/records"
@@ -43,16 +42,16 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // RecordsFromFile mocks base method.
-func (m *MockService) RecordsFromFile(ctx context.Context, r io.Reader) (records.Root, error) {
+func (m *MockService) RecordsFromFile(ctx context.Context, filename string) (records.Root, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RecordsFromFile", ctx, r)
+	ret := m.ctrl.Call(m, "RecordsFromFile", ctx, filename)
 	ret0, _ := ret[0].(records.Root)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // RecordsFromFile indicates an expected call of RecordsFromFile.
-func (mr *MockServiceMockRecorder) RecordsFromFile(ctx, r any) *gomock.Call {
+func (mr *MockServiceMockRecorder) RecordsFromFile(ctx, filename any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordsFromFile", reflect.TypeOf((*MockService)(nil).RecordsFromFile), ctx, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordsFromFile", reflect.TypeOf((*MockService)(nil).RecordsFromFile), ctx, filename)
 }

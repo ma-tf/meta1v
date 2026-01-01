@@ -9,6 +9,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
+	"github.com/ma-tf/meta1v/pkg/records"
 	"github.com/spf13/cobra"
 )
 
@@ -22,21 +23,27 @@ frame count, ISO and user provided remarks.`,
 	}
 
 	fs := osfs.NewFileSystem()
-	b := efd.NewRootBuilder(log)
+	builder := efd.NewRootBuilder(log)
+	parser := efd.NewParser(log, records.NewDefaultThumbnailFactory())
+
 	listUseCase := NewListUseCase(
 		efd.NewService(
 			log,
-			b,
+			builder,
+			parser,
 			fs,
 		),
-		display.NewDisplayableRollFactory(),
+		display.NewDisplayableRollFactory(
+			display.NewFrameBuilder(false),
+		),
 		display.NewService(),
 	)
 
 	exportUseCase := NewExportUseCase(
 		efd.NewService(
 			log,
-			b,
+			builder,
+			parser,
 			fs,
 		),
 		csv.NewService(),

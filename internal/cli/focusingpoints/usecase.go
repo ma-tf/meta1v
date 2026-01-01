@@ -15,7 +15,6 @@ var (
 	ErrFailedToParseFile = errors.New(
 		"failed to parse file for focusing points",
 	)
-	ErrFailedToList = errors.New("failed to list focusing points")
 )
 
 type listUseCase struct {
@@ -50,9 +49,7 @@ func (uc listUseCase) List(
 		return errors.Join(ErrFailedToParseFile, err)
 	}
 
-	if err = uc.displayService.DisplayFocusingPoints(os.Stdout, dr); err != nil {
-		return errors.Join(ErrFailedToList, err)
-	}
+	uc.displayService.DisplayFocusingPoints(os.Stdout, dr)
 
 	return nil
 }

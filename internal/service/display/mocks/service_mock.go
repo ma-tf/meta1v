@@ -42,9 +42,11 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // DisplayCustomFunctions mocks base method.
-func (m *MockService) DisplayCustomFunctions(w io.Writer, r display.DisplayableRoll) {
+func (m *MockService) DisplayCustomFunctions(w io.Writer, r display.DisplayableRoll) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DisplayCustomFunctions", w, r)
+	ret := m.ctrl.Call(m, "DisplayCustomFunctions", w, r)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // DisplayCustomFunctions indicates an expected call of DisplayCustomFunctions.
@@ -54,11 +56,9 @@ func (mr *MockServiceMockRecorder) DisplayCustomFunctions(w, r any) *gomock.Call
 }
 
 // DisplayFocusingPoints mocks base method.
-func (m *MockService) DisplayFocusingPoints(w io.Writer, r display.DisplayableRoll) error {
+func (m *MockService) DisplayFocusingPoints(w io.Writer, r display.DisplayableRoll) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DisplayFocusingPoints", w, r)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "DisplayFocusingPoints", w, r)
 }
 
 // DisplayFocusingPoints indicates an expected call of DisplayFocusingPoints.
@@ -68,11 +68,9 @@ func (mr *MockServiceMockRecorder) DisplayFocusingPoints(w, r any) *gomock.Call 
 }
 
 // DisplayFrames mocks base method.
-func (m *MockService) DisplayFrames(w io.Writer, r display.DisplayableRoll) error {
+func (m *MockService) DisplayFrames(w io.Writer, r display.DisplayableRoll) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DisplayFrames", w, r)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "DisplayFrames", w, r)
 }
 
 // DisplayFrames indicates an expected call of DisplayFrames.

@@ -14,8 +14,8 @@ import (
 
 var errExample = errors.New("example error")
 
-//nolint:exhaustruct // for testcase struct literals
-func Test_List(t *testing.T) {
+//nolint:exhaustruct // only partial is needed
+func Test_CustomFunctionsUseCase_List(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -82,6 +82,41 @@ func Test_List(t *testing.T) {
 			expectedError: customfunctions.ErrFailedToParseFile,
 		},
 		{
+			name: "failed to display custom functions",
+			expect: func(
+				mockEFDService efd_test.MockService,
+				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
+				mockDisplayService display_test.MockService,
+				tt testcase,
+			) {
+				mockEFDService.EXPECT().
+					RecordsFromFile(gomock.Any(), tt.filename).
+					Return(
+						tt.records,
+						nil,
+					)
+				mockDisplayableRollFactory.EXPECT().
+					Create(tt.records).
+					Return(
+						tt.roll,
+						nil,
+					)
+				mockDisplayService.EXPECT().
+					DisplayCustomFunctions(gomock.Any(), tt.roll).
+					Return(customfunctions.ErrFailedToDisplay)
+			},
+			filename: "file.efd",
+			records: records.Root{
+				EFDF: records.EFDF{
+					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
+				},
+			},
+			roll: display.DisplayableRoll{
+				Title: "title",
+			},
+			expectedError: customfunctions.ErrFailedToDisplay,
+		},
+		{
 			name: "successfully display custom functions",
 			expect: func(
 				mockEFDService efd_test.MockService,
@@ -103,7 +138,7 @@ func Test_List(t *testing.T) {
 					)
 				mockDisplayService.EXPECT().
 					DisplayCustomFunctions(gomock.Any(), tt.roll).
-					Return()
+					Return(nil)
 			},
 			filename: "file.efd",
 			records: records.Root{

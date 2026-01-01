@@ -50,9 +50,7 @@ func (uc listUseCase) List(
 		return errors.Join(ErrFailedToParseFile, err)
 	}
 
-	if err = uc.displayService.DisplayFrames(os.Stdout, dr); err != nil {
-		return errors.Join(ErrFailedToList, err)
-	}
+	uc.displayService.DisplayFrames(os.Stdout, dr)
 
 	return nil
 }

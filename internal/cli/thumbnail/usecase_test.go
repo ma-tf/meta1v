@@ -15,7 +15,7 @@ import (
 
 var errExample = errors.New("example error")
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_List(t *testing.T) {
 	t.Parallel()
 

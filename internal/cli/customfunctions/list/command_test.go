@@ -12,7 +12,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_CommandRun(t *testing.T) {
 	t.Parallel()
 

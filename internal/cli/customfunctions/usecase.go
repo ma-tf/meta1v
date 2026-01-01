@@ -15,6 +15,7 @@ var (
 	ErrFailedToParseFile = errors.New(
 		"failed to parse file for custom functions",
 	)
+	ErrFailedToDisplay = errors.New("failed to display custom functions")
 )
 
 type listUseCase struct {
@@ -49,7 +50,9 @@ func (uc listUseCase) List(
 		return errors.Join(ErrFailedToParseFile, err)
 	}
 
-	uc.displayService.DisplayCustomFunctions(os.Stdout, dr)
+	if err = uc.displayService.DisplayCustomFunctions(os.Stdout, dr); err != nil {
+		return errors.Join(ErrFailedToDisplay, err)
+	}
 
 	return nil
 }

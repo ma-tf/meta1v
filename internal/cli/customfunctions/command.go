@@ -7,6 +7,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
+	"github.com/ma-tf/meta1v/pkg/records"
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +26,12 @@ Canon EOS-1V manual.`,
 		efd.NewService(
 			log,
 			efd.NewRootBuilder(log),
+			efd.NewParser(log, records.NewDefaultThumbnailFactory()),
 			osfs.NewFileSystem(),
 		),
-		display.NewDisplayableRollFactory(),
+		display.NewDisplayableRollFactory(
+			display.NewFrameBuilder(false),
+		),
 		display.NewService(),
 	)
 

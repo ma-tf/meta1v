@@ -1,3 +1,4 @@
+//go:generate mockgen -destination=./mocks/builder_mock.go -package=display_test github.com/ma-tf/meta1v/internal/service/display FrameMetadataBuilder,ExposureSettingsBuilder,CameraModesBuilder,CustomFunctionsBuilder,ThumbnailBuilder,DisplayableFrameBuilder
 package display
 
 import (
@@ -17,37 +18,54 @@ type frameBuilder struct {
 	err    error
 }
 
-type step1FrameBuilder interface {
-	WithBasicInfo() step2FrameBuilder
+type FrameMetadataBuilder interface {
+	WithFrameMetadata(r records.EFRM) ExposureSettingsBuilder
 }
 
-type step2FrameBuilder interface {
-	WithCameraModesAndFlashInfo() step3FrameBuilder
+type ExposureSettingsBuilder interface {
+	WithExposureSettings() CameraModesBuilder
 }
 
-type step3FrameBuilder interface {
-	WithCustomFunctionsAndFocusPoints() *frameBuilder
+type CameraModesBuilder interface {
+	WithCameraModesAndFlashInfo() CustomFunctionsBuilder
 }
 
-func newFrameBuilder(
-	r records.EFRM,
-	t *DisplayableThumbnail,
+type CustomFunctionsBuilder interface {
+	WithCustomFunctionsAndFocusPoints() ThumbnailBuilder
+}
+
+type ThumbnailBuilder interface {
+	WithThumbnail(t *DisplayableThumbnail) DisplayableFrameBuilder
+}
+
+type DisplayableFrameBuilder interface {
+	Build() (DisplayableFrame, error)
+}
+
+func NewFrameBuilder(
 	strict bool,
-) step1FrameBuilder {
-	fb := &frameBuilder{
+) FrameMetadataBuilder {
+	return &frameBuilder{
 		strict: strict,
-		efrm:   r,
+		efrm:   records.EFRM{},     //nolint:exhaustruct // will be built step by step
 		frame:  DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
 		err:    nil,
 	}
+}
+
+func (fb *frameBuilder) WithFrameMetadata(
+	r records.EFRM,
+) ExposureSettingsBuilder {
+	fb.efrm = r
 
 	fb.frame.FilmID, fb.err = domain.NewFilmID(r.CodeA, r.CodeB)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.FilmLoadedAt, fb.err = domain.NewDateTime(r.Year, r.Month, r.Day,
-		r.Hour, r.Minute, r.Second)
+	fb.frame.FilmLoadedAt, fb.err = domain.NewDateTime(
+		r.RollYear, r.RollMonth, r.RollDay,
+		r.RollHour, r.RollMinute, r.RollSecond)
 	if fb.err != nil {
 		return fb
 	}
@@ -64,16 +82,26 @@ func newFrameBuilder(
 		return fb
 	}
 
-	fb.frame.IsoDX = domain.NewIso(r.IsoDX)
+	fb.frame.TakenAt, fb.err = domain.NewDateTime(
+		r.Year,
+		r.Month,
+		r.Day,
+		r.Hour,
+		r.Minute,
+		r.Second,
+	)
+	if fb.err != nil {
+		return fb
+	}
+
 	fb.frame.FrameNumber = uint(r.FrameNumber)
 	fb.frame.Remarks = domain.NewRemarks(r.Remarks)
-	fb.frame.Thumbnail = t
 	fb.frame.UserModifiedRecord = r.IsModifiedRecord != 0
 
 	return fb
 }
 
-func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
+func (fb *frameBuilder) WithExposureSettings() CameraModesBuilder {
 	if fb.err != nil {
 		return fb
 	}
@@ -104,23 +132,12 @@ func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 		return fb
 	}
 
+	fb.frame.IsoDX = domain.NewIso(fb.efrm.IsoDX)
 	fb.frame.IsoM = domain.NewIso(fb.efrm.IsoM)
 
 	fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(
 		fb.efrm.ExposureCompenation,
 		fb.strict,
-	)
-	if fb.err != nil {
-		return fb
-	}
-
-	fb.frame.TakenAt, fb.err = domain.NewDateTime(
-		fb.efrm.Year,
-		fb.efrm.Month,
-		fb.efrm.BatteryDay,
-		fb.efrm.Hour,
-		fb.efrm.Minute,
-		fb.efrm.Second,
 	)
 	if fb.err != nil {
 		return fb
@@ -136,7 +153,7 @@ func (fb *frameBuilder) WithBasicInfo() step2FrameBuilder {
 	return fb
 }
 
-func (fb *frameBuilder) WithCameraModesAndFlashInfo() step3FrameBuilder {
+func (fb *frameBuilder) WithCameraModesAndFlashInfo() CustomFunctionsBuilder {
 	if fb.err != nil {
 		return fb
 	}
@@ -179,7 +196,7 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo() step3FrameBuilder {
 	return fb
 }
 
-func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() *frameBuilder {
+func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() ThumbnailBuilder {
 	if fb.err != nil {
 		return fb
 	}
@@ -206,6 +223,18 @@ func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() *frameBuilder {
 	return fb
 }
 
+func (fb *frameBuilder) WithThumbnail(
+	t *DisplayableThumbnail,
+) DisplayableFrameBuilder {
+	if fb.err != nil {
+		return fb
+	}
+
+	fb.frame.Thumbnail = t
+
+	return fb
+}
+
 func (fb *frameBuilder) Build() (DisplayableFrame, error) {
 	return fb.frame, fb.err
 }
@@ -214,7 +243,7 @@ func (fb *frameBuilder) Build() (DisplayableFrame, error) {
 
 var ErrInvalidCustomFunction = errors.New("invalid custom function")
 
-//nolint:gochecknoglobals,mnd // not exported anyway, magic numbers are defined by manual
+//nolint:gochecknoglobals,mnd // not exported anyway, magic numbers are defined by Canon manual
 var cfMaxRanges = map[int]byte{
 	0:  1,
 	1:  3,
@@ -238,7 +267,7 @@ var cfMaxRanges = map[int]byte{
 	19: 5,
 }
 
-type DisplayableCustomFunctions []string
+type DisplayableCustomFunctions [20]string
 
 func NewCustomFunctions(
 	r records.EFRM,
@@ -269,7 +298,8 @@ func NewCustomFunctions(
 		r.CustomFunction19,
 	}
 
-	values := make([]string, len(cfs))
+	values := [20]string{}
+
 	for i, cf := range cfs {
 		if cf != math.MaxUint8 && (cf < cfMin || cf > cfMaxRanges[i]) {
 			if strict {

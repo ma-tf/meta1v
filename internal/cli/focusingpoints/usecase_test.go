@@ -14,7 +14,7 @@ import (
 
 var errExample = errors.New("example error")
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_List(t *testing.T) {
 	t.Parallel()
 
@@ -82,43 +82,6 @@ func Test_List(t *testing.T) {
 			expectedError: focusingpoints.ErrFailedToParseFile,
 		},
 		{
-			name: "failed to list focusing points",
-			expect: func(
-				mockEFDService efd_test.MockService,
-				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
-				mockDisplayService display_test.MockService,
-				tt testcase,
-			) {
-				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.filename).
-					Return(
-						tt.records,
-						nil,
-					)
-
-				mockDisplayableRollFactory.EXPECT().
-					Create(tt.records).
-					Return(
-						tt.roll,
-						nil,
-					)
-
-				mockDisplayService.EXPECT().
-					DisplayFocusingPoints(gomock.Any(), tt.roll).
-					Return(
-						errExample,
-					)
-			},
-			filename: "file.efd",
-			records: records.Root{
-				EFDF: records.EFDF{
-					Title: [64]byte{'t', 'i', 't', 'l', 'e'},
-				},
-			},
-			roll:          display.DisplayableRoll{},
-			expectedError: focusingpoints.ErrFailedToList,
-		},
-		{
 			name: "successfully display focusing points",
 			expect: func(
 				mockEFDService efd_test.MockService,
@@ -139,10 +102,7 @@ func Test_List(t *testing.T) {
 						nil,
 					)
 				mockDisplayService.EXPECT().
-					DisplayFocusingPoints(gomock.Any(), tt.roll).
-					Return(
-						nil,
-					)
+					DisplayFocusingPoints(gomock.Any(), tt.roll)
 			},
 			filename: "file.efd",
 			records: records.Root{

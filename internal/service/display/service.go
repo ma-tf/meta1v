@@ -12,8 +12,6 @@ import (
 	"strings"
 
 	"github.com/ma-tf/meta1v/pkg/domain"
-	"github.com/ma-tf/meta1v/pkg/records"
-	"github.com/qeesung/image2ascii/convert"
 )
 
 const (
@@ -53,15 +51,17 @@ const (
 )
 
 var (
-	ErrMultipleThumbnailsForFrame = errors.New("frame has multiple thumbnails")
-	ErrFrameIndexOutOfRange       = errors.New("frame index out of range")
+	ErrMultipleThumbnailsForFrame = errors.New(
+		"frame has multiple thumbnails",
+	)
+	ErrFrameIndexOutOfRange = errors.New("frame index out of range")
 )
 
 type Service interface {
 	DisplayRoll(w io.Writer, r DisplayableRoll)
-	DisplayCustomFunctions(w io.Writer, r DisplayableRoll)
-	DisplayFocusingPoints(w io.Writer, r DisplayableRoll) error
-	DisplayFrames(w io.Writer, r DisplayableRoll) error
+	DisplayCustomFunctions(w io.Writer, r DisplayableRoll) error
+	DisplayFocusingPoints(w io.Writer, r DisplayableRoll)
+	DisplayFrames(w io.Writer, r DisplayableRoll)
 	DisplayThumbnails(w io.Writer, r DisplayableRoll)
 }
 
@@ -73,63 +73,15 @@ func NewService() Service {
 
 type DisplayableRoll struct {
 	FilmID         domain.FilmID
-	FirstRow       uint
-	PerRow         uint
+	FirstRow       domain.FirstRow
+	PerRow         domain.PerRow
 	Title          domain.Title
 	FilmLoadedDate domain.ValidatedDatetime
-	FrameCount     uint
+	FrameCount     domain.FrameCount
 	IsoDX          domain.Iso
 	Remarks        domain.Remarks // film name, location, push/pull, etc.
 
 	Frames []DisplayableFrame
-}
-
-func getThumbnails(r records.Root) (map[uint16]*DisplayableThumbnail, error) {
-	thumbnails := make(map[uint16]*DisplayableThumbnail, len(r.EFTPs))
-	for _, eftp := range r.EFTPs {
-		thumbnail := newDisplayableThumbnail(eftp)
-
-		if thumbnails[eftp.Index] != nil {
-			return nil, fmt.Errorf("%w: frame number %d",
-				ErrMultipleThumbnailsForFrame, eftp.Index)
-		}
-
-		thumbnails[eftp.Index] = &thumbnail
-	}
-
-	return thumbnails, nil
-}
-
-func getFrames(
-	r records.Root,
-	thumbnails map[uint16]*DisplayableThumbnail,
-) ([]DisplayableFrame, error) {
-	frames := make([]DisplayableFrame, 0, len(r.EFRMs))
-	for i, frame := range r.EFRMs {
-		idx := i + 1
-		if idx < 0 || idx > math.MaxUint16 {
-			return nil,
-				fmt.Errorf("%w: index %d", ErrFrameIndexOutOfRange, i+1)
-		}
-
-		var pt *DisplayableThumbnail
-		if t, ok := thumbnails[uint16(idx)]; ok {
-			pt = t
-		}
-
-		framePF, errPF := newFrameBuilder(frame, pt, false).
-			WithBasicInfo().
-			WithCameraModesAndFlashInfo().
-			WithCustomFunctionsAndFocusPoints().
-			Build()
-		if errPF != nil {
-			return nil, errPF
-		}
-
-		frames = append(frames, framePF)
-	}
-
-	return frames, nil
 }
 
 func (s *service) DisplayRoll(w io.Writer, r DisplayableRoll) {
@@ -146,7 +98,7 @@ func (s *service) DisplayRoll(w io.Writer, r DisplayableRoll) {
 	fmt.Fprintln(w, header)
 	fmt.Fprintln(w, strings.Repeat("-", len(header)))
 
-	row := fmt.Sprintf("%-*s %-*d %-*d %-*s %-*s %-*d %-*s %-*s",
+	row := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, r.FilmID,
 		firstRowWidth, r.FirstRow,
 		perRowWidth, r.PerRow,
@@ -159,7 +111,7 @@ func (s *service) DisplayRoll(w io.Writer, r DisplayableRoll) {
 	fmt.Fprintln(w, row)
 }
 
-func (s *service) DisplayFrames(w io.Writer, r DisplayableRoll) error {
+func (s *service) DisplayFrames(w io.Writer, r DisplayableRoll) {
 	//nolint:golines // more readable this way
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, "FILM ID",
@@ -191,8 +143,6 @@ func (s *service) DisplayFrames(w io.Writer, r DisplayableRoll) error {
 		row := s.renderFrame(fr)
 		fmt.Fprintln(w, row)
 	}
-
-	return nil
 }
 
 func (s *service) renderFrame(fr DisplayableFrame) string {
@@ -224,7 +174,7 @@ func (s *service) renderFrame(fr DisplayableFrame) string {
 	return row
 }
 
-func (s *service) DisplayCustomFunctions(w io.Writer, r DisplayableRoll) {
+func (s *service) DisplayCustomFunctions(w io.Writer, r DisplayableRoll) error {
 	//nolint:golines // more readable this way
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, "FILM ID",
@@ -258,6 +208,8 @@ func (s *service) DisplayCustomFunctions(w io.Writer, r DisplayableRoll) {
 		row := s.renderCustomFunctions(fr)
 		fmt.Fprintln(w, row)
 	}
+
+	return nil
 }
 
 func (s *service) renderCustomFunctions(fr DisplayableFrame) string {
@@ -265,7 +217,7 @@ func (s *service) renderCustomFunctions(fr DisplayableFrame) string {
 	row := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, fr.FilmID,
 		frameNumberWidth, s.renderFrameNumber(fr),
-		customFunctionsWidth, "#",
+		customFunctionsWidth, " ",
 		customFunctionsWidth, fr.CustomFunctions[0],
 		customFunctionsWidth, fr.CustomFunctions[1],
 		customFunctionsWidth, fr.CustomFunctions[2],
@@ -291,15 +243,10 @@ func (s *service) renderCustomFunctions(fr DisplayableFrame) string {
 	return row
 }
 
-func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) error {
+func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) {
 	rows := make([]string, len(r.Frames))
 	for i, fr := range r.Frames {
-		row, err := s.renderFocusPoints(fr)
-		if err != nil {
-			return err
-		}
-
-		rows[i] = row
+		rows[i] = s.renderFocusPoints(fr)
 	}
 
 	header := fmt.Sprintf("%-*s %-*s %-*s",
@@ -313,13 +260,11 @@ func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) error {
 	for _, row := range rows {
 		fmt.Fprintln(w, row)
 	}
-
-	return nil
 }
 
 func (s *service) renderFocusPoints(
 	f DisplayableFrame,
-) (string, error) {
+) string {
 	pf := f.FocusingPoints
 
 	if pf.Selection == math.MaxUint32 {
@@ -335,17 +280,12 @@ func (s *service) renderFocusPoints(
 			focusingPointsWidth, pad(empty, focusingPointsPadding),
 		)
 
-		return s, nil
+		return s
 	}
 
 	p := make([]string, len(fpBits))
 	for i, fpBit := range fpBits {
-		b, err := byteToBox(pf.Points[i], fpBit)
-		if err != nil {
-			return "", err
-		}
-
-		p[i] = b
+		p[i] = byteToBox(pf.Points[i], fpBit)
 	}
 
 	printableFocusPoints := "    " + p[0] + "\n" +
@@ -360,7 +300,7 @@ func (s *service) renderFocusPoints(
 		focusingPointsWidth, pad(printableFocusPoints, focusingPointsPadding),
 	)
 
-	return header, nil
+	return header
 }
 
 func (s *service) DisplayThumbnails(w io.Writer, r DisplayableRoll) {
@@ -440,25 +380,6 @@ type DisplayableThumbnail struct {
 	Filepath  string
 }
 
-func newDisplayableThumbnail(eftp records.EFTP) DisplayableThumbnail {
-	filepath := string(eftp.Filepath[:bytes.IndexByte(eftp.Filepath[:], 0)])
-
-	options := convert.DefaultOptions
-	options.FixedWidth = int(eftp.Width)
-
-	const heightRatio = 2
-
-	options.FixedHeight = int(eftp.Height / heightRatio)
-
-	ascii := convert.NewImageConverter().
-		Image2ASCIIString(eftp.Thumbnail, &options)
-
-	return DisplayableThumbnail{
-		Thumbnail: ascii,
-		Filepath:  filepath,
-	}
-}
-
 func (s *service) renderFrameNumber(fr DisplayableFrame) string {
 	if !fr.UserModifiedRecord {
 		return strconv.FormatUint(uint64(fr.FrameNumber), 10)
@@ -486,4 +407,32 @@ func pad[S ~string](s S, p int) S {
 	}
 
 	return S(sb.String())
+}
+
+//nolint:gochecknoglobals // not exported anyway
+var fpBits = [8]int{7, 2, 8, 3, 8, 2, 8, 7}
+
+func byteToBox(b byte, l int) string {
+	const emptyBox, filledBox = "\u25AF", "\u25AE"
+
+	var buf bytes.Buffer
+
+	for i, mask := 0, byte(math.MaxInt8+1); i < l; i, mask = i+1, mask>>1 {
+		var (
+			topOrBottomRow  = l == 7
+			startOfFullByte = l == 8 && i == 0
+			endOfBits       = l != 8 && i == l-1
+		)
+
+		switch {
+		case b&mask != 0:
+			buf.WriteString("\033[31m" + filledBox + "\033[0m ")
+		case topOrBottomRow || startOfFullByte || endOfBits:
+			buf.WriteString("\033[31m" + emptyBox + "\033[0m ")
+		default:
+			buf.WriteString(emptyBox + " ")
+		}
+	}
+
+	return buf.String()
 }

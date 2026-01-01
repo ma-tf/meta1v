@@ -6,9 +6,12 @@ var (
 	ErrMultipleThumbnailsForFrame = errors.New("frame has multiple thumbnails")
 	ErrFrameIndexOutOfRange       = errors.New("frame index out of range")
 
-	ErrPrefixOutOfRange    = errors.New("prefix out of range (0-99)")
-	ErrSuffixOutOfRange    = errors.New("suffix out of range (0-999)")
-	ErrInvalidFilmLoadDate = errors.New("invalid film loaded date time")
+	ErrPrefixOutOfRange          = errors.New("prefix out of range (0-99)")
+	ErrSuffixOutOfRange          = errors.New("suffix out of range (0-999)")
+	ErrFirstRowGreaterThanPerRow = errors.New(
+		"first row cannot be greater than per row",
+	)
+	ErrInvalidDateTime     = errors.New("invalid date time")
 	ErrInvalidAv           = errors.New("invalid Av value")
 	ErrInvalidTv           = errors.New("invalid Tv value")
 	ErrUnknownExposureComp = errors.New(

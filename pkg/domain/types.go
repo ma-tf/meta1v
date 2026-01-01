@@ -33,6 +33,29 @@ func NewFilmID(prefix, suffix uint32) (FilmID, error) {
 	return FilmID(s), nil
 }
 
+type FirstRow string
+
+func NewFirstRow(firstRow uint8, perRow uint8) (FirstRow, error) {
+	if firstRow > perRow {
+		return "", fmt.Errorf("%w (%d > %d)",
+			ErrFirstRowGreaterThanPerRow, firstRow, perRow)
+	}
+
+	return FirstRow(strconv.Itoa(int(perRow - firstRow))), nil
+}
+
+type PerRow string
+
+func NewPerRow(perRow uint8) PerRow {
+	return PerRow(strconv.Itoa(int(perRow)))
+}
+
+type FrameCount string
+
+func NewFrameCount(fc uint32) FrameCount {
+	return FrameCount(strconv.FormatUint(uint64(fc), 10))
+}
+
 type ValidatedDatetime string
 
 func NewDateTime(
@@ -53,7 +76,7 @@ func NewDateTime(
 
 	t, err := time.Parse(time.DateTime, rawDate) // performs format validation
 	if err != nil || t.IsZero() {
-		return "", errors.Join(ErrInvalidFilmLoadDate, err)
+		return "", errors.Join(ErrInvalidDateTime, err)
 	}
 
 	return ValidatedDatetime(t.Format(time.DateTime)), nil

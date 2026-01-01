@@ -14,7 +14,7 @@ import (
 
 var errExample = errors.New("example error")
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_FrameListUseCase(t *testing.T) {
 	t.Parallel()
 
@@ -84,45 +84,6 @@ func Test_FrameListUseCase(t *testing.T) {
 			expectedError: frame.ErrFailedToParseFile,
 		},
 		{
-			name: "failed to list frames",
-			expect: func(
-				mockEFDService efd_test.MockService,
-				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
-				mockDisplayService display_test.MockService,
-				tt testcase,
-			) {
-				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.filename).
-					Return(
-						tt.records,
-						nil,
-					)
-
-				mockDisplayableRollFactory.EXPECT().
-					Create(tt.records).
-					Return(
-						tt.roll,
-						nil,
-					)
-
-				mockDisplayService.EXPECT().
-					DisplayFrames(gomock.Any(), tt.roll).
-					Return(
-						errExample,
-					)
-			},
-			filename: "file.efd",
-			records: records.Root{
-				EFRMs: []records.EFRM{
-					{
-						Remarks: [256]byte{'r', 'e', 'm', 'a', 'r', 'k', 's'},
-					},
-				},
-			},
-			roll:          display.DisplayableRoll{},
-			expectedError: frame.ErrFailedToList,
-		},
-		{
 			name: "successfully display frames",
 			expect: func(
 				mockEFDService efd_test.MockService,
@@ -145,10 +106,7 @@ func Test_FrameListUseCase(t *testing.T) {
 					)
 
 				mockDisplayService.EXPECT().
-					DisplayFrames(gomock.Any(), tt.roll).
-					Return(
-						nil,
-					)
+					DisplayFrames(gomock.Any(), tt.roll)
 			},
 			filename: "file.efd",
 			records: records.Root{

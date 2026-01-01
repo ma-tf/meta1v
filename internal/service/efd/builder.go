@@ -2,14 +2,8 @@
 package efd
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
-	"fmt"
-	"image"
-	"image/color"
-	"io"
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/pkg/records"
@@ -18,7 +12,9 @@ import (
 var ErrMissingEFDFRecord = errors.New("missing EFDF record")
 
 type RootBuilder interface {
-	AddRecord(ctx context.Context, r records.Raw) error
+	AddEFDF(ctx context.Context, efdf records.EFDF) error
+	AddEFRM(ctx context.Context, efrm records.EFRM)
+	AddEFTP(ctx context.Context, eftp records.EFTP)
 	Build() (records.Root, error)
 }
 
@@ -46,18 +42,22 @@ func NewRootBuilder(log *slog.Logger) RootBuilder {
 	}
 }
 
-func (b *rootBuilder) AddRecord(ctx context.Context, r records.Raw) error {
-	magic := string(r.Magic[:])
-	switch magic {
-	case "EFDF":
-		return b.addEFDF(ctx, r)
-	case "EFRM":
-		return b.addEFRM(ctx, r)
-	case "EFTP":
-		return b.addEFTP(ctx, r)
-	default:
-		return fmt.Errorf("%w: %s", ErrUnknownRecordType, magic)
+func (b *rootBuilder) AddEFDF(_ context.Context, efdf records.EFDF) error {
+	if b.efdf != nil {
+		return ErrMultipleEFDFRecords
 	}
+
+	b.efdf = &efdf
+
+	return nil
+}
+
+func (b *rootBuilder) AddEFRM(_ context.Context, efrm records.EFRM) {
+	b.efrms = append(b.efrms, efrm)
+}
+
+func (b *rootBuilder) AddEFTP(_ context.Context, eftp records.EFTP) {
+	b.eftps = append(b.eftps, eftp)
 }
 
 func (b *rootBuilder) Build() (records.Root, error) {
@@ -70,92 +70,4 @@ func (b *rootBuilder) Build() (records.Root, error) {
 		EFRMs: b.efrms,
 		EFTPs: b.eftps,
 	}, nil
-}
-
-func (b *rootBuilder) addEFDF(ctx context.Context, record records.Raw) error {
-	if b.efdf != nil {
-		return ErrMultipleEFDFRecords
-	}
-
-	var r records.EFDF
-	if err := binary.Read(bytes.NewReader(record.Data), binary.LittleEndian, &r); err != nil {
-		return fmt.Errorf("failed to parse EFDF record: %w", err)
-	}
-
-	b.log.DebugContext(ctx, "efdf parsed",
-		slog.Uint64("frameCount", uint64(r.FrameCount)),
-		slog.Int("length", len(record.Data)))
-
-	b.efdf = &r
-
-	return nil
-}
-
-func (b *rootBuilder) addEFRM(ctx context.Context, record records.Raw) error {
-	var r records.EFRM
-
-	if err := binary.Read(bytes.NewReader(record.Data), binary.LittleEndian, &r); err != nil {
-		return fmt.Errorf("failed to parse EFRM record: %w", err)
-	}
-
-	b.log.DebugContext(ctx, "efrm parsed",
-		slog.Int("length", len(record.Data)),
-		slog.Int("frameNumber", int(r.FrameNumber)))
-
-	b.efrms = append(b.efrms, r)
-
-	return nil
-}
-
-func (b *rootBuilder) addEFTP(ctx context.Context, record records.Raw) error {
-	const bytesPerPixel = 3
-
-	var (
-		order  = binary.LittleEndian
-		header [16]byte
-	)
-
-	r := bytes.NewReader(record.Data)
-	if err := binary.Read(r, order, &header); err != nil {
-		return errors.Join(ErrFailedToParseThumbnail, err)
-	}
-
-	var filepath [256]byte
-	if err := binary.Read(r, order, &filepath); err != nil {
-		return errors.Join(ErrFailedToParseThumbnail, err)
-	}
-
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return errors.Join(ErrFailedToParseThumbnail, err)
-	}
-
-	w, h := order.Uint16(header[4:6]), order.Uint16(header[6:8])
-	width, height := int(w), int(h)
-
-	thumbnail := image.NewRGBA(image.Rect(0, 0, width, height))
-
-	for i := 0; i+2 < len(data); i += bytesPerPixel {
-		idx := i / bytesPerPixel
-		thumbnail.SetRGBA(idx%width, idx/height,
-			color.RGBA{data[idx+2], data[idx+1], data[idx], 255})
-	}
-
-	frameNumber := order.Uint16(header[0:2])
-	b.log.DebugContext(ctx, "eftp parsed",
-		slog.Int("length", height*width*bytesPerPixel),
-		slog.Int("frameNumber", int(frameNumber)))
-
-	b.eftps = append(b.eftps, records.EFTP{
-		Index:     frameNumber,
-		Unknown1:  header[2],
-		Unknown2:  header[3],
-		Width:     w,
-		Height:    h,
-		Unknown3:  [8]byte(header[8:16]),
-		Filepath:  filepath,
-		Thumbnail: thumbnail,
-	})
-
-	return nil
 }

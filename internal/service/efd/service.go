@@ -3,8 +3,8 @@ package efd
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 
@@ -23,8 +23,6 @@ var (
 	ErrFailedToParseThumbnail   = errors.New("failed to parse EFTP thumbnail")
 )
 
-var _ Service = &service{log: nil, builder: nil, fs: nil}
-
 type Service interface {
 	RecordsFromFile(ctx context.Context, filename string) (records.Root, error)
 }
@@ -32,17 +30,20 @@ type Service interface {
 type service struct {
 	log     *slog.Logger
 	builder RootBuilder
+	parser  Parser
 	fs      osfs.FileSystem
 }
 
 func NewService(
 	log *slog.Logger,
 	builder RootBuilder,
+	parser Parser,
 	fs osfs.FileSystem,
 ) Service {
 	return &service{
 		log:     log,
 		builder: builder,
+		parser:  parser,
 		fs:      fs,
 	}
 }
@@ -61,17 +62,17 @@ func (s *service) RecordsFromFile(
 		slog.String("filename", filename))
 
 	for {
-		record, errRaw := s.recordFromFile(ctx, file)
-		if errRaw != nil {
-			if errors.Is(errRaw, io.EOF) {
-				break // done
-			}
-
-			return records.Root{}, errRaw
+		record, errRaw := s.parser.ParseRaw(ctx, file)
+		if errors.Is(errRaw, io.EOF) {
+			break
 		}
 
-		if err := s.builder.AddRecord(ctx, record); err != nil {
-			return records.Root{}, errors.Join(ErrFailedToAddRecord, err)
+		if errRaw != nil {
+			return records.Root{}, errors.Join(ErrFailedToReadRecord, errRaw)
+		}
+
+		if errProcess := s.processRecord(ctx, record); errProcess != nil {
+			return records.Root{}, errProcess
 		}
 	}
 
@@ -87,34 +88,39 @@ func (s *service) RecordsFromFile(
 	return root, nil
 }
 
-func (s *service) recordFromFile(
-	ctx context.Context,
-	r io.Reader,
-) (records.Raw, error) {
-	var magicAndLength [16]byte
-	if err := binary.Read(r, binary.LittleEndian, &magicAndLength); err != nil {
-		return records.Raw{}, errors.Join(ErrInvalidRecordMagicNumber, err)
+func (s *service) processRecord(ctx context.Context, record records.Raw) error {
+	magic := string(record.Magic[:])
+	switch magic {
+	case "EFDF":
+		efdf, errParse := s.parser.ParseEFDF(ctx, record.Data)
+		if errParse != nil {
+			return errors.Join(ErrFailedToAddRecord, errParse)
+		}
+
+		if err := s.builder.AddEFDF(ctx, efdf); err != nil {
+			return errors.Join(ErrFailedToAddRecord, err)
+		}
+
+		return nil
+	case "EFRM":
+		efrm, errParse := s.parser.ParseEFRM(ctx, record.Data)
+		if errParse != nil {
+			return errors.Join(ErrFailedToAddRecord, errParse)
+		}
+
+		s.builder.AddEFRM(ctx, efrm)
+
+		return nil
+	case "EFTP":
+		eftp, errParse := s.parser.ParseEFTP(ctx, record.Data)
+		if errParse != nil {
+			return errors.Join(ErrFailedToAddRecord, errParse)
+		}
+
+		s.builder.AddEFTP(ctx, eftp)
+
+		return nil
+	default:
+		return fmt.Errorf("%w: %s", ErrUnknownRecordType, magic)
 	}
-
-	magic := magicAndLength[:4]
-
-	l := binary.LittleEndian.Uint64(magicAndLength[8:16])
-	bufLen := l - uint64(len(magicAndLength))
-	buf := make([]byte, bufLen)
-
-	_, err := io.ReadFull(r, buf)
-	if err != nil {
-		return records.Raw{}, errors.Join(ErrFailedToReadRecord, err)
-	}
-
-	s.log.DebugContext(ctx, "record read",
-		slog.String("magic", string(magic)),
-		slog.Uint64("length", l),
-	)
-
-	return records.Raw{
-		Magic:  [4]byte(magic),
-		Length: l,
-		Data:   buf,
-	}, nil
 }

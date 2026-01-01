@@ -15,7 +15,7 @@ import (
 
 var errExample = errors.New("example error")
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_Export(t *testing.T) {
 	t.Parallel()
 
@@ -23,6 +23,7 @@ func Test_Export(t *testing.T) {
 		name   string
 		expect func(
 			efd_test.MockService,
+			csv_test.MockService,
 			testcase,
 		)
 		filename      string
@@ -34,6 +35,7 @@ func Test_Export(t *testing.T) {
 			name: "failed to read file",
 			expect: func(
 				mockEFDService efd_test.MockService,
+				_ csv_test.MockService,
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
@@ -45,6 +47,26 @@ func Test_Export(t *testing.T) {
 			},
 			filename:      "file.efd",
 			expectedError: roll.ErrFailedToReadFile,
+		},
+		{
+			name: "successfully export roll to CSV",
+			expect: func(
+				mockEFDService efd_test.MockService,
+				mockCSVService csv_test.MockService,
+				tt testcase,
+			) {
+				mockEFDService.EXPECT().
+					RecordsFromFile(gomock.Any(), tt.filename).
+					Return(
+						records.Root{},
+						nil,
+					)
+
+				mockCSVService.EXPECT().
+					ExportRoll()
+			},
+			filename:      "file.efd",
+			expectedError: nil,
 		},
 	}
 
@@ -62,6 +84,7 @@ func Test_Export(t *testing.T) {
 
 			tt.expect(
 				*mockEFDService,
+				*mockCSVService,
 				tt,
 			)
 
@@ -98,7 +121,7 @@ func Test_Export(t *testing.T) {
 	}
 }
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_List(t *testing.T) {
 	t.Parallel()
 

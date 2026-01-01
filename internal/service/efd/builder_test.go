@@ -1,10 +1,9 @@
 package efd_test
 
 import (
-	"bytes"
-	"encoding/binary"
+	"context"
 	"errors"
-	"log/slog"
+	"reflect"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/service/efd"
@@ -12,60 +11,93 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func buildEFDFRaw(record records.EFDF) records.Raw {
-	buf := &bytes.Buffer{}
-	_ = binary.Write(buf, binary.LittleEndian, record)
-	data := buf.Bytes()
-	return records.Raw{
-		Magic:  [4]byte{'E', 'F', 'D', 'F'},
-		Length: uint64(len(data)),
-		Data:   data,
-	}
-}
-
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_RootBuilder(t *testing.T) {
 	t.Parallel()
 
-	buf := &bytes.Buffer{}
-	logger := slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
-		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-
-			return a
-		},
-	}))
-
 	type testcase struct {
 		name           string
-		recordsToAdd   []records.Raw
+		efdfsToAdd     []records.EFDF
+		efrmsToAdd     []records.EFRM
+		eftpsToAdd     []records.EFTP
 		expectedError  error
 		expectedResult records.Root
 	}
 
 	tests := []testcase{
 		{
-			name: "successful build with one EFDF record",
-			recordsToAdd: []records.Raw{
-				buildEFDFRaw(records.EFDF{Title: [64]byte{'t', 'i', 't', 'l', 'e'}}),
-			},
-			expectedError: nil,
-		},
-		{
 			name: "error on multiple EFDF records",
-			recordsToAdd: []records.Raw{
-				buildEFDFRaw(records.EFDF{Title: [64]byte{'t', 'i', 't', 'l', 'e'}}),
-				buildEFDFRaw(records.EFDF{Title: [64]byte{'o', 't', 'h', 'e', 'r'}}),
+			efdfsToAdd: []records.EFDF{
+				{Title: [64]byte{'t', 'i', 't', 'l', 'e'}},
+				{Title: [64]byte{'o', 't', 'h', 'e', 'r'}},
 			},
 			expectedError: efd.ErrMultipleEFDFRecords,
 		},
-		// {
-		// 	name:          "error on missing EFDF record",
-		// 	recordsToAdd:  []records.Raw{},
-		// 	expectedError: efd.ErrMissingEFDFRecord,
-		// },
+		{
+			name:          "error on missing EFDF record",
+			efdfsToAdd:    []records.EFDF{},
+			expectedError: efd.ErrMissingEFDFRecord,
+		},
+		{
+			name: "successful build with EFDF, EFRM and EFTP records",
+			efdfsToAdd: []records.EFDF{
+				{Title: [64]byte{'t', 'i', 't', 'l', 'e'}},
+			},
+			efrmsToAdd: []records.EFRM{
+				{Remarks: [256]byte{'r', 'e', 'm', 'a', 'r', 'k', 's'}},
+			},
+			eftpsToAdd: []records.EFTP{
+				{Index: 1},
+			},
+			expectedError: nil,
+			expectedResult: records.Root{
+				EFDF: records.EFDF{Title: [64]byte{'t', 'i', 't', 'l', 'e'}},
+				EFRMs: []records.EFRM{
+					{Remarks: [256]byte{'r', 'e', 'm', 'a', 'r', 'k', 's'}},
+				},
+				EFTPs: []records.EFTP{
+					{Index: 1},
+				},
+			},
+		},
+	}
+
+	addRecordsAndBuild := func(ctx context.Context, builder efd.RootBuilder, tc testcase) (records.Root, error) {
+		for _, record := range tc.efdfsToAdd {
+			if err := builder.AddEFDF(ctx, record); err != nil {
+				return records.Root{}, err
+			}
+		}
+
+		for _, record := range tc.efrmsToAdd {
+			builder.AddEFRM(ctx, record)
+		}
+
+		for _, record := range tc.eftpsToAdd {
+			builder.AddEFTP(ctx, record)
+		}
+
+		return builder.Build()
+	}
+
+	assertExpectedError := func(t *testing.T, got, expected error) {
+		t.Helper()
+
+		if expected == nil {
+			return
+		}
+
+		if got == nil || !errors.Is(got, expected) {
+			t.Fatalf("expected error %v, got %v", expected, got)
+		}
+	}
+
+	assertExpectedResult := func(t *testing.T, got, expected records.Root) {
+		t.Helper()
+
+		if !reflect.DeepEqual(got, expected) {
+			t.Fatalf("expected result %v, got %v", expected, got)
+		}
 	}
 
 	for _, tt := range tests {
@@ -77,40 +109,16 @@ func Test_RootBuilder(t *testing.T) {
 
 			ctx := t.Context()
 
-			builder := efd.NewRootBuilder(logger)
-
-			for _, record := range tt.recordsToAdd {
-				err := builder.AddRecord(ctx, record)
-				if err != nil {
-					t.Fatalf("failed to add record: %v", err)
-				}
-			}
-
-			_, err := builder.Build()
+			builder := efd.NewRootBuilder(newTestLogger())
+			result, err := addRecordsAndBuild(ctx, builder, tt)
 
 			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf(
-						"expected error %v, got %v",
-						tt.expectedError,
-						err,
-					)
-				}
+				assertExpectedError(t, err, tt.expectedError)
 
 				return
 			}
 
-			// if result != tt.expectedResult {
-			// 	t.Fatalf("expected result %v, got %v", tt.expectedResult, result)
-			// }
-
-			if err != nil {
-				t.Fatalf("expected no error, got %v", err)
-			}
+			assertExpectedResult(t, result, tt.expectedResult)
 		})
 	}
 }

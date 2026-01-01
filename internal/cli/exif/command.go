@@ -9,6 +9,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
+	"github.com/ma-tf/meta1v/pkg/records"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +39,7 @@ func NewCommand(log *slog.Logger) *cobra.Command {
 				efd.NewService(
 					log,
 					efd.NewRootBuilder(log),
+					efd.NewParser(log, records.NewDefaultThumbnailFactory()),
 					osfs.NewFileSystem(),
 				),
 				exif.NewService(log),

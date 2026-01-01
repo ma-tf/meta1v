@@ -20,20 +20,20 @@ type EFDF struct {
 	Unknown3   [4]byte
 	Unknown4   [2]byte
 	CodeB      uint32
-	Year       uint16
-	Month      uint8
-	Day        uint8
-	Hour       uint8
-	Minute     uint8
-	Second     uint8
+	Year       uint16 // year film loaded
+	Month      uint8  // month film loaded
+	Day        uint8  // day film loaded
+	Hour       uint8  // datetime hour film loaded
+	Minute     uint8  // datetime minute film loaded
+	Second     uint8  // datetime second film loaded
 	Unknown5   [1]byte
-	FrameCount uint32
+	FrameCount uint32 // total number of frames in the roll
 	IsoDX      uint32
 	CodeA      uint32
-	FirstRow   uint8
-	PerRow     uint8
+	FirstRow   uint8 // number of frames in first row of your contact sheet (usually less than per row)
+	PerRow     uint8 // number of frames per row of your contact sheet
 	Unknown6   [128]byte
-	Title      [64]byte
+	Title      [64]byte // null-terminated string, title of the roll
 	Remarks    [256]byte
 }
 

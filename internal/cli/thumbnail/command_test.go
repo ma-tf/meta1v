@@ -8,7 +8,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli/thumbnail"
 )
 
-//nolint:exhaustruct // for testcase struct literals
+//nolint:exhaustruct // only partial is needed
 func Test_CommandRun(t *testing.T) {
 	t.Parallel()
 
