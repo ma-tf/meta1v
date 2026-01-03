@@ -180,9 +180,9 @@ func NewExposureCompensation(
 			)
 		}
 
-		prefix := "+"
-		if ec&1 == 1 {
-			prefix = "-"
+		var prefix string
+		if ec >= 0 {
+			prefix = "+"
 		}
 
 		const divisor = 10
