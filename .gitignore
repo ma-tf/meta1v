@@ -1,2 +1,5 @@
 .husky/_/
 node_modules/
+coverage.html
+coverage.out
+bin/meta1v
