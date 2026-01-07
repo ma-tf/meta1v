@@ -67,7 +67,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(tt.records).
+					Create(gomock.Any(), tt.records).
 					Return(
 						display.DisplayableRoll{},
 						errExample,
@@ -96,7 +96,7 @@ func Test_List(t *testing.T) {
 						nil,
 					)
 				mockDisplayableRollFactory.EXPECT().
-					Create(tt.records).
+					Create(gomock.Any(), tt.records).
 					Return(
 						tt.roll,
 						nil,

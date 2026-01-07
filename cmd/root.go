@@ -1,8 +1,3 @@
-/*
-Package cmd implements the command line interface for meta1v.
-
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -18,6 +13,10 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli/frame"
 	"github.com/ma-tf/meta1v/internal/cli/roll"
 	"github.com/ma-tf/meta1v/internal/cli/thumbnail"
+	"github.com/ma-tf/meta1v/internal/service/efd"
+	exifService "github.com/ma-tf/meta1v/internal/service/exif"
+	"github.com/ma-tf/meta1v/internal/service/osfs"
+	"github.com/ma-tf/meta1v/pkg/records"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -92,7 +91,17 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	rootCmd.AddCommand(exif.NewCommand(logger))
+	exifUseCase := exif.NewUseCase(
+		efd.NewService(
+			logger,
+			efd.NewRootBuilder(logger),
+			efd.NewReader(logger, records.NewDefaultThumbnailFactory()),
+			osfs.NewFileSystem(),
+		),
+		exifService.NewService(logger),
+	)
+
+	rootCmd.AddCommand(exif.NewCommand(logger, exifUseCase))
 	rootCmd.AddCommand(roll.NewCommand(logger))
 	rootCmd.AddCommand(customfunctions.NewCommand(logger))
 	rootCmd.AddCommand(focusingpoints.NewCommand(logger))

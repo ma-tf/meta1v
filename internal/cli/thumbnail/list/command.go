@@ -24,7 +24,7 @@ thumbnail converted to ascii.`,
 			ctx := cmd.Context()
 
 			if len(args) != 1 {
-				return cli.ErrNoFilenameProvided
+				return cli.ErrEFDFileMustBeProvided
 			}
 
 			log.DebugContext(ctx, "arguments:",

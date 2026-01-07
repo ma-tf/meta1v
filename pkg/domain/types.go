@@ -66,7 +66,8 @@ func NewDateTime(
 	minute,
 	second uint8,
 ) (ValidatedDatetime, error) {
-	if year == math.MaxUint16 && month&day&hour&minute&second == math.MaxUint8 {
+	if (year == math.MaxUint16 && month&day&hour&minute&second == math.MaxUint8) ||
+		(year == 0 && month&day&hour&minute&second == 0) {
 		return "", nil
 	}
 

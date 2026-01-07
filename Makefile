@@ -5,7 +5,7 @@ all: tidy generate lint build test
 generate:
 	go generate ./...
 
-PKGS := $(shell go list ./... 2>/dev/null | grep -Ev '(/test|/mocks)$$')
+PKGS := $(shell go list ./... 2>/dev/null | grep -Ev '(/test|/mocks|/cmd$$|/osfs$$|^github\.com/ma-tf/meta1v$$)')
 
 .PHONY: test
 test:
@@ -15,7 +15,6 @@ test:
 coverage:
 	@go test -covermode=count -coverprofile=coverage.out $(PKGS)
 	@go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report saved to coverage.html"
 
 .PHONY: build
 build:

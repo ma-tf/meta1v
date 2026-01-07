@@ -3,6 +3,9 @@ package cli
 import "errors"
 
 var (
-	ErrNoFilenameProvided = errors.New("filename must be specified")
-	ErrFailedToOpenFile   = errors.New("failed to open specified file")
+	ErrEFDFileMustBeProvided      = errors.New("efd file must be specified")
+	ErrFailedToOpenFile           = errors.New("failed to open specified file")
+	ErrTargetFileMustBeSpecified  = errors.New("target file must be specified")
+	ErrFrameNumberMustBeSpecified = errors.New("frame number must be specified")
+	ErrTooManyArguments           = errors.New("too many arguments provided")
 )

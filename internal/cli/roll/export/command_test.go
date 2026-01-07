@@ -13,7 +13,7 @@ import (
 )
 
 //nolint:exhaustruct // only partial is needed
-func Test_CommandRun(t *testing.T) {
+func Test_NewCommand_Args(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -39,22 +39,22 @@ func Test_CommandRun(t *testing.T) {
 
 	tests := []testcase{
 		{
-			name:          "no filename provided",
+			name:          "no efd file provided",
 			args:          []string{},
 			expect:        func(_ export_test.MockUseCase, _ testcase) {},
-			expectedError: cli.ErrNoFilenameProvided,
+			expectedError: cli.ErrEFDFileMustBeProvided,
 		},
 		{
-			name: "successful execution",
-			expect: func(
-				mockUseCase export_test.MockUseCase,
-				tt testcase,
-			) {
-				mockUseCase.EXPECT().
-					Export(gomock.Any(), tt.args[0]).
-					Return(nil)
-			},
-			args: []string{"file.efd"},
+			name:          "only efd file provided",
+			args:          []string{"file.efd"},
+			expect:        func(_ export_test.MockUseCase, _ testcase) {},
+			expectedError: cli.ErrTargetFileMustBeSpecified,
+		},
+		{
+			name:          "too many arguments provided",
+			args:          []string{"file.efd", "output.csv", "extra_arg"},
+			expect:        func(_ export_test.MockUseCase, _ testcase) {},
+			expectedError: cli.ErrTooManyArguments,
 		},
 	}
 
@@ -96,5 +96,37 @@ func Test_CommandRun(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 		})
+	}
+}
+
+//nolint:exhaustruct // only partial is needed
+func Test_CommandRun(t *testing.T) {
+	t.Parallel()
+
+	buf := &bytes.Buffer{}
+	logger := slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockUseCase := export_test.NewMockUseCase(ctrl)
+
+	mockUseCase.EXPECT().
+		Export(gomock.Any(), "file.efd", "output.csv").
+		Return(nil)
+
+	cmd := export.NewCommand(logger, mockUseCase)
+	cmd.SetArgs([]string{"file.efd", "output.csv"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

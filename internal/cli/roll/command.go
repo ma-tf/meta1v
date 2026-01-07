@@ -24,29 +24,28 @@ frame count, ISO and user provided remarks.`,
 
 	fs := osfs.NewFileSystem()
 	builder := efd.NewRootBuilder(log)
-	parser := efd.NewParser(log, records.NewDefaultThumbnailFactory())
+	reader := efd.NewReader(log, records.NewDefaultThumbnailFactory())
+	efdSvc := efd.NewService(
+		log,
+		builder,
+		reader,
+		fs,
+	)
+	factory := display.NewDisplayableRollFactory(
+		display.NewFrameBuilder(log, false),
+	)
 
 	listUseCase := NewListUseCase(
-		efd.NewService(
-			log,
-			builder,
-			parser,
-			fs,
-		),
-		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(false),
-		),
+		efdSvc,
+		factory,
 		display.NewService(),
 	)
 
 	exportUseCase := NewExportUseCase(
-		efd.NewService(
-			log,
-			builder,
-			parser,
-			fs,
-		),
+		efdSvc,
+		factory,
 		csv.NewService(),
+		fs,
 	)
 
 	cmd.AddCommand(list.NewCommand(log, listUseCase))

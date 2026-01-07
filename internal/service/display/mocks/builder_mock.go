@@ -10,6 +10,7 @@
 package display_test
 
 import (
+	context "context"
 	reflect "reflect"
 
 	display "github.com/ma-tf/meta1v/internal/service/display"
@@ -42,17 +43,17 @@ func (m *MockFrameMetadataBuilder) EXPECT() *MockFrameMetadataBuilderMockRecorde
 }
 
 // WithFrameMetadata mocks base method.
-func (m *MockFrameMetadataBuilder) WithFrameMetadata(r records.EFRM) display.ExposureSettingsBuilder {
+func (m *MockFrameMetadataBuilder) WithFrameMetadata(ctx context.Context, r records.EFRM) display.ExposureSettingsBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithFrameMetadata", r)
+	ret := m.ctrl.Call(m, "WithFrameMetadata", ctx, r)
 	ret0, _ := ret[0].(display.ExposureSettingsBuilder)
 	return ret0
 }
 
 // WithFrameMetadata indicates an expected call of WithFrameMetadata.
-func (mr *MockFrameMetadataBuilderMockRecorder) WithFrameMetadata(r any) *gomock.Call {
+func (mr *MockFrameMetadataBuilderMockRecorder) WithFrameMetadata(ctx, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithFrameMetadata", reflect.TypeOf((*MockFrameMetadataBuilder)(nil).WithFrameMetadata), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithFrameMetadata", reflect.TypeOf((*MockFrameMetadataBuilder)(nil).WithFrameMetadata), ctx, r)
 }
 
 // MockExposureSettingsBuilder is a mock of ExposureSettingsBuilder interface.
@@ -80,17 +81,17 @@ func (m *MockExposureSettingsBuilder) EXPECT() *MockExposureSettingsBuilderMockR
 }
 
 // WithExposureSettings mocks base method.
-func (m *MockExposureSettingsBuilder) WithExposureSettings() display.CameraModesBuilder {
+func (m *MockExposureSettingsBuilder) WithExposureSettings(ctx context.Context) display.CameraModesBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithExposureSettings")
+	ret := m.ctrl.Call(m, "WithExposureSettings", ctx)
 	ret0, _ := ret[0].(display.CameraModesBuilder)
 	return ret0
 }
 
 // WithExposureSettings indicates an expected call of WithExposureSettings.
-func (mr *MockExposureSettingsBuilderMockRecorder) WithExposureSettings() *gomock.Call {
+func (mr *MockExposureSettingsBuilderMockRecorder) WithExposureSettings(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithExposureSettings", reflect.TypeOf((*MockExposureSettingsBuilder)(nil).WithExposureSettings))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithExposureSettings", reflect.TypeOf((*MockExposureSettingsBuilder)(nil).WithExposureSettings), ctx)
 }
 
 // MockCameraModesBuilder is a mock of CameraModesBuilder interface.
@@ -118,17 +119,17 @@ func (m *MockCameraModesBuilder) EXPECT() *MockCameraModesBuilderMockRecorder {
 }
 
 // WithCameraModesAndFlashInfo mocks base method.
-func (m *MockCameraModesBuilder) WithCameraModesAndFlashInfo() display.CustomFunctionsBuilder {
+func (m *MockCameraModesBuilder) WithCameraModesAndFlashInfo(ctx context.Context) display.CustomFunctionsBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithCameraModesAndFlashInfo")
+	ret := m.ctrl.Call(m, "WithCameraModesAndFlashInfo", ctx)
 	ret0, _ := ret[0].(display.CustomFunctionsBuilder)
 	return ret0
 }
 
 // WithCameraModesAndFlashInfo indicates an expected call of WithCameraModesAndFlashInfo.
-func (mr *MockCameraModesBuilderMockRecorder) WithCameraModesAndFlashInfo() *gomock.Call {
+func (mr *MockCameraModesBuilderMockRecorder) WithCameraModesAndFlashInfo(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCameraModesAndFlashInfo", reflect.TypeOf((*MockCameraModesBuilder)(nil).WithCameraModesAndFlashInfo))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCameraModesAndFlashInfo", reflect.TypeOf((*MockCameraModesBuilder)(nil).WithCameraModesAndFlashInfo), ctx)
 }
 
 // MockCustomFunctionsBuilder is a mock of CustomFunctionsBuilder interface.
@@ -156,17 +157,17 @@ func (m *MockCustomFunctionsBuilder) EXPECT() *MockCustomFunctionsBuilderMockRec
 }
 
 // WithCustomFunctionsAndFocusPoints mocks base method.
-func (m *MockCustomFunctionsBuilder) WithCustomFunctionsAndFocusPoints() display.ThumbnailBuilder {
+func (m *MockCustomFunctionsBuilder) WithCustomFunctionsAndFocusPoints(ctx context.Context) display.ThumbnailBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithCustomFunctionsAndFocusPoints")
+	ret := m.ctrl.Call(m, "WithCustomFunctionsAndFocusPoints", ctx)
 	ret0, _ := ret[0].(display.ThumbnailBuilder)
 	return ret0
 }
 
 // WithCustomFunctionsAndFocusPoints indicates an expected call of WithCustomFunctionsAndFocusPoints.
-func (mr *MockCustomFunctionsBuilderMockRecorder) WithCustomFunctionsAndFocusPoints() *gomock.Call {
+func (mr *MockCustomFunctionsBuilderMockRecorder) WithCustomFunctionsAndFocusPoints(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCustomFunctionsAndFocusPoints", reflect.TypeOf((*MockCustomFunctionsBuilder)(nil).WithCustomFunctionsAndFocusPoints))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCustomFunctionsAndFocusPoints", reflect.TypeOf((*MockCustomFunctionsBuilder)(nil).WithCustomFunctionsAndFocusPoints), ctx)
 }
 
 // MockThumbnailBuilder is a mock of ThumbnailBuilder interface.
@@ -194,17 +195,17 @@ func (m *MockThumbnailBuilder) EXPECT() *MockThumbnailBuilderMockRecorder {
 }
 
 // WithThumbnail mocks base method.
-func (m *MockThumbnailBuilder) WithThumbnail(t *display.DisplayableThumbnail) display.DisplayableFrameBuilder {
+func (m *MockThumbnailBuilder) WithThumbnail(ctx context.Context, t *display.DisplayableThumbnail) display.DisplayableFrameBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithThumbnail", t)
+	ret := m.ctrl.Call(m, "WithThumbnail", ctx, t)
 	ret0, _ := ret[0].(display.DisplayableFrameBuilder)
 	return ret0
 }
 
 // WithThumbnail indicates an expected call of WithThumbnail.
-func (mr *MockThumbnailBuilderMockRecorder) WithThumbnail(t any) *gomock.Call {
+func (mr *MockThumbnailBuilderMockRecorder) WithThumbnail(ctx, t any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithThumbnail", reflect.TypeOf((*MockThumbnailBuilder)(nil).WithThumbnail), t)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithThumbnail", reflect.TypeOf((*MockThumbnailBuilder)(nil).WithThumbnail), ctx, t)
 }
 
 // MockDisplayableFrameBuilder is a mock of DisplayableFrameBuilder interface.

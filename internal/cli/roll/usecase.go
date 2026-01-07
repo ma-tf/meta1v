@@ -10,11 +10,15 @@ import (
 	"github.com/ma-tf/meta1v/internal/service/csv"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
+	"github.com/ma-tf/meta1v/internal/service/osfs"
 )
 
 var (
-	ErrFailedToReadFile  = errors.New("failed read file for roll")
-	ErrFailedToParseFile = errors.New("failed to parse file for roll")
+	ErrFailedToReadFile         = errors.New("failed read file for roll")
+	ErrFailedToParseFile        = errors.New("failed to parse file for roll")
+	ErrFailedToCreateOutputFile = errors.New(
+		"failed to create output file for roll",
+	)
 )
 
 type listUseCase struct {
@@ -44,7 +48,7 @@ func (uc listUseCase) List(
 		return errors.Join(ErrFailedToReadFile, err)
 	}
 
-	dr, err := uc.displayableRollFactory.Create(records)
+	dr, err := uc.displayableRollFactory.Create(ctx, records)
 	if err != nil {
 		return errors.Join(ErrFailedToParseFile, err)
 	}
@@ -55,27 +59,46 @@ func (uc listUseCase) List(
 }
 
 type exportUseCase struct {
-	efdService efd.Service
-	csvService csv.Service
+	efdService             efd.Service
+	displayableRollFactory display.DisplayableRollFactory
+	csvService             csv.Service
+	fs                     osfs.FileSystem
 }
 
 func NewExportUseCase(
 	efdService efd.Service,
+	displayableRollFactory display.DisplayableRollFactory,
 	csvService csv.Service,
+	fs osfs.FileSystem,
 ) export.UseCase {
 	return exportUseCase{
-		efdService: efdService,
-		csvService: csvService,
+		efdService:             efdService,
+		displayableRollFactory: displayableRollFactory,
+		csvService:             csvService,
+		fs:                     fs,
 	}
 }
 
-func (uc exportUseCase) Export(ctx context.Context, filename string) error {
-	_, err := uc.efdService.RecordsFromFile(ctx, filename)
+func (uc exportUseCase) Export(
+	ctx context.Context,
+	efdFile string,
+	outputFile string,
+) error {
+	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return errors.Join(ErrFailedToReadFile, err)
 	}
 
-	uc.csvService.ExportRoll()
+	dr, err := uc.displayableRollFactory.Create(ctx, records)
+	if err != nil {
+		return errors.Join(ErrFailedToParseFile, err)
+	}
 
-	return nil
+	file, err := uc.fs.Create(outputFile)
+	if err != nil {
+		return errors.Join(ErrFailedToCreateOutputFile, err)
+	}
+	defer file.Close()
+
+	return uc.csvService.ExportRoll(file, dr)
 }

@@ -78,14 +78,16 @@ func Test_FrameBuilder_WithFrameMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			frameBuilder := display.NewFrameBuilder(true)
+			ctx := t.Context()
+
+			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
 
 			result, err := frameBuilder.
-				WithFrameMetadata(tt.frame).
-				WithExposureSettings().
-				WithCameraModesAndFlashInfo().
-				WithCustomFunctionsAndFocusPoints().
-				WithThumbnail(nil).
+				WithFrameMetadata(ctx, tt.frame).
+				WithExposureSettings(ctx).
+				WithCameraModesAndFlashInfo(ctx).
+				WithCustomFunctionsAndFocusPoints(ctx).
+				WithThumbnail(ctx, nil).
 				Build()
 
 			if tt.expectedError != nil {
@@ -287,14 +289,16 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			frameBuilder := display.NewFrameBuilder(true)
+			ctx := t.Context()
+
+			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
 
 			result, err := frameBuilder.
-				WithFrameMetadata(tt.frame).
-				WithExposureSettings().
-				WithCameraModesAndFlashInfo().
-				WithCustomFunctionsAndFocusPoints().
-				WithThumbnail(nil).
+				WithFrameMetadata(ctx, tt.frame).
+				WithExposureSettings(ctx).
+				WithCameraModesAndFlashInfo(ctx).
+				WithCustomFunctionsAndFocusPoints(ctx).
+				WithThumbnail(ctx, nil).
 				Build()
 
 			if tt.expectedError != nil {
@@ -528,14 +532,16 @@ func Test_FrameBuilder_WithCameraModesAndFlashInfo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			frameBuilder := display.NewFrameBuilder(true)
+			ctx := t.Context()
+
+			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
 
 			result, err := frameBuilder.
-				WithFrameMetadata(tt.frame).
-				WithExposureSettings().
-				WithCameraModesAndFlashInfo().
-				WithCustomFunctionsAndFocusPoints().
-				WithThumbnail(nil).
+				WithFrameMetadata(ctx, tt.frame).
+				WithExposureSettings(ctx).
+				WithCameraModesAndFlashInfo(ctx).
+				WithCustomFunctionsAndFocusPoints(ctx).
+				WithThumbnail(ctx, nil).
 				Build()
 
 			if tt.expectedError != nil {
@@ -698,14 +704,16 @@ func Test_FrameBuilder_CustomFunctionsAndSuccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			frameBuilder := display.NewFrameBuilder(true)
+			ctx := t.Context()
+
+			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
 
 			result, err := frameBuilder.
-				WithFrameMetadata(tt.frame).
-				WithExposureSettings().
-				WithCameraModesAndFlashInfo().
-				WithCustomFunctionsAndFocusPoints().
-				WithThumbnail(nil).
+				WithFrameMetadata(ctx, tt.frame).
+				WithExposureSettings(ctx).
+				WithCameraModesAndFlashInfo(ctx).
+				WithCustomFunctionsAndFocusPoints(ctx).
+				WithThumbnail(ctx, nil).
 				Build()
 
 			if tt.expectedError != nil {

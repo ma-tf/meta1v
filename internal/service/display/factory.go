@@ -4,6 +4,7 @@ package display
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -23,7 +24,7 @@ type factory struct {
 }
 
 type DisplayableRollFactory interface {
-	Create(r records.Root) (DisplayableRoll, error)
+	Create(ctx context.Context, r records.Root) (DisplayableRoll, error)
 }
 
 func NewDisplayableRollFactory(
@@ -35,6 +36,7 @@ func NewDisplayableRollFactory(
 }
 
 func (f *factory) Create(
+	ctx context.Context,
 	r records.Root,
 ) (DisplayableRoll, error) {
 	fid, err := domain.NewFilmID(r.EFDF.CodeA, r.EFDF.CodeB)
@@ -63,7 +65,7 @@ func (f *factory) Create(
 	}
 
 	// r.EFRMs != rr.Exposures ∵ multiple exposures? untested with real world frames
-	frames, err := f.getFrames(r, thumbnails)
+	frames, err := f.getFrames(ctx, r, thumbnails)
 	if err != nil {
 		return DisplayableRoll{}, err
 	}
@@ -82,6 +84,7 @@ func (f *factory) Create(
 }
 
 func (f *factory) getFrames(
+	ctx context.Context,
 	r records.Root,
 	thumbnails map[uint16]*DisplayableThumbnail,
 ) ([]DisplayableFrame, error) {
@@ -99,11 +102,11 @@ func (f *factory) getFrames(
 		}
 
 		framePF, errPF := f.frameBuilder.
-			WithFrameMetadata(frame).
-			WithExposureSettings().
-			WithCameraModesAndFlashInfo().
-			WithCustomFunctionsAndFocusPoints().
-			WithThumbnail(pt).
+			WithFrameMetadata(ctx, frame).
+			WithExposureSettings(ctx).
+			WithCameraModesAndFlashInfo(ctx).
+			WithCustomFunctionsAndFocusPoints(ctx).
+			WithThumbnail(ctx, pt).
 			Build()
 		if errPF != nil {
 			return nil, errors.Join(ErrFailedToBuildFrame, errPF)

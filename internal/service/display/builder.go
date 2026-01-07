@@ -2,8 +2,10 @@
 package display
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"strconv"
 
@@ -12,6 +14,7 @@ import (
 )
 
 type frameBuilder struct {
+	log    *slog.Logger
 	strict bool
 	efrm   records.EFRM
 	frame  DisplayableFrame
@@ -19,23 +22,29 @@ type frameBuilder struct {
 }
 
 type FrameMetadataBuilder interface {
-	WithFrameMetadata(r records.EFRM) ExposureSettingsBuilder
+	WithFrameMetadata(
+		ctx context.Context,
+		r records.EFRM,
+	) ExposureSettingsBuilder
 }
 
 type ExposureSettingsBuilder interface {
-	WithExposureSettings() CameraModesBuilder
+	WithExposureSettings(ctx context.Context) CameraModesBuilder
 }
 
 type CameraModesBuilder interface {
-	WithCameraModesAndFlashInfo() CustomFunctionsBuilder
+	WithCameraModesAndFlashInfo(ctx context.Context) CustomFunctionsBuilder
 }
 
 type CustomFunctionsBuilder interface {
-	WithCustomFunctionsAndFocusPoints() ThumbnailBuilder
+	WithCustomFunctionsAndFocusPoints(ctx context.Context) ThumbnailBuilder
 }
 
 type ThumbnailBuilder interface {
-	WithThumbnail(t *DisplayableThumbnail) DisplayableFrameBuilder
+	WithThumbnail(
+		ctx context.Context,
+		t *DisplayableThumbnail,
+	) DisplayableFrameBuilder
 }
 
 type DisplayableFrameBuilder interface {
@@ -43,9 +52,11 @@ type DisplayableFrameBuilder interface {
 }
 
 func NewFrameBuilder(
+	log *slog.Logger,
 	strict bool,
 ) FrameMetadataBuilder {
 	return &frameBuilder{
+		log:    log,
 		strict: strict,
 		efrm:   records.EFRM{},     //nolint:exhaustruct // will be built step by step
 		frame:  DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
@@ -54,6 +65,7 @@ func NewFrameBuilder(
 }
 
 func (fb *frameBuilder) WithFrameMetadata(
+	ctx context.Context,
 	r records.EFRM,
 ) ExposureSettingsBuilder {
 	fb.efrm = r
@@ -98,15 +110,25 @@ func (fb *frameBuilder) WithFrameMetadata(
 	fb.frame.Remarks = domain.NewRemarks(r.Remarks)
 	fb.frame.UserModifiedRecord = r.IsModifiedRecord != 0
 
+	fb.log.DebugContext(ctx, "parsed frame metadata",
+		slog.Any("FilmID", fb.frame.FilmID),
+		slog.Any("FilmLoadedAt", fb.frame.FilmLoadedAt),
+		slog.Any("BatteryLoadedAt", fb.frame.BatteryLoadedAt),
+		slog.Any("TakenAt", fb.frame.TakenAt),
+		slog.Any("FrameNumber", fb.frame.FrameNumber),
+		slog.Any("Remarks", fb.frame.Remarks),
+		slog.Any("UserModifiedRecord", fb.frame.UserModifiedRecord),
+	)
+
 	return fb
 }
 
-func (fb *frameBuilder) WithExposureSettings() CameraModesBuilder {
+func (fb *frameBuilder) WithExposureSettings(
+	ctx context.Context,
+) CameraModesBuilder {
 	if fb.err != nil {
 		return fb
 	}
-
-	fb.frame.FocalLength = domain.NewFocalLength(fb.efrm.FocalLength)
 
 	fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, fb.strict)
 	if fb.err != nil {
@@ -120,8 +142,7 @@ func (fb *frameBuilder) WithExposureSettings() CameraModesBuilder {
 
 	if fb.frame.Tv == "Bulb" {
 		fb.frame.BulbExposureTime, fb.err = domain.NewBulbExposureTime(
-			fb.efrm.BulbExposureTime,
-		)
+			fb.efrm.BulbExposureTime)
 		if fb.err != nil {
 			return fb
 		}
@@ -132,28 +153,40 @@ func (fb *frameBuilder) WithExposureSettings() CameraModesBuilder {
 		return fb
 	}
 
+	fb.frame.FocalLength = domain.NewFocalLength(fb.efrm.FocalLength)
 	fb.frame.IsoDX = domain.NewIso(fb.efrm.IsoDX)
 	fb.frame.IsoM = domain.NewIso(fb.efrm.IsoM)
 
 	fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(
-		fb.efrm.ExposureCompenation,
-		fb.strict,
-	)
+		fb.efrm.ExposureCompenation, fb.strict)
 	if fb.err != nil {
 		return fb
 	}
 
 	fb.frame.MultipleExposure, fb.err = domain.NewMultipleExposure(
-		fb.efrm.MultipleExposure,
-	)
+		fb.efrm.MultipleExposure)
 	if fb.err != nil {
 		return fb
 	}
 
+	fb.log.DebugContext(ctx, "parsed exposure settings",
+		slog.Any("MaxAperture", fb.frame.MaxAperture),
+		slog.Any("Tv", fb.frame.Tv),
+		slog.Any("BulbExposureTime", fb.frame.BulbExposureTime),
+		slog.Any("Av", fb.frame.Av),
+		slog.Any("FocalLength", fb.frame.FocalLength),
+		slog.Any("IsoDX", fb.frame.IsoDX),
+		slog.Any("IsoM", fb.frame.IsoM),
+		slog.Any("ExposureCompensation", fb.frame.ExposureCompensation),
+		slog.Any("MultipleExposure", fb.frame.MultipleExposure),
+	)
+
 	return fb
 }
 
-func (fb *frameBuilder) WithCameraModesAndFlashInfo() CustomFunctionsBuilder {
+func (fb *frameBuilder) WithCameraModesAndFlashInfo(
+	ctx context.Context,
+) CustomFunctionsBuilder {
 	if fb.err != nil {
 		return fb
 	}
@@ -193,10 +226,21 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo() CustomFunctionsBuilder {
 		return fb
 	}
 
+	fb.log.DebugContext(ctx, "parsed camera modes and flash info",
+		slog.Any("FlashExposureComp", fb.frame.FlashExposureComp),
+		slog.Any("FlashMode", fb.frame.FlashMode),
+		slog.Any("MeteringMode", fb.frame.MeteringMode),
+		slog.Any("ShootingMode", fb.frame.ShootingMode),
+		slog.Any("FilmAdvanceMode", fb.frame.FilmAdvanceMode),
+		slog.Any("AFMode", fb.frame.AFMode),
+	)
+
 	return fb
 }
 
-func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() ThumbnailBuilder {
+func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints(
+	ctx context.Context,
+) ThumbnailBuilder {
 	if fb.err != nil {
 		return fb
 	}
@@ -220,10 +264,16 @@ func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints() ThumbnailBuilder {
 		},
 	}
 
+	fb.log.DebugContext(ctx, "parsed custom functions and focus points",
+		slog.Any("CustomFunctions", fb.frame.CustomFunctions),
+		slog.Any("FocusingPoints", fb.frame.FocusingPoints),
+	)
+
 	return fb
 }
 
 func (fb *frameBuilder) WithThumbnail(
+	ctx context.Context,
 	t *DisplayableThumbnail,
 ) DisplayableFrameBuilder {
 	if fb.err != nil {
@@ -231,6 +281,8 @@ func (fb *frameBuilder) WithThumbnail(
 	}
 
 	fb.frame.Thumbnail = t
+
+	fb.log.DebugContext(ctx, "parsed thumbnail") // no printing because it's big
 
 	return fb
 }

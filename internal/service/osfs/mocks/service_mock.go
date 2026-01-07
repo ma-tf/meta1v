@@ -41,6 +41,21 @@ func (m *MockFileSystem) EXPECT() *MockFileSystemMockRecorder {
 	return m.recorder
 }
 
+// Create mocks base method.
+func (m *MockFileSystem) Create(name string) (osfs.File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", name)
+	ret0, _ := ret[0].(osfs.File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockFileSystemMockRecorder) Create(name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockFileSystem)(nil).Create), name)
+}
+
 // Open mocks base method.
 func (m *MockFileSystem) Open(name string) (osfs.File, error) {
 	m.ctrl.T.Helper()
@@ -167,4 +182,19 @@ func (m *MockFile) Stat() (os.FileInfo, error) {
 func (mr *MockFileMockRecorder) Stat() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockFile)(nil).Stat))
+}
+
+// Write mocks base method.
+func (m *MockFile) Write(p []byte) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", p)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Write indicates an expected call of Write.
+func (mr *MockFileMockRecorder) Write(p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockFile)(nil).Write), p)
 }

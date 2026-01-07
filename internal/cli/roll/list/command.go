@@ -24,7 +24,7 @@ frame count, ISO and user provided remarks.`,
 			ctx := cmd.Context()
 
 			if len(args) != 1 {
-				return cli.ErrNoFilenameProvided
+				return cli.ErrEFDFileMustBeProvided
 			}
 
 			log.DebugContext(ctx, "arguments:",

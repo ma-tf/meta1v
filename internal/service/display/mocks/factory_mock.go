@@ -10,6 +10,7 @@
 package display_test
 
 import (
+	context "context"
 	reflect "reflect"
 
 	display "github.com/ma-tf/meta1v/internal/service/display"
@@ -42,16 +43,16 @@ func (m *MockDisplayableRollFactory) EXPECT() *MockDisplayableRollFactoryMockRec
 }
 
 // Create mocks base method.
-func (m *MockDisplayableRollFactory) Create(r records.Root) (display.DisplayableRoll, error) {
+func (m *MockDisplayableRollFactory) Create(ctx context.Context, r records.Root) (display.DisplayableRoll, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", r)
+	ret := m.ctrl.Call(m, "Create", ctx, r)
 	ret0, _ := ret[0].(display.DisplayableRoll)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockDisplayableRollFactoryMockRecorder) Create(r any) *gomock.Call {
+func (mr *MockDisplayableRollFactoryMockRecorder) Create(ctx, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDisplayableRollFactory)(nil).Create), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDisplayableRollFactory)(nil).Create), ctx, r)
 }

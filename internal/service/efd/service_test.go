@@ -41,7 +41,7 @@ func Test_RecordsFromFile(t *testing.T) {
 		filename string
 		expect   func(
 			mockFileSystem osfs_test.MockFileSystem,
-			mockParser efd_test.MockParser,
+			mockReader efd_test.MockReader,
 			mockRootBuilder efd_test.MockRootBuilder,
 			tt testcase,
 			ctrl *gomock.Controller,
@@ -56,7 +56,7 @@ func Test_RecordsFromFile(t *testing.T) {
 			filename: "nonexistent.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				_ efd_test.MockParser,
+				_ efd_test.MockReader,
 				_ efd_test.MockRootBuilder,
 				tt testcase,
 				_ *gomock.Controller,
@@ -72,7 +72,7 @@ func Test_RecordsFromFile(t *testing.T) {
 			filename: "failed_to_read.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				_ efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -82,8 +82,8 @@ func Test_RecordsFromFile(t *testing.T) {
 					Close().
 					Return(nil)
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{}, errExample)
 
 				mockFileSystem.EXPECT().
@@ -97,7 +97,7 @@ func Test_RecordsFromFile(t *testing.T) {
 			filename: "failed_to_build.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				mockRootBuilder efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -107,8 +107,8 @@ func Test_RecordsFromFile(t *testing.T) {
 					Close().
 					Return(nil)
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{}, io.EOF)
 
 				mockRootBuilder.EXPECT().
@@ -125,7 +125,7 @@ func Test_RecordsFromFile(t *testing.T) {
 			name: "successfully parsed EFD file",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				mockRootBuilder efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -137,47 +137,47 @@ func Test_RecordsFromFile(t *testing.T) {
 
 				efdfRaw, efrmRaw, eftpRaw := []byte{}, []byte{}, []byte{}
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'D', 'F'},
 						Length: uint64(len(efdfRaw)),
 						Data:   efdfRaw,
 					}, nil)
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'R', 'M'},
 						Length: uint64(len(efrmRaw)),
 						Data:   efrmRaw,
 					}, nil)
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'T', 'P'},
 						Length: uint64(len(eftpRaw)),
 						Data:   eftpRaw,
 					}, nil)
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{}, io.EOF)
 
 				efdf := records.EFDF{Title: [64]byte{'t', 'i', 't', 'l', 'e'}}
-				mockParser.EXPECT().
-					ParseEFDF(gomock.Any(), efdfRaw).
+				mockReader.EXPECT().
+					ReadEFDF(gomock.Any(), efdfRaw).
 					Return(efdf, nil)
 
 				efrm := records.EFRM{FrameNumber: 1}
-				mockParser.EXPECT().
-					ParseEFRM(gomock.Any(), efrmRaw).
+				mockReader.EXPECT().
+					ReadEFRM(gomock.Any(), efrmRaw).
 					Return(efrm, nil)
 
 				eftp := records.EFTP{Width: 100, Height: 100}
-				mockParser.EXPECT().
-					ParseEFTP(gomock.Any(), eftpRaw).
+				mockReader.EXPECT().
+					ReadEFTP(gomock.Any(), eftpRaw).
 					Return(eftp, nil)
 
 				mockRootBuilder.EXPECT().
@@ -245,13 +245,13 @@ func Test_RecordsFromFile(t *testing.T) {
 			ctx := t.Context()
 
 			mockFileSystem := osfs_test.NewMockFileSystem(ctrl)
-			mockParser := efd_test.NewMockParser(ctrl)
+			mockReader := efd_test.NewMockReader(ctrl)
 			mockRootBuilder := efd_test.NewMockRootBuilder(ctrl)
 
 			if tt.expect != nil {
 				tt.expect(
 					*mockFileSystem,
-					*mockParser,
+					*mockReader,
 					*mockRootBuilder,
 					tt,
 					ctrl,
@@ -261,7 +261,7 @@ func Test_RecordsFromFile(t *testing.T) {
 			svc := efd.NewService(
 				newTestLogger(),
 				mockRootBuilder,
-				mockParser,
+				mockReader,
 				mockFileSystem,
 			)
 
@@ -294,7 +294,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 		filename string
 		expect   func(
 			mockFileSystem osfs_test.MockFileSystem,
-			mockParser efd_test.MockParser,
+			mockReader efd_test.MockReader,
 			mockRootBuilder efd_test.MockRootBuilder,
 			tt testcase,
 			ctrl *gomock.Controller,
@@ -308,7 +308,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			filename: "failed_to_parse_efdf.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				_ efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -319,16 +319,16 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 					Return(nil)
 
 				efdfRaw := []byte{}
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'D', 'F'},
 						Length: uint64(len(efdfRaw)),
 						Data:   efdfRaw,
 					}, nil)
 
-				mockParser.EXPECT().
-					ParseEFDF(gomock.Any(), efdfRaw).
+				mockReader.EXPECT().
+					ReadEFDF(gomock.Any(), efdfRaw).
 					Return(records.EFDF{}, errExample)
 
 				mockFileSystem.EXPECT().
@@ -342,7 +342,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			filename: "failed_to_add_efdf.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				mockRootBuilder efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -353,8 +353,8 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 					Return(nil)
 
 				efdfRaw := []byte{}
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'D', 'F'},
 						Length: uint64(len(efdfRaw)),
@@ -362,8 +362,8 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 					}, nil)
 
 				efdf := records.EFDF{Title: [64]byte{'t', 'i', 't', 'l', 'e'}}
-				mockParser.EXPECT().
-					ParseEFDF(gomock.Any(), efdfRaw).
+				mockReader.EXPECT().
+					ReadEFDF(gomock.Any(), efdfRaw).
 					Return(efdf, nil)
 
 				mockRootBuilder.EXPECT().
@@ -381,7 +381,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			filename: "failed_to_parse_efrm.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				_ efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -392,16 +392,16 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 					Return(nil)
 
 				efrmRaw := []byte{}
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'R', 'M'},
 						Length: uint64(len(efrmRaw)),
 						Data:   efrmRaw,
 					}, nil)
 
-				mockParser.EXPECT().
-					ParseEFRM(gomock.Any(), efrmRaw).
+				mockReader.EXPECT().
+					ReadEFRM(gomock.Any(), efrmRaw).
 					Return(records.EFRM{}, errExample)
 
 				mockFileSystem.EXPECT().
@@ -415,7 +415,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			filename: "failed_to_parse_eftp.efd",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				_ efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -426,16 +426,16 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 					Return(nil)
 
 				eftpRaw := []byte{}
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'E', 'F', 'T', 'P'},
 						Length: uint64(len(eftpRaw)),
 						Data:   eftpRaw,
 					}, nil)
 
-				mockParser.EXPECT().
-					ParseEFTP(gomock.Any(), eftpRaw).
+				mockReader.EXPECT().
+					ReadEFTP(gomock.Any(), eftpRaw).
 					Return(records.EFTP{}, errExample)
 
 				mockFileSystem.EXPECT().
@@ -448,7 +448,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			name: "unknown record magic number",
 			expect: func(
 				mockFileSystem osfs_test.MockFileSystem,
-				mockParser efd_test.MockParser,
+				mockReader efd_test.MockReader,
 				_ efd_test.MockRootBuilder,
 				tt testcase,
 				ctrl *gomock.Controller,
@@ -458,8 +458,8 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 					Close().
 					Return(nil)
 
-				mockParser.EXPECT().
-					ParseRaw(gomock.Any(), file).
+				mockReader.EXPECT().
+					ReadRaw(gomock.Any(), file).
 					Return(records.Raw{
 						Magic:  [4]byte{'X', 'Y', 'Z', 'W'},
 						Length: 0,
@@ -500,13 +500,13 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			ctx := t.Context()
 
 			mockFileSystem := osfs_test.NewMockFileSystem(ctrl)
-			mockParser := efd_test.NewMockParser(ctrl)
+			mockReader := efd_test.NewMockReader(ctrl)
 			mockRootBuilder := efd_test.NewMockRootBuilder(ctrl)
 
 			if tt.expect != nil {
 				tt.expect(
 					*mockFileSystem,
-					*mockParser,
+					*mockReader,
 					*mockRootBuilder,
 					tt,
 					ctrl,
@@ -516,7 +516,7 @@ func Test_RecordsFromFile_ProcessRecord(t *testing.T) {
 			svc := efd.NewService(
 				newTestLogger(),
 				mockRootBuilder,
-				mockParser,
+				mockReader,
 				mockFileSystem,
 			)
 

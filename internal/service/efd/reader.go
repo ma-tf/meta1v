@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/parser_mock.go -package=efd_test github.com/ma-tf/meta1v/internal/service/efd Parser
+//go:generate mockgen -destination=./mocks/reader_mock.go -package=efd_test github.com/ma-tf/meta1v/internal/service/efd Reader
 package efd
 
 import (
@@ -15,33 +15,33 @@ import (
 )
 
 var (
-	ErrFailedToParseEFDF = errors.New("failed to parse EFDF record")
-	ErrFailedToParseEFRM = errors.New("failed to parse EFRM record")
+	ErrFailedToReadEFDF = errors.New("failed to read EFDF record")
+	ErrFailedToReadEFRM = errors.New("failed to read EFRM record")
 )
 
-type Parser interface {
-	ParseRaw(ctx context.Context, r io.Reader) (records.Raw, error)
-	ParseEFDF(ctx context.Context, data []byte) (records.EFDF, error)
-	ParseEFRM(ctx context.Context, data []byte) (records.EFRM, error)
-	ParseEFTP(ctx context.Context, data []byte) (records.EFTP, error)
+type Reader interface {
+	ReadRaw(ctx context.Context, r io.Reader) (records.Raw, error)
+	ReadEFDF(ctx context.Context, data []byte) (records.EFDF, error)
+	ReadEFRM(ctx context.Context, data []byte) (records.EFRM, error)
+	ReadEFTP(ctx context.Context, data []byte) (records.EFTP, error)
 }
 
-type parser struct {
+type reader struct {
 	log              *slog.Logger
 	thumbnailFactory records.ThumbnailFactory
 }
 
-func NewParser(
+func NewReader(
 	log *slog.Logger,
 	thumbnailFactory records.ThumbnailFactory,
-) Parser {
-	return &parser{
+) Reader {
+	return &reader{
 		log:              log,
 		thumbnailFactory: thumbnailFactory,
 	}
 }
 
-func (b *parser) ParseRaw(
+func (b *reader) ReadRaw(
 	ctx context.Context,
 	r io.Reader,
 ) (records.Raw, error) {
@@ -73,13 +73,13 @@ func (b *parser) ParseRaw(
 	}, nil
 }
 
-func (b *parser) ParseEFDF(
+func (b *reader) ReadEFDF(
 	ctx context.Context,
 	data []byte,
 ) (records.EFDF, error) {
 	var efdf records.EFDF
 	if err := binary.Read(bytes.NewReader(data), binary.LittleEndian, &efdf); err != nil {
-		return records.EFDF{}, errors.Join(ErrFailedToParseEFDF, err)
+		return records.EFDF{}, errors.Join(ErrFailedToReadEFDF, err)
 	}
 
 	b.log.DebugContext(ctx, "parsed EFDF record")
@@ -87,13 +87,13 @@ func (b *parser) ParseEFDF(
 	return efdf, nil
 }
 
-func (b *parser) ParseEFRM(
+func (b *reader) ReadEFRM(
 	ctx context.Context,
 	data []byte,
 ) (records.EFRM, error) {
 	var efrm records.EFRM
 	if err := binary.Read(bytes.NewReader(data), binary.LittleEndian, &efrm); err != nil {
-		return records.EFRM{}, errors.Join(ErrFailedToParseEFRM, err)
+		return records.EFRM{}, errors.Join(ErrFailedToReadEFRM, err)
 	}
 
 	b.log.DebugContext(ctx, "parsed EFRM record")
@@ -101,7 +101,7 @@ func (b *parser) ParseEFRM(
 	return efrm, nil
 }
 
-func (b *parser) ParseEFTP(
+func (b *reader) ReadEFTP(
 	ctx context.Context,
 	data []byte,
 ) (records.EFTP, error) {

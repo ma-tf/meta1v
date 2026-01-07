@@ -35,9 +35,8 @@ type domainJSON struct {
 
 func NewMapProvider() *MapProvider {
 	var data domainJSON
-	if err := json.Unmarshal(domainData, &data); err != nil {
-		panic(err)
-	}
+
+	_ = json.Unmarshal(domainData, &data)
 
 	return &MapProvider{
 		tvs:  convertMapInt32[Tv](data.ShutterSpeeds),

@@ -30,20 +30,20 @@ type Service interface {
 type service struct {
 	log     *slog.Logger
 	builder RootBuilder
-	parser  Parser
+	reader  Reader
 	fs      osfs.FileSystem
 }
 
 func NewService(
 	log *slog.Logger,
 	builder RootBuilder,
-	parser Parser,
+	reader Reader,
 	fs osfs.FileSystem,
 ) Service {
 	return &service{
 		log:     log,
 		builder: builder,
-		parser:  parser,
+		reader:  reader,
 		fs:      fs,
 	}
 }
@@ -62,7 +62,7 @@ func (s *service) RecordsFromFile(
 		slog.String("filename", filename))
 
 	for {
-		record, errRaw := s.parser.ParseRaw(ctx, file)
+		record, errRaw := s.reader.ReadRaw(ctx, file)
 		if errors.Is(errRaw, io.EOF) {
 			break
 		}
@@ -92,9 +92,9 @@ func (s *service) processRecord(ctx context.Context, record records.Raw) error {
 	magic := string(record.Magic[:])
 	switch magic {
 	case "EFDF":
-		efdf, errParse := s.parser.ParseEFDF(ctx, record.Data)
-		if errParse != nil {
-			return errors.Join(ErrFailedToAddRecord, errParse)
+		efdf, errRead := s.reader.ReadEFDF(ctx, record.Data)
+		if errRead != nil {
+			return errors.Join(ErrFailedToAddRecord, errRead)
 		}
 
 		if err := s.builder.AddEFDF(ctx, efdf); err != nil {
@@ -103,18 +103,18 @@ func (s *service) processRecord(ctx context.Context, record records.Raw) error {
 
 		return nil
 	case "EFRM":
-		efrm, errParse := s.parser.ParseEFRM(ctx, record.Data)
-		if errParse != nil {
-			return errors.Join(ErrFailedToAddRecord, errParse)
+		efrm, errRead := s.reader.ReadEFRM(ctx, record.Data)
+		if errRead != nil {
+			return errors.Join(ErrFailedToAddRecord, errRead)
 		}
 
 		s.builder.AddEFRM(ctx, efrm)
 
 		return nil
 	case "EFTP":
-		eftp, errParse := s.parser.ParseEFTP(ctx, record.Data)
-		if errParse != nil {
-			return errors.Join(ErrFailedToAddRecord, errParse)
+		eftp, errRead := s.reader.ReadEFTP(ctx, record.Data)
+		if errRead != nil {
+			return errors.Join(ErrFailedToAddRecord, errRead)
 		}
 
 		s.builder.AddEFTP(ctx, eftp)

@@ -9,6 +9,7 @@ import (
 var _ FileSystem = osFS{}
 
 type FileSystem interface {
+	Create(name string) (File, error)
 	Open(name string) (File, error)
 	Stat(name string) (os.FileInfo, error)
 }
@@ -18,10 +19,14 @@ type File interface {
 	io.Reader
 	io.ReaderAt
 	io.Seeker
+	io.Writer
 	Stat() (os.FileInfo, error)
 }
 
 type osFS struct{}
+
+//nolint:wrapcheck // os package errors are sufficient
+func (osFS) Create(name string) (File, error) { return os.Create(name) }
 
 //nolint:wrapcheck // os package errors are sufficient
 func (osFS) Open(name string) (File, error) { return os.Open(name) }

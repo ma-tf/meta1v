@@ -9,6 +9,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
+	osfs_test "github.com/ma-tf/meta1v/internal/service/osfs/mocks"
 	"github.com/ma-tf/meta1v/pkg/records"
 	"go.uber.org/mock/gomock"
 )
@@ -23,10 +24,16 @@ func Test_Export(t *testing.T) {
 		name   string
 		expect func(
 			efd_test.MockService,
+			display_test.MockDisplayableRollFactory,
+			osfs_test.MockFileSystem,
 			csv_test.MockService,
+			*osfs_test.MockFile,
 			testcase,
 		)
-		filename      string
+		efdfile       string
+		targetfile    string
+		records       records.Root
+		roll          display.DisplayableRoll
 		expectedError error
 	}
 
@@ -35,37 +42,181 @@ func Test_Export(t *testing.T) {
 			name: "failed to read file",
 			expect: func(
 				mockEFDService efd_test.MockService,
+				_ display_test.MockDisplayableRollFactory,
+				_ osfs_test.MockFileSystem,
 				_ csv_test.MockService,
+				_ *osfs_test.MockFile,
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.filename).
+					RecordsFromFile(gomock.Any(), tt.efdfile).
 					Return(
-						records.Root{},
+						tt.records,
 						errExample,
 					)
 			},
-			filename:      "file.efd",
+			efdfile:       "file.efd",
+			records:       records.Root{},
 			expectedError: roll.ErrFailedToReadFile,
+		},
+		{
+			name: "failed to parse file",
+			expect: func(
+				mockEFDService efd_test.MockService,
+				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
+				_ osfs_test.MockFileSystem,
+				_ csv_test.MockService,
+				_ *osfs_test.MockFile,
+				tt testcase,
+			) {
+				mockEFDService.EXPECT().
+					RecordsFromFile(gomock.Any(), tt.efdfile).
+					Return(
+						tt.records,
+						nil,
+					)
+
+				mockDisplayableRollFactory.EXPECT().
+					Create(gomock.Any(), tt.records).
+					Return(
+						display.DisplayableRoll{},
+						errExample,
+					)
+			},
+			efdfile:       "file.efd",
+			records:       records.Root{},
+			roll:          display.DisplayableRoll{},
+			expectedError: roll.ErrFailedToParseFile,
+		},
+		{
+			name: "failed to create output file",
+			expect: func(
+				mockEFDService efd_test.MockService,
+				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
+				mockFileSystem osfs_test.MockFileSystem,
+				_ csv_test.MockService,
+				_ *osfs_test.MockFile,
+				tt testcase,
+			) {
+				mockEFDService.EXPECT().
+					RecordsFromFile(gomock.Any(), tt.efdfile).
+					Return(
+						tt.records,
+						nil,
+					)
+
+				mockDisplayableRollFactory.EXPECT().
+					Create(gomock.Any(), tt.records).
+					Return(
+						tt.roll,
+						nil,
+					)
+
+				mockFileSystem.EXPECT().
+					Create(tt.targetfile).
+					Return(
+						nil,
+						errExample,
+					)
+			},
+			efdfile:       "file.efd",
+			targetfile:    "output.csv",
+			records:       records.Root{},
+			roll:          display.DisplayableRoll{},
+			expectedError: roll.ErrFailedToCreateOutputFile,
+		},
+		{
+			name: "export roll error",
+			expect: func(
+				mockEFDService efd_test.MockService,
+				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
+				mockFileSystem osfs_test.MockFileSystem,
+				mockCSVService csv_test.MockService,
+				mockFile *osfs_test.MockFile,
+				tt testcase,
+			) {
+				mockEFDService.EXPECT().
+					RecordsFromFile(gomock.Any(), tt.efdfile).
+					Return(
+						tt.records,
+						nil,
+					)
+
+				mockDisplayableRollFactory.EXPECT().
+					Create(gomock.Any(), tt.records).
+					Return(
+						tt.roll,
+						nil,
+					)
+
+				mockFile.EXPECT().
+					Close().
+					Return(nil)
+
+				mockFileSystem.EXPECT().
+					Create(tt.targetfile).
+					Return(
+						mockFile,
+						nil,
+					)
+
+				mockCSVService.EXPECT().
+					ExportRoll(mockFile, tt.roll).
+					Return(
+						errExample,
+					)
+			},
+			efdfile:       "file.efd",
+			targetfile:    "output.csv",
+			records:       records.Root{},
+			roll:          display.DisplayableRoll{},
+			expectedError: errExample,
 		},
 		{
 			name: "successfully export roll to CSV",
 			expect: func(
 				mockEFDService efd_test.MockService,
+				mockDisplayableRollFactory display_test.MockDisplayableRollFactory,
+				mockFileSystem osfs_test.MockFileSystem,
 				mockCSVService csv_test.MockService,
+				mockFile *osfs_test.MockFile,
 				tt testcase,
 			) {
 				mockEFDService.EXPECT().
-					RecordsFromFile(gomock.Any(), tt.filename).
+					RecordsFromFile(gomock.Any(), tt.efdfile).
 					Return(
-						records.Root{},
+						tt.records,
+						nil,
+					)
+
+				mockDisplayableRollFactory.EXPECT().
+					Create(gomock.Any(), tt.records).
+					Return(
+						tt.roll,
+						nil,
+					)
+
+				mockFile.EXPECT().
+					Close().
+					Return(nil)
+
+				mockFileSystem.EXPECT().
+					Create(tt.targetfile).
+					Return(
+						mockFile,
 						nil,
 					)
 
 				mockCSVService.EXPECT().
-					ExportRoll()
+					ExportRoll(mockFile, tt.roll).
+					Return(
+						nil,
+					)
 			},
-			filename:      "file.efd",
+			efdfile:       "file.efd",
+			targetfile:    "output.csv",
+			records:       records.Root{},
+			roll:          display.DisplayableRoll{},
 			expectedError: nil,
 		},
 	}
@@ -80,22 +231,33 @@ func Test_Export(t *testing.T) {
 			ctx := t.Context()
 
 			mockEFDService := efd_test.NewMockService(mockCtrl)
+			mockDisplayableRollFactory := display_test.NewMockDisplayableRollFactory(
+				mockCtrl,
+			)
 			mockCSVService := csv_test.NewMockService(mockCtrl)
+			mockFileSystem := osfs_test.NewMockFileSystem(mockCtrl)
+			mockFile := osfs_test.NewMockFile(mockCtrl)
 
 			tt.expect(
 				*mockEFDService,
+				*mockDisplayableRollFactory,
+				*mockFileSystem,
 				*mockCSVService,
+				mockFile,
 				tt,
 			)
 
 			uc := roll.NewExportUseCase(
 				mockEFDService,
+				mockDisplayableRollFactory,
 				mockCSVService,
+				mockFileSystem,
 			)
 
 			err := uc.Export(
 				ctx,
-				tt.filename,
+				tt.efdfile,
+				tt.targetfile,
 			)
 
 			if tt.expectedError != nil {
@@ -174,7 +336,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(tt.records).
+					Create(gomock.Any(), tt.records).
 					Return(
 						display.DisplayableRoll{},
 						errExample,
@@ -204,7 +366,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(tt.records).
+					Create(gomock.Any(), tt.records).
 					Return(
 						tt.roll,
 						nil,

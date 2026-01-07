@@ -26,11 +26,11 @@ Canon EOS-1V manual.`,
 		efd.NewService(
 			log,
 			efd.NewRootBuilder(log),
-			efd.NewParser(log, records.NewDefaultThumbnailFactory()),
+			efd.NewReader(log, records.NewDefaultThumbnailFactory()),
 			osfs.NewFileSystem(),
 		),
 		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(false),
+			display.NewFrameBuilder(log, false),
 		),
 		display.NewService(),
 	)

@@ -42,7 +42,7 @@ func Test_CommandRun(t *testing.T) {
 			name:          "no filename provided",
 			args:          []string{},
 			expect:        func(_ list_test.MockUseCase, _ testcase) {},
-			expectedError: cli.ErrNoFilenameProvided,
+			expectedError: cli.ErrEFDFileMustBeProvided,
 		},
 		{
 			name: "successful execution",

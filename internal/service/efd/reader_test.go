@@ -14,7 +14,7 @@ import (
 )
 
 //nolint:exhaustruct // only partial is needed
-func Test_Parser_ParseRaw(t *testing.T) {
+func Test_Reader_ReadRaw(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -86,9 +86,9 @@ func Test_Parser_ParseRaw(t *testing.T) {
 			ctx := t.Context()
 
 			mockThumbnailFactory := records_test.NewMockThumbnailFactory(ctrl)
-			parser := efd.NewParser(newTestLogger(), mockThumbnailFactory)
+			reader := efd.NewReader(newTestLogger(), mockThumbnailFactory)
 
-			result, err := parser.ParseRaw(
+			result, err := reader.ReadRaw(
 				ctx,
 				bytes.NewReader(tt.file),
 			)
@@ -132,7 +132,7 @@ func newEFDF(r records.EFDF) []byte {
 }
 
 //nolint:exhaustruct // only partial is needed
-func Test_Parser_ParseEFDF(t *testing.T) {
+func Test_Reader_ReadEFDF(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -146,7 +146,7 @@ func Test_Parser_ParseEFDF(t *testing.T) {
 		{
 			name:          "failed parse of invalid EFDF record",
 			data:          []byte{0x00, 0x01, 0x02},
-			expectedError: efd.ErrFailedToParseEFDF,
+			expectedError: efd.ErrFailedToReadEFDF,
 		},
 		{
 			name: "successful parse of EFDF record",
@@ -170,9 +170,9 @@ func Test_Parser_ParseEFDF(t *testing.T) {
 			ctx := t.Context()
 
 			mockThumbnailFactory := records_test.NewMockThumbnailFactory(ctrl)
-			parser := efd.NewParser(newTestLogger(), mockThumbnailFactory)
+			reader := efd.NewReader(newTestLogger(), mockThumbnailFactory)
 
-			result, err := parser.ParseEFDF(
+			result, err := reader.ReadEFDF(
 				ctx,
 				tt.data,
 			)
@@ -202,7 +202,7 @@ func newEFRM(r records.EFRM) []byte {
 }
 
 //nolint:exhaustruct // only partial is needed
-func Test_Parser_ParseEFRM(t *testing.T) {
+func Test_Reader_ReadEFRM(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -216,7 +216,7 @@ func Test_Parser_ParseEFRM(t *testing.T) {
 		{
 			name:          "failed parse of invalid EFRM record",
 			data:          []byte{0x00, 0x01, 0x02},
-			expectedError: efd.ErrFailedToParseEFRM,
+			expectedError: efd.ErrFailedToReadEFRM,
 		},
 		{
 			name: "successful parse of EFRM record",
@@ -240,9 +240,9 @@ func Test_Parser_ParseEFRM(t *testing.T) {
 			ctx := t.Context()
 
 			mockThumbnailFactory := records_test.NewMockThumbnailFactory(ctrl)
-			parser := efd.NewParser(newTestLogger(), mockThumbnailFactory)
+			reader := efd.NewReader(newTestLogger(), mockThumbnailFactory)
 
-			result, err := parser.ParseEFRM(
+			result, err := reader.ReadEFRM(
 				ctx,
 				tt.data,
 			)
@@ -265,7 +265,7 @@ func Test_Parser_ParseEFRM(t *testing.T) {
 }
 
 //nolint:exhaustruct // only partial is needed
-func Test_Parser_ParseEFTP(t *testing.T) {
+func Test_Reader_ReadEFTP(t *testing.T) {
 	t.Parallel()
 
 	type testcase struct {
@@ -347,8 +347,8 @@ func Test_Parser_ParseEFTP(t *testing.T) {
 				tt.expect(*mockThumbnailFactory)
 			}
 
-			parser := efd.NewParser(newTestLogger(), mockThumbnailFactory)
-			result, err := parser.ParseEFTP(
+			reader := efd.NewReader(newTestLogger(), mockThumbnailFactory)
+			result, err := reader.ReadEFTP(
 				ctx,
 				tt.data,
 			)

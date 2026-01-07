@@ -10,8 +10,10 @@
 package csv_test
 
 import (
+	io "io"
 	reflect "reflect"
 
+	display "github.com/ma-tf/meta1v/internal/service/display"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,13 +42,15 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // ExportRoll mocks base method.
-func (m *MockService) ExportRoll() {
+func (m *MockService) ExportRoll(w io.Writer, r display.DisplayableRoll) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ExportRoll")
+	ret := m.ctrl.Call(m, "ExportRoll", w, r)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // ExportRoll indicates an expected call of ExportRoll.
-func (mr *MockServiceMockRecorder) ExportRoll() *gomock.Call {
+func (mr *MockServiceMockRecorder) ExportRoll(w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRoll", reflect.TypeOf((*MockService)(nil).ExportRoll))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRoll", reflect.TypeOf((*MockService)(nil).ExportRoll), w, r)
 }

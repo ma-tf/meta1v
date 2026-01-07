@@ -3,12 +3,28 @@ package display_test
 import (
 	"bytes"
 	"errors"
+	"log/slog"
 	"math"
 	"strings"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/service/display"
 )
+
+//nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
 
 //nolint:exhaustruct // only partial is needed
 func Test_DisplayRoll(t *testing.T) {

@@ -42,7 +42,7 @@ func (uc usecase) DisplayThumbnails(
 		return errors.Join(ErrFailedToReadFile, err)
 	}
 
-	dr, err := uc.displayableRollFactory.Create(records)
+	dr, err := uc.displayableRollFactory.Create(ctx, records)
 	if err != nil {
 		return errors.Join(ErrFailedToParseFile, err)
 	}
