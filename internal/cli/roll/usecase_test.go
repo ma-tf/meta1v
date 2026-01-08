@@ -34,6 +34,7 @@ func Test_Export(t *testing.T) {
 		targetfile    string
 		records       records.Root
 		roll          display.DisplayableRoll
+		strict        bool
 		expectedError error
 	}
 
@@ -77,7 +78,7 @@ func Test_Export(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						display.DisplayableRoll{},
 						errExample,
@@ -106,7 +107,7 @@ func Test_Export(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						tt.roll,
 						nil,
@@ -143,7 +144,7 @@ func Test_Export(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						tt.roll,
 						nil,
@@ -190,7 +191,7 @@ func Test_Export(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						tt.roll,
 						nil,
@@ -258,6 +259,7 @@ func Test_Export(t *testing.T) {
 				ctx,
 				tt.efdfile,
 				tt.targetfile,
+				tt.strict,
 			)
 
 			if tt.expectedError != nil {
@@ -298,6 +300,7 @@ func Test_List(t *testing.T) {
 		filename      string
 		records       records.Root
 		roll          display.DisplayableRoll
+		strict        bool
 		expectedError error
 	}
 
@@ -336,7 +339,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						display.DisplayableRoll{},
 						errExample,
@@ -366,7 +369,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						tt.roll,
 						nil,
@@ -419,6 +422,7 @@ func Test_List(t *testing.T) {
 			err := uc.List(
 				ctx,
 				tt.filename,
+				tt.strict,
 			)
 
 			if tt.expectedError != nil {

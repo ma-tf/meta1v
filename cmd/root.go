@@ -21,9 +21,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Config struct {
+	Log struct {
+		Level string `mapstructure:"level"`
+	} `mapstructure:"log"`
+	Strict bool `mapstructure:"strict"`
+}
+
 //nolint:gochecknoglobals // cobra boilerplate
 var (
 	cfgFile  string
+	config   Config
 	logger   *slog.Logger
 	logLevel = new(slog.LevelVar)
 	rootCmd  = &cobra.Command{
@@ -39,9 +47,8 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 				return fmt.Errorf("failed to initialise configuration: %w", err)
 			}
 
-			cfgLogLevel := viper.GetString("log.level")
 			level := slog.LevelInfo
-			switch strings.ToLower(cfgLogLevel) {
+			switch strings.ToLower(config.Log.Level) {
 			case "debug":
 				level = slog.LevelDebug
 			case "warn", "warning":
@@ -90,6 +97,13 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().BoolVarP(
+		&config.Strict,
+		"strict",
+		"s",
+		false,
+		"enable strict mode (fail on unknown metadata values)",
+	)
 
 	exifUseCase := exif.NewUseCase(
 		efd.NewService(
@@ -111,12 +125,8 @@ func init() {
 
 func initialiseConfig(cmd *cobra.Command) error {
 	viper.SetEnvPrefix("META1V")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "*", "-", "*"))
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv()
-
-	if err := viper.BindEnv("log.level", "META1V_LOG_LEVEL"); err != nil {
-		return fmt.Errorf("failed to bind env variable: %w", err)
-	}
 
 	if cfgFile != "" {
 		// Use config file from the flag.
@@ -144,6 +154,10 @@ func initialiseConfig(cmd *cobra.Command) error {
 	err := viper.BindPFlags(cmd.Flags())
 	if err != nil {
 		return fmt.Errorf("failed to bind config flags: %w", err)
+	}
+
+	if err = viper.Unmarshal(&config); err != nil {
+		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	return nil

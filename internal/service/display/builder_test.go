@@ -17,6 +17,7 @@ func Test_FrameBuilder_WithFrameMetadata(t *testing.T) {
 	type testcase struct {
 		name           string
 		frame          records.EFRM
+		strict         bool
 		expectedResult display.DisplayableFrame
 		expectedError  error
 	}
@@ -80,13 +81,13 @@ func Test_FrameBuilder_WithFrameMetadata(t *testing.T) {
 
 			ctx := t.Context()
 
-			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
+			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
 			result, err := frameBuilder.
 				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx).
-				WithCameraModesAndFlashInfo(ctx).
-				WithCustomFunctionsAndFocusPoints(ctx).
+				WithExposureSettings(ctx, tt.strict).
+				WithCameraModesAndFlashInfo(ctx, tt.strict).
+				WithCustomFunctionsAndFocusPoints(ctx, tt.strict).
 				WithThumbnail(ctx, nil).
 				Build()
 
@@ -121,6 +122,7 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 	type testcase struct {
 		name           string
 		frame          records.EFRM
+		strict         bool
 		expectedResult display.DisplayableFrame
 		expectedError  error
 	}
@@ -129,51 +131,70 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 		{
 			name: "invalid max aperture",
 			frame: records.EFRM{
-				RollYear:      math.MaxUint16,
-				RollMonth:     math.MaxUint8,
-				RollDay:       math.MaxUint8,
-				RollHour:      math.MaxUint8,
-				RollMinute:    math.MaxUint8,
-				RollSecond:    math.MaxUint8,
-				BatteryYear:   math.MaxUint16,
-				BatteryMonth:  math.MaxUint8,
-				BatteryDay:    math.MaxUint8,
-				BatteryHour:   math.MaxUint8,
-				BatteryMinute: math.MaxUint8,
-				BatterySecond: math.MaxUint8,
-				Year:          math.MaxUint16,
-				Month:         math.MaxUint8,
-				Day:           math.MaxUint8,
-				Hour:          math.MaxUint8,
-				Minute:        math.MaxUint8,
-				Second:        math.MaxUint8,
-				MaxAperture:   10,
+				RollYear:            math.MaxUint16,
+				RollMonth:           math.MaxUint8,
+				RollDay:             math.MaxUint8,
+				RollHour:            math.MaxUint8,
+				RollMinute:          math.MaxUint8,
+				RollSecond:          math.MaxUint8,
+				BatteryYear:         math.MaxUint16,
+				BatteryMonth:        math.MaxUint8,
+				BatteryDay:          math.MaxUint8,
+				BatteryHour:         math.MaxUint8,
+				BatteryMinute:       math.MaxUint8,
+				BatterySecond:       math.MaxUint8,
+				Year:                math.MaxUint16,
+				Month:               math.MaxUint8,
+				Day:                 math.MaxUint8,
+				Hour:                math.MaxUint8,
+				Minute:              math.MaxUint8,
+				Second:              math.MaxUint8,
+				MaxAperture:         10,
+				Tv:                  -1,
+				Av:                  0,
+				ExposureCompenation: 0,
+				MultipleExposure:    0,
+				FlashMode:           0,
+				MeteringMode:        0,
+				ShootingMode:        0,
+				FilmAdvanceMode:     10,
+				AFMode:              0,
 			},
+			strict:        true,
 			expectedError: domain.ErrInvalidAv,
 		},
 		{
 			name: "invalid shutter speed",
 			frame: records.EFRM{
-				RollYear:      math.MaxUint16,
-				RollMonth:     math.MaxUint8,
-				RollDay:       math.MaxUint8,
-				RollHour:      math.MaxUint8,
-				RollMinute:    math.MaxUint8,
-				RollSecond:    math.MaxUint8,
-				BatteryYear:   math.MaxUint16,
-				BatteryMonth:  math.MaxUint8,
-				BatteryDay:    math.MaxUint8,
-				BatteryHour:   math.MaxUint8,
-				BatteryMinute: math.MaxUint8,
-				BatterySecond: math.MaxUint8,
-				Year:          math.MaxUint16,
-				Month:         math.MaxUint8,
-				Day:           math.MaxUint8,
-				Hour:          math.MaxUint8,
-				Minute:        math.MaxUint8,
-				Second:        math.MaxUint8,
-				Tv:            1,
+				RollYear:            math.MaxUint16,
+				RollMonth:           math.MaxUint8,
+				RollDay:             math.MaxUint8,
+				RollHour:            math.MaxUint8,
+				RollMinute:          math.MaxUint8,
+				RollSecond:          math.MaxUint8,
+				BatteryYear:         math.MaxUint16,
+				BatteryMonth:        math.MaxUint8,
+				BatteryDay:          math.MaxUint8,
+				BatteryHour:         math.MaxUint8,
+				BatteryMinute:       math.MaxUint8,
+				BatterySecond:       math.MaxUint8,
+				Year:                math.MaxUint16,
+				Month:               math.MaxUint8,
+				Day:                 math.MaxUint8,
+				Hour:                math.MaxUint8,
+				Minute:              math.MaxUint8,
+				Second:              math.MaxUint8,
+				Tv:                  1,
+				Av:                  0,
+				ExposureCompenation: 0,
+				MultipleExposure:    0,
+				FlashMode:           0,
+				MeteringMode:        0,
+				ShootingMode:        0,
+				FilmAdvanceMode:     10,
+				AFMode:              0,
 			},
+			strict:        true,
 			expectedError: domain.ErrInvalidTv,
 		},
 		{
@@ -205,27 +226,35 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 		{
 			name: "invalid aperture",
 			frame: records.EFRM{
-				RollYear:      math.MaxUint16,
-				RollMonth:     math.MaxUint8,
-				RollDay:       math.MaxUint8,
-				RollHour:      math.MaxUint8,
-				RollMinute:    math.MaxUint8,
-				RollSecond:    math.MaxUint8,
-				BatteryYear:   math.MaxUint16,
-				BatteryMonth:  math.MaxUint8,
-				BatteryDay:    math.MaxUint8,
-				BatteryHour:   math.MaxUint8,
-				BatteryMinute: math.MaxUint8,
-				BatterySecond: math.MaxUint8,
-				Year:          math.MaxUint16,
-				Month:         math.MaxUint8,
-				Day:           math.MaxUint8,
-				Hour:          math.MaxUint8,
-				Minute:        math.MaxUint8,
-				Second:        math.MaxUint8,
-				Tv:            -1,
-				Av:            10,
+				RollYear:            math.MaxUint16,
+				RollMonth:           math.MaxUint8,
+				RollDay:             math.MaxUint8,
+				RollHour:            math.MaxUint8,
+				RollMinute:          math.MaxUint8,
+				RollSecond:          math.MaxUint8,
+				BatteryYear:         math.MaxUint16,
+				BatteryMonth:        math.MaxUint8,
+				BatteryDay:          math.MaxUint8,
+				BatteryHour:         math.MaxUint8,
+				BatteryMinute:       math.MaxUint8,
+				BatterySecond:       math.MaxUint8,
+				Year:                math.MaxUint16,
+				Month:               math.MaxUint8,
+				Day:                 math.MaxUint8,
+				Hour:                math.MaxUint8,
+				Minute:              math.MaxUint8,
+				Second:              math.MaxUint8,
+				Tv:                  -1,
+				Av:                  10,
+				ExposureCompenation: 0,
+				MultipleExposure:    0,
+				FlashMode:           0,
+				MeteringMode:        0,
+				ShootingMode:        0,
+				FilmAdvanceMode:     10,
+				AFMode:              0,
 			},
+			strict:        true,
 			expectedError: domain.ErrInvalidAv,
 		},
 		{
@@ -252,7 +281,14 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 				Tv:                  -1,
 				Av:                  0,
 				ExposureCompenation: 1,
+				MultipleExposure:    0,
+				FlashMode:           0,
+				MeteringMode:        0,
+				ShootingMode:        0,
+				FilmAdvanceMode:     10,
+				AFMode:              0,
 			},
+			strict:        true,
 			expectedError: domain.ErrUnknownExposureComp,
 		},
 		{
@@ -291,13 +327,13 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 
 			ctx := t.Context()
 
-			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
+			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
 			result, err := frameBuilder.
 				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx).
-				WithCameraModesAndFlashInfo(ctx).
-				WithCustomFunctionsAndFocusPoints(ctx).
+				WithExposureSettings(ctx, tt.strict).
+				WithCameraModesAndFlashInfo(ctx, false).
+				WithCustomFunctionsAndFocusPoints(ctx, false).
 				WithThumbnail(ctx, nil).
 				Build()
 
@@ -332,6 +368,7 @@ func Test_FrameBuilder_WithCameraModesAndFlashInfo(t *testing.T) {
 	type testcase struct {
 		name           string
 		frame          records.EFRM
+		strict         bool
 		expectedResult display.DisplayableFrame
 		expectedError  error
 	}
@@ -363,7 +400,13 @@ func Test_FrameBuilder_WithCameraModesAndFlashInfo(t *testing.T) {
 				ExposureCompenation:       0,
 				MultipleExposure:          0,
 				FlashExposureCompensation: 1,
+				FlashMode:                 0,
+				MeteringMode:              0,
+				ShootingMode:              0,
+				FilmAdvanceMode:           10,
+				AFMode:                    0,
 			},
+			strict:        true,
 			expectedError: domain.ErrUnknownExposureComp,
 		},
 		{
@@ -534,13 +577,13 @@ func Test_FrameBuilder_WithCameraModesAndFlashInfo(t *testing.T) {
 
 			ctx := t.Context()
 
-			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
+			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
 			result, err := frameBuilder.
 				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx).
-				WithCameraModesAndFlashInfo(ctx).
-				WithCustomFunctionsAndFocusPoints(ctx).
+				WithExposureSettings(ctx, false).
+				WithCameraModesAndFlashInfo(ctx, tt.strict).
+				WithCustomFunctionsAndFocusPoints(ctx, false).
 				WithThumbnail(ctx, nil).
 				Build()
 
@@ -575,6 +618,7 @@ func Test_FrameBuilder_CustomFunctionsAndSuccess(t *testing.T) {
 	type testcase struct {
 		name           string
 		frame          records.EFRM
+		strict         bool
 		expectedResult display.DisplayableFrame
 		expectedError  error
 	}
@@ -613,6 +657,7 @@ func Test_FrameBuilder_CustomFunctionsAndSuccess(t *testing.T) {
 				AFMode:                    0,
 				CustomFunction0:           math.MaxUint8 - 1,
 			},
+			strict:        true,
 			expectedError: display.ErrInvalidCustomFunction,
 		},
 		{
@@ -706,13 +751,13 @@ func Test_FrameBuilder_CustomFunctionsAndSuccess(t *testing.T) {
 
 			ctx := t.Context()
 
-			frameBuilder := display.NewFrameBuilder(newTestLogger(), true)
+			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
 			result, err := frameBuilder.
 				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx).
-				WithCameraModesAndFlashInfo(ctx).
-				WithCustomFunctionsAndFocusPoints(ctx).
+				WithExposureSettings(ctx, false).
+				WithCameraModesAndFlashInfo(ctx, false).
+				WithCustomFunctionsAndFocusPoints(ctx, tt.strict).
 				WithThumbnail(ctx, nil).
 				Build()
 

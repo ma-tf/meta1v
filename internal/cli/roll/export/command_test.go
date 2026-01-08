@@ -120,10 +120,11 @@ func Test_CommandRun(t *testing.T) {
 	mockUseCase := export_test.NewMockUseCase(ctrl)
 
 	mockUseCase.EXPECT().
-		Export(gomock.Any(), "file.efd", "output.csv").
+		Export(gomock.Any(), "file.efd", "output.csv", gomock.Any()).
 		Return(nil)
 
 	cmd := export.NewCommand(logger, mockUseCase)
+	cmd.Flags().Bool("strict", false, "enable strict mode")
 	cmd.SetArgs([]string{"file.efd", "output.csv"})
 
 	if err := cmd.Execute(); err != nil {

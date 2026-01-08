@@ -24,7 +24,11 @@ type factory struct {
 }
 
 type DisplayableRollFactory interface {
-	Create(ctx context.Context, r records.Root) (DisplayableRoll, error)
+	Create(
+		ctx context.Context,
+		r records.Root,
+		strict bool,
+	) (DisplayableRoll, error)
 }
 
 func NewDisplayableRollFactory(
@@ -38,6 +42,7 @@ func NewDisplayableRollFactory(
 func (f *factory) Create(
 	ctx context.Context,
 	r records.Root,
+	strict bool,
 ) (DisplayableRoll, error) {
 	fid, err := domain.NewFilmID(r.EFDF.CodeA, r.EFDF.CodeB)
 	if err != nil {
@@ -65,7 +70,7 @@ func (f *factory) Create(
 	}
 
 	// r.EFRMs != rr.Exposures ∵ multiple exposures? untested with real world frames
-	frames, err := f.getFrames(ctx, r, thumbnails)
+	frames, err := f.getFrames(ctx, r, thumbnails, strict)
 	if err != nil {
 		return DisplayableRoll{}, err
 	}
@@ -87,6 +92,7 @@ func (f *factory) getFrames(
 	ctx context.Context,
 	r records.Root,
 	thumbnails map[uint16]*DisplayableThumbnail,
+	strict bool,
 ) ([]DisplayableFrame, error) {
 	frames := make([]DisplayableFrame, 0, len(r.EFRMs))
 	for i, frame := range r.EFRMs {
@@ -103,9 +109,9 @@ func (f *factory) getFrames(
 
 		framePF, errPF := f.frameBuilder.
 			WithFrameMetadata(ctx, frame).
-			WithExposureSettings(ctx).
-			WithCameraModesAndFlashInfo(ctx).
-			WithCustomFunctionsAndFocusPoints(ctx).
+			WithExposureSettings(ctx, strict).
+			WithCameraModesAndFlashInfo(ctx, strict).
+			WithCustomFunctionsAndFocusPoints(ctx, strict).
 			WithThumbnail(ctx, pt).
 			Build()
 		if errPF != nil {

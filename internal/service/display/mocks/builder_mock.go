@@ -81,17 +81,17 @@ func (m *MockExposureSettingsBuilder) EXPECT() *MockExposureSettingsBuilderMockR
 }
 
 // WithExposureSettings mocks base method.
-func (m *MockExposureSettingsBuilder) WithExposureSettings(ctx context.Context) display.CameraModesBuilder {
+func (m *MockExposureSettingsBuilder) WithExposureSettings(ctx context.Context, strict bool) display.CameraModesBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithExposureSettings", ctx)
+	ret := m.ctrl.Call(m, "WithExposureSettings", ctx, strict)
 	ret0, _ := ret[0].(display.CameraModesBuilder)
 	return ret0
 }
 
 // WithExposureSettings indicates an expected call of WithExposureSettings.
-func (mr *MockExposureSettingsBuilderMockRecorder) WithExposureSettings(ctx any) *gomock.Call {
+func (mr *MockExposureSettingsBuilderMockRecorder) WithExposureSettings(ctx, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithExposureSettings", reflect.TypeOf((*MockExposureSettingsBuilder)(nil).WithExposureSettings), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithExposureSettings", reflect.TypeOf((*MockExposureSettingsBuilder)(nil).WithExposureSettings), ctx, strict)
 }
 
 // MockCameraModesBuilder is a mock of CameraModesBuilder interface.
@@ -119,17 +119,17 @@ func (m *MockCameraModesBuilder) EXPECT() *MockCameraModesBuilderMockRecorder {
 }
 
 // WithCameraModesAndFlashInfo mocks base method.
-func (m *MockCameraModesBuilder) WithCameraModesAndFlashInfo(ctx context.Context) display.CustomFunctionsBuilder {
+func (m *MockCameraModesBuilder) WithCameraModesAndFlashInfo(ctx context.Context, strict bool) display.CustomFunctionsBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithCameraModesAndFlashInfo", ctx)
+	ret := m.ctrl.Call(m, "WithCameraModesAndFlashInfo", ctx, strict)
 	ret0, _ := ret[0].(display.CustomFunctionsBuilder)
 	return ret0
 }
 
 // WithCameraModesAndFlashInfo indicates an expected call of WithCameraModesAndFlashInfo.
-func (mr *MockCameraModesBuilderMockRecorder) WithCameraModesAndFlashInfo(ctx any) *gomock.Call {
+func (mr *MockCameraModesBuilderMockRecorder) WithCameraModesAndFlashInfo(ctx, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCameraModesAndFlashInfo", reflect.TypeOf((*MockCameraModesBuilder)(nil).WithCameraModesAndFlashInfo), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCameraModesAndFlashInfo", reflect.TypeOf((*MockCameraModesBuilder)(nil).WithCameraModesAndFlashInfo), ctx, strict)
 }
 
 // MockCustomFunctionsBuilder is a mock of CustomFunctionsBuilder interface.
@@ -157,17 +157,17 @@ func (m *MockCustomFunctionsBuilder) EXPECT() *MockCustomFunctionsBuilderMockRec
 }
 
 // WithCustomFunctionsAndFocusPoints mocks base method.
-func (m *MockCustomFunctionsBuilder) WithCustomFunctionsAndFocusPoints(ctx context.Context) display.ThumbnailBuilder {
+func (m *MockCustomFunctionsBuilder) WithCustomFunctionsAndFocusPoints(ctx context.Context, strict bool) display.ThumbnailBuilder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithCustomFunctionsAndFocusPoints", ctx)
+	ret := m.ctrl.Call(m, "WithCustomFunctionsAndFocusPoints", ctx, strict)
 	ret0, _ := ret[0].(display.ThumbnailBuilder)
 	return ret0
 }
 
 // WithCustomFunctionsAndFocusPoints indicates an expected call of WithCustomFunctionsAndFocusPoints.
-func (mr *MockCustomFunctionsBuilderMockRecorder) WithCustomFunctionsAndFocusPoints(ctx any) *gomock.Call {
+func (mr *MockCustomFunctionsBuilderMockRecorder) WithCustomFunctionsAndFocusPoints(ctx, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCustomFunctionsAndFocusPoints", reflect.TypeOf((*MockCustomFunctionsBuilder)(nil).WithCustomFunctionsAndFocusPoints), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCustomFunctionsAndFocusPoints", reflect.TypeOf((*MockCustomFunctionsBuilder)(nil).WithCustomFunctionsAndFocusPoints), ctx, strict)
 }
 
 // MockThumbnailBuilder is a mock of ThumbnailBuilder interface.

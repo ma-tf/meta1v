@@ -28,7 +28,7 @@ thumbnail converted to ascii.`,
 			osfs.NewFileSystem(),
 		),
 		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(log, false),
+			display.NewFrameBuilder(log),
 		),
 		display.NewService(),
 	)

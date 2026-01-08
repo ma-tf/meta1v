@@ -28,7 +28,7 @@ exposure compensation, focus points, custom functions, and more.`,
 			osfs.NewFileSystem(),
 		),
 		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(log, false),
+			display.NewFrameBuilder(log),
 		),
 		display.NewService(),
 	)

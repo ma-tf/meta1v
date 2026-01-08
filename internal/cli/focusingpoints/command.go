@@ -30,7 +30,7 @@ For the setting focusing points on the camera, check the Canon EOS-1V manual.`,
 			osfs.NewFileSystem(),
 		),
 		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(log, false),
+			display.NewFrameBuilder(log),
 		),
 		display.NewService(),
 	)

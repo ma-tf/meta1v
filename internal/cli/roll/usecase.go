@@ -3,6 +3,7 @@ package roll
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli/roll/export"
@@ -42,13 +43,14 @@ func NewListUseCase(
 func (uc listUseCase) List(
 	ctx context.Context,
 	filename string,
+	strict bool,
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
 		return errors.Join(ErrFailedToReadFile, err)
 	}
 
-	dr, err := uc.displayableRollFactory.Create(ctx, records)
+	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
 		return errors.Join(ErrFailedToParseFile, err)
 	}
@@ -83,13 +85,14 @@ func (uc exportUseCase) Export(
 	ctx context.Context,
 	efdFile string,
 	outputFile string,
+	strict bool,
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return errors.Join(ErrFailedToReadFile, err)
 	}
 
-	dr, err := uc.displayableRollFactory.Create(ctx, records)
+	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
 		return errors.Join(ErrFailedToParseFile, err)
 	}
@@ -100,5 +103,9 @@ func (uc exportUseCase) Export(
 	}
 	defer file.Close()
 
-	return uc.csvService.ExportRoll(file, dr)
+	if err = uc.csvService.ExportRoll(file, dr); err != nil {
+		return fmt.Errorf("failed to export roll to CSV: %w", err)
+	}
+
+	return nil
 }

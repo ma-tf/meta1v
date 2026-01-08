@@ -38,10 +38,12 @@ func (s *service) ExportRoll(w io.Writer, r display.DisplayableRoll) error {
 		r.Remarks,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write roll header: %w", err)
 	}
 
-	_, err = w.Write([]byte(b.String()))
+	if _, err = w.Write([]byte(b.String())); err != nil {
+		return fmt.Errorf("failed to write roll header: %w", err)
+	}
 
-	return err
+	return nil
 }

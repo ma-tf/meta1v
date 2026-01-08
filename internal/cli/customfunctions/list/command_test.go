@@ -51,7 +51,7 @@ func Test_CommandRun(t *testing.T) {
 				tt testcase,
 			) {
 				mockUseCase.EXPECT().
-					List(gomock.Any(), tt.args[0]).
+					List(gomock.Any(), tt.args[0], gomock.Any()).
 					Return(nil)
 			},
 			args: []string{"file.efd"},
@@ -72,6 +72,7 @@ func Test_CommandRun(t *testing.T) {
 			}
 
 			cmd := list.NewCommand(logger, mockUseCase)
+			cmd.Flags().Bool("strict", false, "enable strict mode")
 			cmd.SetArgs(tt.args)
 
 			err := cmd.Execute()

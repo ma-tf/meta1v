@@ -41,15 +41,15 @@ func (m *MockUseCase) EXPECT() *MockUseCaseMockRecorder {
 }
 
 // DisplayThumbnails mocks base method.
-func (m *MockUseCase) DisplayThumbnails(ctx context.Context, filename string) error {
+func (m *MockUseCase) DisplayThumbnails(ctx context.Context, filename string, strict bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DisplayThumbnails", ctx, filename)
+	ret := m.ctrl.Call(m, "DisplayThumbnails", ctx, filename, strict)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DisplayThumbnails indicates an expected call of DisplayThumbnails.
-func (mr *MockUseCaseMockRecorder) DisplayThumbnails(ctx, filename any) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) DisplayThumbnails(ctx, filename, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayThumbnails", reflect.TypeOf((*MockUseCase)(nil).DisplayThumbnails), ctx, filename)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayThumbnails", reflect.TypeOf((*MockUseCase)(nil).DisplayThumbnails), ctx, filename, strict)
 }

@@ -36,13 +36,14 @@ func NewThumbnailListUseCase(
 func (uc usecase) DisplayThumbnails(
 	ctx context.Context,
 	filename string,
+	strict bool,
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
 		return errors.Join(ErrFailedToReadFile, err)
 	}
 
-	dr, err := uc.displayableRollFactory.Create(ctx, records)
+	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
 		return errors.Join(ErrFailedToParseFile, err)
 	}

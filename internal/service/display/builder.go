@@ -14,11 +14,10 @@ import (
 )
 
 type frameBuilder struct {
-	log    *slog.Logger
-	strict bool
-	efrm   records.EFRM
-	frame  DisplayableFrame
-	err    error
+	log   *slog.Logger
+	efrm  records.EFRM
+	frame DisplayableFrame
+	err   error
 }
 
 type FrameMetadataBuilder interface {
@@ -29,15 +28,24 @@ type FrameMetadataBuilder interface {
 }
 
 type ExposureSettingsBuilder interface {
-	WithExposureSettings(ctx context.Context) CameraModesBuilder
+	WithExposureSettings(
+		ctx context.Context,
+		strict bool,
+	) CameraModesBuilder
 }
 
 type CameraModesBuilder interface {
-	WithCameraModesAndFlashInfo(ctx context.Context) CustomFunctionsBuilder
+	WithCameraModesAndFlashInfo(
+		ctx context.Context,
+		strict bool,
+	) CustomFunctionsBuilder
 }
 
 type CustomFunctionsBuilder interface {
-	WithCustomFunctionsAndFocusPoints(ctx context.Context) ThumbnailBuilder
+	WithCustomFunctionsAndFocusPoints(
+		ctx context.Context,
+		strict bool,
+	) ThumbnailBuilder
 }
 
 type ThumbnailBuilder interface {
@@ -53,14 +61,12 @@ type DisplayableFrameBuilder interface {
 
 func NewFrameBuilder(
 	log *slog.Logger,
-	strict bool,
 ) FrameMetadataBuilder {
 	return &frameBuilder{
-		log:    log,
-		strict: strict,
-		efrm:   records.EFRM{},     //nolint:exhaustruct // will be built step by step
-		frame:  DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
-		err:    nil,
+		log:   log,
+		efrm:  records.EFRM{},     //nolint:exhaustruct // will be built step by step
+		frame: DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
+		err:   nil,
 	}
 }
 
@@ -125,17 +131,18 @@ func (fb *frameBuilder) WithFrameMetadata(
 
 func (fb *frameBuilder) WithExposureSettings(
 	ctx context.Context,
+	strict bool,
 ) CameraModesBuilder {
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, fb.strict)
+	fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, strict)
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.Tv, fb.err = domain.NewTv(fb.efrm.Tv, fb.strict)
+	fb.frame.Tv, fb.err = domain.NewTv(fb.efrm.Tv, strict)
 	if fb.err != nil {
 		return fb
 	}
@@ -148,7 +155,7 @@ func (fb *frameBuilder) WithExposureSettings(
 		}
 	}
 
-	fb.frame.Av, fb.err = domain.NewAv(fb.efrm.Av, fb.strict)
+	fb.frame.Av, fb.err = domain.NewAv(fb.efrm.Av, strict)
 	if fb.err != nil {
 		return fb
 	}
@@ -158,7 +165,7 @@ func (fb *frameBuilder) WithExposureSettings(
 	fb.frame.IsoM = domain.NewIso(fb.efrm.IsoM)
 
 	fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(
-		fb.efrm.ExposureCompenation, fb.strict)
+		fb.efrm.ExposureCompenation, strict)
 	if fb.err != nil {
 		return fb
 	}
@@ -186,6 +193,7 @@ func (fb *frameBuilder) WithExposureSettings(
 
 func (fb *frameBuilder) WithCameraModesAndFlashInfo(
 	ctx context.Context,
+	strict bool,
 ) CustomFunctionsBuilder {
 	if fb.err != nil {
 		return fb
@@ -193,7 +201,7 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo(
 
 	fb.frame.FlashExposureComp, fb.err = domain.NewExposureCompensation(
 		fb.efrm.FlashExposureCompensation,
-		fb.strict,
+		strict,
 	)
 	if fb.err != nil {
 		return fb
@@ -240,12 +248,13 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo(
 
 func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints(
 	ctx context.Context,
+	strict bool,
 ) ThumbnailBuilder {
 	if fb.err != nil {
 		return fb
 	}
 
-	fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm, fb.strict)
+	fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm, strict)
 	if fb.err != nil {
 		return fb
 	}

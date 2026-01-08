@@ -41,15 +41,15 @@ func (m *MockUseCase) EXPECT() *MockUseCaseMockRecorder {
 }
 
 // Export mocks base method.
-func (m *MockUseCase) Export(ctx context.Context, efdFile, outputFile string) error {
+func (m *MockUseCase) Export(ctx context.Context, efdFile, outputFile string, strict bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Export", ctx, efdFile, outputFile)
+	ret := m.ctrl.Call(m, "Export", ctx, efdFile, outputFile, strict)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Export indicates an expected call of Export.
-func (mr *MockUseCaseMockRecorder) Export(ctx, efdFile, outputFile any) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) Export(ctx, efdFile, outputFile, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockUseCase)(nil).Export), ctx, efdFile, outputFile)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockUseCase)(nil).Export), ctx, efdFile, outputFile, strict)
 }

@@ -32,7 +32,7 @@ frame count, ISO and user provided remarks.`,
 		fs,
 	)
 	factory := display.NewDisplayableRollFactory(
-		display.NewFrameBuilder(log, false),
+		display.NewFrameBuilder(log),
 	)
 
 	listUseCase := NewListUseCase(

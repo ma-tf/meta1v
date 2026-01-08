@@ -43,16 +43,16 @@ func (m *MockDisplayableRollFactory) EXPECT() *MockDisplayableRollFactoryMockRec
 }
 
 // Create mocks base method.
-func (m *MockDisplayableRollFactory) Create(ctx context.Context, r records.Root) (display.DisplayableRoll, error) {
+func (m *MockDisplayableRollFactory) Create(ctx context.Context, r records.Root, strict bool) (display.DisplayableRoll, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, r)
+	ret := m.ctrl.Call(m, "Create", ctx, r, strict)
 	ret0, _ := ret[0].(display.DisplayableRoll)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockDisplayableRollFactoryMockRecorder) Create(ctx, r any) *gomock.Call {
+func (mr *MockDisplayableRollFactoryMockRecorder) Create(ctx, r, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDisplayableRollFactory)(nil).Create), ctx, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDisplayableRollFactory)(nil).Create), ctx, r, strict)
 }

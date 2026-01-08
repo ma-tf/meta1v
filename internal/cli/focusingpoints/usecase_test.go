@@ -29,6 +29,7 @@ func Test_List(t *testing.T) {
 		filename      string
 		records       records.Root
 		roll          display.DisplayableRoll
+		strict        bool
 		expectedError error
 	}
 
@@ -67,7 +68,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						display.DisplayableRoll{},
 						errExample,
@@ -96,7 +97,7 @@ func Test_List(t *testing.T) {
 						nil,
 					)
 				mockDisplayableRollFactory.EXPECT().
-					Create(gomock.Any(), tt.records).
+					Create(gomock.Any(), tt.records, tt.strict).
 					Return(
 						tt.roll,
 						nil,
@@ -146,7 +147,7 @@ func Test_List(t *testing.T) {
 				mockDisplayService,
 			)
 
-			err := uc.List(ctx, tt.filename)
+			err := uc.List(ctx, tt.filename, tt.strict)
 
 			if tt.expectedError != nil {
 				if err == nil {

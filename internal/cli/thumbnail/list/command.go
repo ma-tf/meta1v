@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -10,7 +11,7 @@ import (
 
 //go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/thumbnail/list UseCase
 type UseCase interface {
-	DisplayThumbnails(ctx context.Context, filename string) error
+	DisplayThumbnails(ctx context.Context, filename string, strict bool) error
 }
 
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
@@ -27,10 +28,15 @@ thumbnail converted to ascii.`,
 				return cli.ErrEFDFileMustBeProvided
 			}
 
+			strict, err := cmd.Flags().GetBool("strict")
+			if err != nil {
+				return fmt.Errorf("failed to get strict flag: %w", err)
+			}
+
 			log.DebugContext(ctx, "arguments:",
 				slog.String("filename", args[0]))
 
-			return uc.DisplayThumbnails(ctx, args[0])
+			return uc.DisplayThumbnails(ctx, args[0], strict)
 		},
 	}
 }

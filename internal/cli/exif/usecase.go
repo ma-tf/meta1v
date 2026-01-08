@@ -27,16 +27,19 @@ func (uc exportUseCase) ExportExif(
 	ctx context.Context,
 	efdFile string,
 	frame int,
-	targetFile string,
+	_ string,
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return fmt.Errorf("failed to interpret file content: %w", err)
 	}
 
-	targetFile = "./test_files/20251011_Japan 1_0.dng"
-
-	err = uc.exifService.WriteEXIF(ctx, records, frame, targetFile)
+	err = uc.exifService.WriteEXIF(
+		ctx,
+		records,
+		frame,
+		"./test_files/20251011_Japan 1_0.dng",
+	)
 	if err != nil {
 		return fmt.Errorf("write exif failed: %w", err)
 	}

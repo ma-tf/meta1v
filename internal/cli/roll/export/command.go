@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -16,7 +17,12 @@ const (
 
 //go:generate mockgen -destination=./mocks/usecase_mock.go -package=export_test github.com/ma-tf/meta1v/internal/cli/roll/export UseCase
 type UseCase interface {
-	Export(ctx context.Context, efdFile string, outputFile string) error
+	Export(
+		ctx context.Context,
+		efdFile string,
+		outputFile string,
+		strict bool,
+	) error
 }
 
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
@@ -40,12 +46,18 @@ frame count, ISO and user provided remarks.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			strict, err := cmd.Flags().GetBool("strict")
+			if err != nil {
+				return fmt.Errorf("failed to get strict flag: %w", err)
+			}
+
 			log.DebugContext(ctx, "arguments:",
 				slog.String("efd_file", args[0]),
 				slog.String("target_file", args[1]),
+				slog.Bool("strict", strict),
 			)
 
-			return uc.Export(ctx, args[0], args[1])
+			return uc.Export(ctx, args[0], args[1], strict)
 		},
 	}
 }

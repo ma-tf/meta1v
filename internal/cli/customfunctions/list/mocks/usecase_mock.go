@@ -41,15 +41,15 @@ func (m *MockUseCase) EXPECT() *MockUseCaseMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockUseCase) List(ctx context.Context, filename string) error {
+func (m *MockUseCase) List(ctx context.Context, filename string, strict bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, filename)
+	ret := m.ctrl.Call(m, "List", ctx, filename, strict)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // List indicates an expected call of List.
-func (mr *MockUseCaseMockRecorder) List(ctx, filename any) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) List(ctx, filename, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUseCase)(nil).List), ctx, filename)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUseCase)(nil).List), ctx, filename, strict)
 }

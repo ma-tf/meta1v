@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -10,7 +11,7 @@ import (
 
 //go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/frame/list UseCase
 type UseCase interface {
-	List(ctx context.Context, filename string) error
+	List(ctx context.Context, filename string, strict bool) error
 }
 
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
@@ -27,10 +28,17 @@ exposure compensation, focus points, custom functions, and more.`,
 				return cli.ErrEFDFileMustBeProvided
 			}
 
-			log.DebugContext(ctx, "arguments:",
-				slog.String("filename", args[0]))
+			strict, err := cmd.Flags().GetBool("strict")
+			if err != nil {
+				return fmt.Errorf("failed to get strict flag: %w", err)
+			}
 
-			return uc.List(ctx, args[0])
+			log.DebugContext(ctx, "arguments:",
+				slog.String("filename", args[0]),
+				slog.Bool("strict", strict),
+			)
+
+			return uc.List(ctx, args[0], strict)
 		},
 	}
 }
