@@ -8,4 +8,5 @@ var (
 	ErrTargetFileMustBeSpecified  = errors.New("target file must be specified")
 	ErrFrameNumberMustBeSpecified = errors.New("frame number must be specified")
 	ErrTooManyArguments           = errors.New("too many arguments provided")
+	ErrFailedToGetStrictFlag      = errors.New("failed to get strict flag")
 )

@@ -28,9 +28,10 @@ func Test_CommandRun(t *testing.T) {
 	}))
 
 	type testcase struct {
-		name   string
-		args   []string
-		expect func(
+		name           string
+		args           []string
+		registerStrict bool
+		expect         func(
 			uc list_test.MockUseCase,
 			tt testcase,
 		)
@@ -41,21 +42,36 @@ func Test_CommandRun(t *testing.T) {
 		{
 			name:          "no filename provided",
 			args:          []string{},
-			expect:        func(_ list_test.MockUseCase, _ testcase) {},
 			expectedError: cli.ErrEFDFileMustBeProvided,
 		},
 		{
-			name: "successful execution",
-			expect: func(
-				mockUseCase list_test.MockUseCase,
-				tt testcase,
-			) {
+			name:           "strict flag not registered",
+			args:           []string{"file.efd"},
+			registerStrict: false,
+			expectedError:  cli.ErrFailedToGetStrictFlag,
+		},
+		{
+			name:           "successful execution",
+			args:           []string{"file.efd"},
+			registerStrict: true,
+			expect: func(mockUseCase list_test.MockUseCase, tt testcase) {
 				mockUseCase.EXPECT().
 					DisplayThumbnails(gomock.Any(), tt.args[0], gomock.Any()).
 					Return(nil)
 			},
-			args: []string{"file.efd"},
 		},
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+
+		if got == nil {
+			t.Fatalf("expected error %v, got nil", want)
+		}
+
+		if !errors.Is(got, want) {
+			t.Fatalf("expected error %v to be in chain, got %v", want, got)
+		}
 	}
 
 	for _, tt := range tests {
@@ -72,23 +88,16 @@ func Test_CommandRun(t *testing.T) {
 			}
 
 			cmd := list.NewCommand(logger, mockUseCase)
-			cmd.Flags().Bool("strict", false, "enable strict mode")
+			if tt.registerStrict {
+				cmd.Flags().Bool("strict", false, "enable strict mode")
+			}
+
 			cmd.SetArgs(tt.args)
 
 			err := cmd.Execute()
 
 			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf(
-						"expected error %v to be in chain, got %v",
-						tt.expectedError,
-						err,
-					)
-				}
+				assertError(t, err, tt.expectedError)
 
 				return
 			}

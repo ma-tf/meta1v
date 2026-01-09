@@ -2,7 +2,7 @@ package list
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -30,7 +30,7 @@ exposure compensation, focus points, custom functions, and more.`,
 
 			strict, err := cmd.Flags().GetBool("strict")
 			if err != nil {
-				return fmt.Errorf("failed to get strict flag: %w", err)
+				return errors.Join(cli.ErrFailedToGetStrictFlag, err)
 			}
 
 			log.DebugContext(ctx, "arguments:",
