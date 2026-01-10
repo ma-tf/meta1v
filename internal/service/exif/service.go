@@ -7,9 +7,35 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/ma-tf/meta1v/pkg/records"
 )
+
+const exiftoolConfig = `%Image::ExifTool::UserDefined = (
+        'Image::ExifTool::XMP::Main' => {
+            AnalogueData => {
+                SubDirectory => {
+                    TagTable => 'Image::ExifTool::UserDefined::AnalogueData',
+                },
+            },
+        },
+    );
+    %Image::ExifTool::UserDefined::AnalogueData = (
+        GROUPS => { 0 => 'XMP', 1 => 'XMP-AnalogueData', 2 => 'Film' },
+        NAMESPACE => { 'AnalogueData' => 'https://filmgra.in/AnalogueData/1.0/' },
+        WRITABLE => 'string',
+        FilmMaker => { },
+        FilmName => { },
+        FilmFormat => { },
+        FilmDevelopProcess => { },
+        FilmDeveloper => { },
+        FilmProcessLab => { },
+        FilmScanner => { },
+        LensFilter => { Groups => { 2 => 'Camera' } },
+    );
+    1;
+    `
 
 type Service interface {
 	WriteEXIF(
@@ -39,31 +65,6 @@ func (s service) WriteEXIF(
 	frameNumber int,
 	targetFile string,
 ) error {
-	const cfg = `%Image::ExifTool::UserDefined = (
-        'Image::ExifTool::XMP::Main' => {
-            AnalogueData => {
-                SubDirectory => {
-                    TagTable => 'Image::ExifTool::UserDefined::AnalogueData',
-                },
-            },
-        },
-    );
-    %Image::ExifTool::UserDefined::AnalogueData = (
-        GROUPS => { 0 => 'XMP', 1 => 'XMP-AnalogueData', 2 => 'Film' },
-        NAMESPACE => { 'AnalogueData' => 'https://filmgra.in/AnalogueData/1.0/' },
-        WRITABLE => 'string',
-        FilmMaker => { },
-        FilmName => { },
-        FilmFormat => { },
-        FilmDevelopProcess => { },
-        FilmDeveloper => { },
-        FilmProcessLab => { },
-        FilmScanner => { },
-        LensFilter => { Groups => { 2 => 'Camera' } },
-    );
-    1;
-    `
-
 	emf, err := newExifBuilder(r, frameNumber).
 		WithAvs().
 		WithTv().
@@ -73,17 +74,28 @@ func (s service) WriteEXIF(
 		return fmt.Errorf("failed to build exportable data: %w", err)
 	}
 
-	return s.runExifTool(ctx, cfg, emf.GetMetadataToWrite(), targetFile)
+	return s.runExifTool(
+		ctx,
+		exiftoolConfig,
+		emf.GetMetadataToWrite(),
+		frameNumber,
+		targetFile,
+	)
 }
 
 // runExifTool creates an anonymous pipe to pass the exiftool config via fd 3
 // to the child process and streams the metadata on stdin.
-func (s service) runExifTool(
-	ctx context.Context,
+func (s service) runExifTool(ctx context.Context,
 	cfg string,
 	metadataToWrite string,
+	frameNumber int,
 	targetFile string,
 ) error {
+	const timeout = 3 * time.Minute
+
+	ctx, cancel := context.WithTimeout(ctx, timeout) // move this up call chain?
+	defer cancel()
+
 	r, w, err := os.Pipe()
 	if err != nil {
 		return fmt.Errorf("create pipe: %w", err)
@@ -112,19 +124,27 @@ func (s service) runExifTool(
 	// Write config in a goroutine so we don't risk blocking if the child
 	// doesn't read immediately. Close writer when done.
 	go func() {
-		_, _ = w.WriteString(cfg)
+		defer w.Close()
 
-		_ = w.Close()
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_, _ = w.WriteString(cfg)
+		}
 	}()
 
 	if err = cmd.Wait(); err != nil {
-		s.log.ErrorContext(ctx, "exiftool execution failed", "output",
-			out.String())
+		s.log.ErrorContext(ctx, "exiftool execution failed",
+			"frameNumber", frameNumber,
+			"targetFile", targetFile,
+			"output", out.String())
 
 		return fmt.Errorf("exiftool failed: %w", err)
 	}
 
 	s.log.DebugContext(ctx, "exiftool success",
+		"targetFile", targetFile,
 		"metadata", metadataToWrite,
 		"output", out.String())
 
