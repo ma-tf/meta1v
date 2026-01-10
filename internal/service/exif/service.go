@@ -3,39 +3,17 @@ package exif
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-const exiftoolConfig = `%Image::ExifTool::UserDefined = (
-        'Image::ExifTool::XMP::Main' => {
-            AnalogueData => {
-                SubDirectory => {
-                    TagTable => 'Image::ExifTool::UserDefined::AnalogueData',
-                },
-            },
-        },
-    );
-    %Image::ExifTool::UserDefined::AnalogueData = (
-        GROUPS => { 0 => 'XMP', 1 => 'XMP-AnalogueData', 2 => 'Film' },
-        NAMESPACE => { 'AnalogueData' => 'https://filmgra.in/AnalogueData/1.0/' },
-        WRITABLE => 'string',
-        FilmMaker => { },
-        FilmName => { },
-        FilmFormat => { },
-        FilmDevelopProcess => { },
-        FilmDeveloper => { },
-        FilmProcessLab => { },
-        FilmScanner => { },
-        LensFilter => { Groups => { 2 => 'Camera' } },
-    );
-    1;
-    `
+//go:embed exiftool.config
+var exiftoolConfig string
 
 type Service interface {
 	WriteEXIF(
@@ -80,16 +58,12 @@ func (s service) WriteEXIF(
 
 // runExifTool creates an anonymous pipe to pass the exiftool config via fd 3
 // to the child process and streams the metadata on stdin.
-func (s service) runExifTool(ctx context.Context,
+func (s service) runExifTool(
+	ctx context.Context,
 	cfg string,
 	metadataToWrite string,
 	targetFile string,
 ) error {
-	const timeout = 3 * time.Minute
-
-	ctx, cancel := context.WithTimeout(ctx, timeout) // move this up call chain?
-	defer cancel()
-
 	r, w, err := os.Pipe()
 	if err != nil {
 		return fmt.Errorf("create pipe: %w", err)
@@ -117,32 +91,6 @@ func (s service) runExifTool(ctx context.Context,
 
 	// Write config in a goroutine so we don't risk blocking if the child
 	// doesn't read immediately. Close writer when done.
-	writeErr := s.writeConfigAsync(ctx, w, cfg)
-
-	waitErr := cmd.Wait()
-	wErr := <-writeErr
-
-	if waitErr != nil {
-		return fmt.Errorf("exiftool failed: %w", waitErr)
-	}
-
-	if wErr != nil {
-		return fmt.Errorf("failed to write exiftool config: %w", wErr)
-	}
-
-	s.log.DebugContext(ctx, "exiftool success",
-		"targetFile", targetFile,
-		"metadata", metadataToWrite,
-		"output", out.String())
-
-	return nil
-}
-
-func (s service) writeConfigAsync(
-	ctx context.Context,
-	w *os.File,
-	cfg string,
-) <-chan error {
 	writeErr := make(chan error, 1)
 
 	go func() {
@@ -157,5 +105,20 @@ func (s service) writeConfigAsync(
 		}
 	}()
 
-	return writeErr
+	waitErr := cmd.Wait()
+	wErr := <-writeErr
+
+	if waitErr != nil {
+		return fmt.Errorf("exiftool failed: %w", waitErr)
+	}
+
+	if wErr != nil {
+		return fmt.Errorf("failed to write exiftool config: %w", wErr)
+	}
+
+	// s.log.DebugContext(ctx, "exiftool success",
+	// 	"targetFile", targetFile,
+	// 	"metadata", metadataToWrite,
+	// 	"output", out.String())
+	return nil
 }

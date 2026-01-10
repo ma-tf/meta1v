@@ -2,3 +2,5 @@ log:
   level: debug
 
 strict: false
+
+timeout: 3m

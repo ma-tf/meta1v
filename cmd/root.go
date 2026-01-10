@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions"
 	"github.com/ma-tf/meta1v/internal/cli/exif"
@@ -22,16 +24,18 @@ type Config struct {
 	Log struct {
 		Level string `mapstructure:"level"`
 	} `mapstructure:"log"`
-	Strict bool `mapstructure:"strict"`
+	Strict  bool          `mapstructure:"strict"`
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 //nolint:gochecknoglobals // cobra boilerplate
 var (
-	cfgFile  string
-	config   Config
-	logger   *slog.Logger
-	logLevel = new(slog.LevelVar)
-	rootCmd  = &cobra.Command{
+	cfgFile       string
+	config        Config
+	logger        *slog.Logger
+	logLevel      = new(slog.LevelVar)
+	cancelTimeout context.CancelFunc
+	rootCmd       = &cobra.Command{
 		Use:   "meta1v",
 		Short: "Provides a way to interact with Canon's EFD files.",
 		Long: `meta1v is a command line tool to interact with Canon's EFD files.
@@ -63,6 +67,18 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 				slog.String("cfgFile", viper.ConfigFileUsed()),
 			)
 
+			// Apply timeout to context
+			ctx, cancel := context.WithTimeout(cmd.Context(), config.Timeout)
+			cancelTimeout = cancel
+			cmd.SetContext(ctx)
+
+			return nil
+		},
+		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
+			if cancelTimeout != nil {
+				cancelTimeout()
+			}
+
 			return nil
 		},
 	}
@@ -77,13 +93,15 @@ func Execute() {
 	}
 }
 
-//nolint:gochecknoinits // cobra boilerplate
+//nolint:gochecknoinits,exhaustruct // cobra boilerplate, slog boilerplate
 func init() {
-	//nolint:exhaustruct // slog boilerplate
 	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: logLevel,
 	})
 	logger = slog.New(handler)
+
+	const defaultTimeout = 3 * time.Minute
+	viper.SetDefault("timeout", defaultTimeout)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
