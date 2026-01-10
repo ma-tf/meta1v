@@ -64,7 +64,7 @@ func (s service) WriteEXIF(
     1;
     `
 
-	emf, err := newExifBuilder(r, frameNumber, false).
+	emf, err := newExifBuilder(r, frameNumber).
 		WithAvs().
 		WithTv().
 		WithFocalLengthAndIsoAndRemarks().

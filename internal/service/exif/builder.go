@@ -12,33 +12,22 @@ import (
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-var ErrMultipleFrames = errors.New("multiple frames with same number found")
+var (
+	ErrMultipleFrames = errors.New("multiple frames with same number found")
+	ErrFrameNotFound  = errors.New("frame not found")
+)
 
 type exifBuilder struct {
-	strict      bool
 	efrm        records.EFRM
 	frameNumber int
 	frame       exifMappedFrame
 	err         error
 }
 
-type step1FrameBuilder interface {
-	WithAvs() step2FrameBuilder
-}
-
-type step2FrameBuilder interface {
-	WithTv() step3FrameBuilder
-}
-
-type step3FrameBuilder interface {
-	WithFocalLengthAndIsoAndRemarks() *exifBuilder
-}
-
 func newExifBuilder(
 	r records.Root,
 	frameNumber int,
-	strict bool,
-) step1FrameBuilder {
+) *exifBuilder {
 	var (
 		efrm *records.EFRM
 		err  error
@@ -53,20 +42,29 @@ func newExifBuilder(
 				break
 			}
 
+			e := e // Create a copy to avoid pointer issues
 			efrm = &e
 		}
 	}
 
+	if efrm == nil && err == nil {
+		err = fmt.Errorf("%w: frame number %d", ErrFrameNotFound, frameNumber)
+	}
+
+	var eframValue records.EFRM
+	if efrm != nil {
+		eframValue = *efrm
+	}
+
 	return &exifBuilder{
-		strict:      strict,
-		efrm:        r.EFRMs[frameNumber],
+		efrm:        eframValue,
 		frameNumber: frameNumber,
 		frame:       exifMappedFrame{}, //nolint:exhaustruct // will be built step by step
 		err:         err,
 	}
 }
 
-func (b *exifBuilder) WithAvs() step2FrameBuilder {
+func (b *exifBuilder) WithAvs() *exifBuilder {
 	if b.err != nil {
 		return b
 	}
@@ -113,7 +111,7 @@ func (b *exifBuilder) WithAvs() step2FrameBuilder {
 	return b
 }
 
-func (b *exifBuilder) WithTv() step3FrameBuilder {
+func (b *exifBuilder) WithTv() *exifBuilder {
 	if b.err != nil {
 		return b
 	}
@@ -189,8 +187,6 @@ type exifMappedFrame struct {
 	FocalLength  string
 	ExposureTime string
 	Iso          string
-
-	AuxImageNumber string
 }
 
 func (emf *exifMappedFrame) GetMetadataToWrite() string {
