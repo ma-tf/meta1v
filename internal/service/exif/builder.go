@@ -153,20 +153,38 @@ func (b *exifBuilder) WithTv() *exifBuilder {
 	return b
 }
 
-func (b *exifBuilder) WithFocalLengthAndIsoAndRemarks() *exifBuilder {
-	f := b.efrm
+func (b *exifBuilder) WithFocalLength() *exifBuilder {
+	if b.err != nil {
+		return b
+	}
 
-	b.frame.DcDescription = string(domain.NewRemarks(f.Remarks))
-
-	fl := domain.NewFocalLength(f.FocalLength)
+	fl := domain.NewFocalLength(b.efrm.FocalLength)
 	b.frame.FocalLength = strings.TrimSuffix(string(fl), "mm")
 
-	iso := string(domain.NewIso(f.IsoM))
+	return b
+}
+
+func (b *exifBuilder) WithIso() *exifBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	iso := string(domain.NewIso(b.efrm.IsoM))
 	if iso == "" {
-		iso = string(domain.NewIso(f.IsoDX))
+		iso = string(domain.NewIso(b.efrm.IsoDX))
 	}
 
 	b.frame.Iso = iso
+
+	return b
+}
+
+func (b *exifBuilder) WithRemarks() *exifBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.frame.DcDescription = string(domain.NewRemarks(b.efrm.Remarks))
 
 	return b
 }

@@ -68,7 +68,9 @@ func (s service) WriteEXIF(
 	emf, err := newExifBuilder(r, frameNumber).
 		WithAvs().
 		WithTv().
-		WithFocalLengthAndIsoAndRemarks().
+		WithFocalLength().
+		WithIso().
+		WithRemarks().
 		Build()
 	if err != nil {
 		return fmt.Errorf("failed to build exportable data: %w", err)
