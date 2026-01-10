@@ -18,7 +18,7 @@ type Container struct {
 	DisplayService         display.Service
 	DisplayableRollFactory display.DisplayableRollFactory
 	CSVService             csv.Service
-	ExifService            exif.Service
+	ExifServiceFactory     exif.ServiceFactory
 }
 
 func New(logger *slog.Logger) *Container {
@@ -38,6 +38,6 @@ func New(logger *slog.Logger) *Container {
 		DisplayService:         display.NewService(),
 		DisplayableRollFactory: display.NewDisplayableRollFactory(frameBuilder),
 		CSVService:             csv.NewService(),
-		ExifService:            exif.NewService(logger),
+		ExifServiceFactory:     exif.NewServiceFactory(logger),
 	}
 }

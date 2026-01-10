@@ -104,7 +104,7 @@ func init() {
 
 	ctr := container.New(logger)
 
-	exifUseCase := exif.NewUseCase(ctr.EFDService, ctr.ExifService)
+	exifUseCase := exif.NewUseCase(ctr.EFDService, ctr.ExifServiceFactory)
 
 	rootCmd.AddCommand(exif.NewCommand(logger, exifUseCase))
 	rootCmd.AddCommand(roll.NewCommand(logger, ctr))

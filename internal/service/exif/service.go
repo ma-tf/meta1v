@@ -50,12 +50,6 @@ type service struct {
 	log *slog.Logger
 }
 
-func NewService(log *slog.Logger) Service {
-	return service{
-		log: log,
-	}
-}
-
 // WriteEXIF runs exiftool with a user-defined config. It avoids shells and
 // temporary files by streaming the config over an anonymous pipe and passing
 // the read end as fd 3 to the child process (accessible as /proc/self/fd/3).
@@ -80,7 +74,6 @@ func (s service) WriteEXIF(
 		ctx,
 		exiftoolConfig,
 		emf.GetMetadataToWrite(),
-		frameNumber,
 		targetFile,
 	)
 }
@@ -90,7 +83,6 @@ func (s service) WriteEXIF(
 func (s service) runExifTool(ctx context.Context,
 	cfg string,
 	metadataToWrite string,
-	frameNumber int,
 	targetFile string,
 ) error {
 	const timeout = 3 * time.Minute
@@ -125,24 +117,17 @@ func (s service) runExifTool(ctx context.Context,
 
 	// Write config in a goroutine so we don't risk blocking if the child
 	// doesn't read immediately. Close writer when done.
-	go func() {
-		defer w.Close()
+	writeErr := s.writeConfigAsync(ctx, w, cfg)
 
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			_, _ = w.WriteString(cfg)
-		}
-	}()
+	waitErr := cmd.Wait()
+	wErr := <-writeErr
 
-	if err = cmd.Wait(); err != nil {
-		s.log.ErrorContext(ctx, "exiftool execution failed",
-			"frameNumber", frameNumber,
-			"targetFile", targetFile,
-			"output", out.String())
+	if waitErr != nil {
+		return fmt.Errorf("exiftool failed: %w", waitErr)
+	}
 
-		return fmt.Errorf("exiftool failed: %w", err)
+	if wErr != nil {
+		return fmt.Errorf("failed to write exiftool config: %w", wErr)
 	}
 
 	s.log.DebugContext(ctx, "exiftool success",
@@ -151,4 +136,26 @@ func (s service) runExifTool(ctx context.Context,
 		"output", out.String())
 
 	return nil
+}
+
+func (s service) writeConfigAsync(
+	ctx context.Context,
+	w *os.File,
+	cfg string,
+) <-chan error {
+	writeErr := make(chan error, 1)
+
+	go func() {
+		defer w.Close()
+
+		select {
+		case <-ctx.Done():
+			writeErr <- ctx.Err()
+		default:
+			_, writeError := w.WriteString(cfg)
+			writeErr <- writeError
+		}
+	}()
+
+	return writeErr
 }

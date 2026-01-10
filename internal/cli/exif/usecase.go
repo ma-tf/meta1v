@@ -9,17 +9,17 @@ import (
 )
 
 type exportUseCase struct {
-	efdService  efd.Service
-	exifService exif.Service
+	efdService         efd.Service
+	exifServiceFactory exif.ServiceFactory
 }
 
 func NewUseCase(
 	efdService efd.Service,
-	exifService exif.Service,
+	exifServiceFactory exif.ServiceFactory,
 ) UseCase {
 	return exportUseCase{
-		efdService:  efdService,
-		exifService: exifService,
+		efdService:         efdService,
+		exifServiceFactory: exifServiceFactory,
 	}
 }
 
@@ -27,19 +27,19 @@ func (uc exportUseCase) ExportExif(
 	ctx context.Context,
 	efdFile string,
 	frame int,
-	_ string,
+	targetFile string,
 ) error {
+	exifService, err := uc.exifServiceFactory.Create()
+	if err != nil {
+		return fmt.Errorf("exif service unavailable: %w", err)
+	}
+
 	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return fmt.Errorf("failed to interpret file content: %w", err)
 	}
 
-	err = uc.exifService.WriteEXIF(
-		ctx,
-		records,
-		frame,
-		"./test_files/20251011_Japan 1_0.dng",
-	)
+	err = exifService.WriteEXIF(ctx, records, frame, targetFile)
 	if err != nil {
 		return fmt.Errorf("write exif failed: %w", err)
 	}
