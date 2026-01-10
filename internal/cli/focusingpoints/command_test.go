@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
+	"github.com/ma-tf/meta1v/internal/container"
 )
 
 //nolint:exhaustruct // only partial is needed
@@ -23,7 +24,8 @@ func Test_NewCommand(t *testing.T) {
 		},
 	}))
 
-	cmd := focusingpoints.NewCommand(logger)
+	ctr := container.New(logger)
+	cmd := focusingpoints.NewCommand(logger, ctr)
 
 	const expectedSubcommands = 1
 	if len(cmd.Commands()) != expectedSubcommands {

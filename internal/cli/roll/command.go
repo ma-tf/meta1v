@@ -5,15 +5,11 @@ import (
 
 	"github.com/ma-tf/meta1v/internal/cli/roll/export"
 	"github.com/ma-tf/meta1v/internal/cli/roll/list"
-	"github.com/ma-tf/meta1v/internal/service/csv"
-	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/internal/service/efd"
-	"github.com/ma-tf/meta1v/internal/service/osfs"
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand(log *slog.Logger) *cobra.Command {
+func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "roll <command>",
 		Short: "Roll information for a specified file.",
@@ -22,30 +18,17 @@ frame count, ISO and user provided remarks.`,
 		Aliases: []string{"r"},
 	}
 
-	fs := osfs.NewFileSystem()
-	builder := efd.NewRootBuilder(log)
-	reader := efd.NewReader(log, records.NewDefaultThumbnailFactory())
-	efdSvc := efd.NewService(
-		log,
-		builder,
-		reader,
-		fs,
-	)
-	factory := display.NewDisplayableRollFactory(
-		display.NewFrameBuilder(log),
-	)
-
 	listUseCase := NewListUseCase(
-		efdSvc,
-		factory,
-		display.NewService(),
+		ctr.EFDService,
+		ctr.DisplayableRollFactory,
+		ctr.DisplayService,
 	)
 
 	exportUseCase := NewExportUseCase(
-		efdSvc,
-		factory,
-		csv.NewService(),
-		fs,
+		ctr.EFDService,
+		ctr.DisplayableRollFactory,
+		ctr.CSVService,
+		ctr.FileSystem,
 	)
 
 	cmd.AddCommand(list.NewCommand(log, listUseCase))

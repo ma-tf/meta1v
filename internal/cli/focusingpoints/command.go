@@ -4,14 +4,11 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
-	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/internal/service/efd"
-	"github.com/ma-tf/meta1v/internal/service/osfs"
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand(log *slog.Logger) *cobra.Command {
+func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "focusingpoints <command>",
 		Short: "Focusing points grid used by the frames for a specified file.",
@@ -23,16 +20,9 @@ For the setting focusing points on the camera, check the Canon EOS-1V manual.`,
 	}
 
 	uc := NewListUseCase(
-		efd.NewService(
-			log,
-			efd.NewRootBuilder(log),
-			efd.NewReader(log, records.NewDefaultThumbnailFactory()),
-			osfs.NewFileSystem(),
-		),
-		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(log),
-		),
-		display.NewService(),
+		ctr.EFDService,
+		ctr.DisplayableRollFactory,
+		ctr.DisplayService,
 	)
 
 	cmd.AddCommand(list.NewCommand(log, uc))

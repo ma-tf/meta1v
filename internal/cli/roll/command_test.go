@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli/roll"
+	"github.com/ma-tf/meta1v/internal/container"
 )
 
 //nolint:exhaustruct // only partial is needed
@@ -23,7 +24,8 @@ func Test_NewCommand(t *testing.T) {
 		},
 	}))
 
-	cmd := roll.NewCommand(logger)
+	ctr := container.New(logger)
+	cmd := roll.NewCommand(logger, ctr)
 
 	const expectedSubcommands = 2
 	if len(cmd.Commands()) != expectedSubcommands {

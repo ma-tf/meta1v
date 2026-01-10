@@ -13,10 +13,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli/frame"
 	"github.com/ma-tf/meta1v/internal/cli/roll"
 	"github.com/ma-tf/meta1v/internal/cli/thumbnail"
-	"github.com/ma-tf/meta1v/internal/service/efd"
-	exifService "github.com/ma-tf/meta1v/internal/service/exif"
-	"github.com/ma-tf/meta1v/internal/service/osfs"
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -105,22 +102,16 @@ func init() {
 		"enable strict mode (fail on unknown metadata values)",
 	)
 
-	exifUseCase := exif.NewUseCase(
-		efd.NewService(
-			logger,
-			efd.NewRootBuilder(logger),
-			efd.NewReader(logger, records.NewDefaultThumbnailFactory()),
-			osfs.NewFileSystem(),
-		),
-		exifService.NewService(logger),
-	)
+	ctr := container.New(logger)
+
+	exifUseCase := exif.NewUseCase(ctr.EFDService, ctr.ExifService)
 
 	rootCmd.AddCommand(exif.NewCommand(logger, exifUseCase))
-	rootCmd.AddCommand(roll.NewCommand(logger))
-	rootCmd.AddCommand(customfunctions.NewCommand(logger))
-	rootCmd.AddCommand(focusingpoints.NewCommand(logger))
-	rootCmd.AddCommand(frame.NewCommand(logger))
-	rootCmd.AddCommand(thumbnail.NewCommand(logger))
+	rootCmd.AddCommand(roll.NewCommand(logger, ctr))
+	rootCmd.AddCommand(customfunctions.NewCommand(logger, ctr))
+	rootCmd.AddCommand(focusingpoints.NewCommand(logger, ctr))
+	rootCmd.AddCommand(frame.NewCommand(logger, ctr))
+	rootCmd.AddCommand(thumbnail.NewCommand(logger, ctr))
 }
 
 func initialiseConfig(cmd *cobra.Command) error {

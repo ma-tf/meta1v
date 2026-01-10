@@ -4,14 +4,11 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli/frame/list"
-	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/internal/service/efd"
-	"github.com/ma-tf/meta1v/internal/service/osfs"
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
 
-func NewCommand(log *slog.Logger) *cobra.Command {
+func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "frame <command>",
 		Short: "Frame information for a specified file.",
@@ -21,16 +18,9 @@ exposure compensation, focus points, custom functions, and more.`,
 	}
 
 	uc := NewListUseCase(
-		efd.NewService(
-			log,
-			efd.NewRootBuilder(log),
-			efd.NewReader(log, records.NewDefaultThumbnailFactory()),
-			osfs.NewFileSystem(),
-		),
-		display.NewDisplayableRollFactory(
-			display.NewFrameBuilder(log),
-		),
-		display.NewService(),
+		ctr.EFDService,
+		ctr.DisplayableRollFactory,
+		ctr.DisplayService,
 	)
 
 	cmd.AddCommand(list.NewCommand(log, uc))
