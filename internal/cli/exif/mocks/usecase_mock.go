@@ -41,15 +41,15 @@ func (m *MockUseCase) EXPECT() *MockUseCaseMockRecorder {
 }
 
 // ExportExif mocks base method.
-func (m *MockUseCase) ExportExif(ctx context.Context, efdFile string, frame int, targetFile string) error {
+func (m *MockUseCase) ExportExif(ctx context.Context, efdFile string, frame int, targetFile string, strict bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportExif", ctx, efdFile, frame, targetFile)
+	ret := m.ctrl.Call(m, "ExportExif", ctx, efdFile, frame, targetFile, strict)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ExportExif indicates an expected call of ExportExif.
-func (mr *MockUseCaseMockRecorder) ExportExif(ctx, efdFile, frame, targetFile any) *gomock.Call {
+func (mr *MockUseCaseMockRecorder) ExportExif(ctx, efdFile, frame, targetFile, strict any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportExif", reflect.TypeOf((*MockUseCase)(nil).ExportExif), ctx, efdFile, frame, targetFile)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportExif", reflect.TypeOf((*MockUseCase)(nil).ExportExif), ctx, efdFile, frame, targetFile, strict)
 }

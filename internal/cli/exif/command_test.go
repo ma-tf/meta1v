@@ -108,9 +108,10 @@ func Test_NewCommand(t *testing.T) {
 	}))
 
 	type testcase struct {
-		name   string
-		args   []string
-		expect func(
+		name           string
+		args           []string
+		registerStrict bool
+		expect         func(
 			mockUseCase *exif_test.MockUseCase,
 			tc testcase,
 		)
@@ -119,17 +120,25 @@ func Test_NewCommand(t *testing.T) {
 
 	tests := []testcase{
 		{
+			name:           "strict flag not registered",
+			args:           []string{"file.efd", "1", "target.jpg"},
+			registerStrict: false,
+			expectedError:  cli.ErrFailedToGetStrictFlag,
+		},
+		{
 			name: "invalid frame number argument",
 			args: []string{
 				"file.efd",
 				"invalid_frame_number",
 				"target.jpg",
 			},
-			expectedError: exif.ErrInvalidFrameNumber,
+			registerStrict: true,
+			expectedError:  exif.ErrInvalidFrameNumber,
 		},
 		{
-			name: "valid arguments",
-			args: []string{"file.efd", "1", "target.jpg"},
+			name:           "valid arguments",
+			args:           []string{"file.efd", "1", "target.jpg"},
+			registerStrict: true,
 			expect: func(
 				mockUseCase *exif_test.MockUseCase,
 				tc testcase,
@@ -141,10 +150,23 @@ func Test_NewCommand(t *testing.T) {
 						tc.args[0],
 						1,
 						tc.args[2],
+						false,
 					).
 					Return(nil)
 			},
 		},
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+
+		if got == nil {
+			t.Fatalf("expected error %v, got nil", want)
+		}
+
+		if !errors.Is(got, want) {
+			t.Fatalf("expected error %v, got %v", want, got)
+		}
 	}
 
 	for _, tt := range tests {
@@ -162,26 +184,23 @@ func Test_NewCommand(t *testing.T) {
 
 			cmd := exif.NewCommand(logger, mockUseCase)
 			cmd.SilenceUsage = true
+
+			if tt.registerStrict {
+				cmd.Flags().Bool("strict", false, "enable strict mode")
+			}
+
 			cmd.SetArgs(tt.args)
 
 			err := cmd.Execute()
 
 			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf("expected error %v, got %v", tt.expectedError, err)
-				}
+				assertError(t, err, tt.expectedError)
 
 				return
 			}
 
 			if err != nil {
 				t.Fatalf("expected no error, got %v", err)
-
-				return
 			}
 		})
 	}

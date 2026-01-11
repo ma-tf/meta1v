@@ -26,6 +26,7 @@ type UseCase interface {
 		efdFile string,
 		frame int,
 		targetFile string,
+		strict bool,
 	) error
 }
 
@@ -50,17 +51,23 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		RunE: func(command *cobra.Command, args []string) error {
 			ctx := command.Context()
 
+			strict, err := command.Flags().GetBool("strict")
+			if err != nil {
+				return errors.Join(cli.ErrFailedToGetStrictFlag, err)
+			}
+
 			log.DebugContext(ctx, "exif arguments:",
 				slog.String("efd_file", args[0]),
 				slog.String("frame_number", args[1]),
-				slog.String("target_file", args[2]))
+				slog.String("target_file", args[2]),
+				slog.Bool("strict", strict))
 
 			frame, err := strconv.Atoi(args[1])
 			if err != nil {
 				return errors.Join(ErrInvalidFrameNumber, err)
 			}
 
-			return uc.ExportExif(ctx, args[0], frame, args[2])
+			return uc.ExportExif(ctx, args[0], frame, args[2], strict)
 		},
 	}
 

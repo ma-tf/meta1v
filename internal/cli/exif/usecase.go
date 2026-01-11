@@ -37,6 +37,7 @@ func (uc exportUseCase) ExportExif(
 	efdFile string,
 	frame int,
 	targetFile string,
+	strict bool,
 ) error {
 	exifService, err := uc.exifServiceFactory.Create()
 	if err != nil {
@@ -74,7 +75,7 @@ func (uc exportUseCase) ExportExif(
 		)
 	}
 
-	err = exifService.WriteEXIF(ctx, efrm, targetFile)
+	err = exifService.WriteEXIF(ctx, efrm, targetFile, strict)
 	if err != nil {
 		return fmt.Errorf("write exif failed: %w", err)
 	}

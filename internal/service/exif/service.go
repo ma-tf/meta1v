@@ -13,6 +13,7 @@ type Service interface {
 		ctx context.Context,
 		efrm records.EFRM,
 		targetFile string,
+		strict bool,
 	) error
 }
 
@@ -28,8 +29,9 @@ func (s service) WriteEXIF(
 	ctx context.Context,
 	efrm records.EFRM,
 	targetFile string,
+	strict bool,
 ) error {
-	exifData, err := transformFrameToExif(efrm)
+	exifData, err := transformFrameToExif(efrm, strict)
 	if err != nil {
 		return fmt.Errorf("failed to transform frame data: %w", err)
 	}

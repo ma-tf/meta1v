@@ -5,15 +5,13 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ma-tf/meta1v/pkg/domain"
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-// transformAperture converts the aperture value to EXIF f-number format.
-func transformAperture(av uint32) (string, error) {
-	avValue, err := domain.NewAv(av, false)
+func transformAperture(av uint32, strict bool) (string, error) {
+	avValue, err := domain.NewAv(av, strict)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse aperture: %w", err)
 	}
@@ -26,8 +24,8 @@ func transformAperture(av uint32) (string, error) {
 }
 
 // transformMaxAperture converts the max aperture value to EXIF APEX format.
-func transformMaxAperture(maxAperture uint32) (string, error) {
-	maxAv, err := domain.NewAv(maxAperture, false)
+func transformMaxAperture(maxAperture uint32, strict bool) (string, error) {
+	maxAv, err := domain.NewAv(maxAperture, strict)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse max aperture: %w", err)
 	}
@@ -52,33 +50,25 @@ func transformMaxAperture(maxAperture uint32) (string, error) {
 }
 
 // transformExposureTime converts the exposure time value to EXIF format.
-func transformExposureTime(tv int32, bulbTime uint32) (string, error) {
-	tvValue, err := domain.NewTv(tv, false)
+func transformExposureTime(
+	tv int32,
+	bulbTime uint32,
+	strict bool,
+) (string, error) {
+	tvValue, err := domain.NewTv(tv, strict)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse exposure time: %w", err)
 	}
 
 	switch {
 	case tvValue == "Bulb":
-		bulbExposureTime, bulbErr := domain.NewBulbExposureTime(bulbTime)
+		_, bulbErr := domain.NewBulbExposureTime(bulbTime)
 		if bulbErr != nil {
-			return "", fmt.Errorf(
-				"failed to parse bulb exposure time: %w",
-				bulbErr,
-			)
+			return "", fmt.Errorf("failed to parse bulb exposure time: %w",
+				bulbErr)
 		}
 
-		t, timeErr := time.Parse(time.TimeOnly, string(bulbExposureTime))
-		if timeErr != nil {
-			return "", fmt.Errorf(
-				"failed to parse bulb time format: %w",
-				timeErr,
-			)
-		}
-
-		total := t.Hour()*3600 + t.Minute()*60 + t.Second()
-
-		return strconv.Itoa(total), nil
+		return strconv.FormatUint(uint64(bulbTime), 10), nil
 	case tv > 0:
 		return strings.TrimSuffix(string(tvValue), "\""), nil
 	default:
@@ -87,18 +77,21 @@ func transformExposureTime(tv int32, bulbTime uint32) (string, error) {
 }
 
 // transformFrameToExif converts frame record data to EXIF metadata structure.
-func transformFrameToExif(efrm records.EFRM) (*exifMappedFrame, error) {
+func transformFrameToExif(
+	efrm records.EFRM,
+	strict bool,
+) (*exifMappedFrame, error) {
 	frame := &exifMappedFrame{} //nolint:exhaustruct // fields populated below
 
 	// Transform aperture values
-	fNumber, err := transformAperture(efrm.Av)
+	fNumber, err := transformAperture(efrm.Av, strict)
 	if err != nil {
 		return nil, err
 	}
 
 	frame.FNumber = fNumber
 
-	maxAperture, err := transformMaxAperture(efrm.MaxAperture)
+	maxAperture, err := transformMaxAperture(efrm.MaxAperture, strict)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +99,8 @@ func transformFrameToExif(efrm records.EFRM) (*exifMappedFrame, error) {
 	frame.MaxAperture = maxAperture
 
 	// Transform exposure time
-	exposureTime, err := transformExposureTime(efrm.Tv, efrm.BulbExposureTime)
+	exposureTime, err := transformExposureTime(
+		efrm.Tv, efrm.BulbExposureTime, strict)
 	if err != nil {
 		return nil, err
 	}
