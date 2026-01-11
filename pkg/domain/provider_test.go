@@ -34,7 +34,7 @@ func Test_MapProvider(t *testing.T) {
 
 				return string(v), ok
 			},
-			expectedResult: "f/1.0",
+			expectedResult: "1.0",
 		},
 		{
 			name: "exposure compensations loaded",

@@ -22,7 +22,7 @@ func transformAperture(av uint32) (string, error) {
 		return "", nil
 	}
 
-	return strings.TrimPrefix(string(avValue), "f/"), nil
+	return string(avValue), nil
 }
 
 // transformMaxAperture converts the max aperture value to EXIF APEX format.
@@ -36,9 +36,7 @@ func transformMaxAperture(maxAperture uint32) (string, error) {
 		return "", nil
 	}
 
-	mav := strings.TrimPrefix(string(maxAv), "f/")
-
-	f, parseErr := strconv.ParseFloat(mav, 64)
+	f, parseErr := strconv.ParseFloat(string(maxAv), 64)
 	if parseErr != nil {
 		return "", fmt.Errorf(
 			"failed to parse max aperture float: %w",
@@ -117,7 +115,7 @@ func transformFrameToExif(efrm records.EFRM) (*exifMappedFrame, error) {
 
 	// Transform focal length
 	fl := domain.NewFocalLength(efrm.FocalLength)
-	frame.FocalLength = strings.TrimSuffix(string(fl), "mm")
+	frame.FocalLength = string(fl)
 
 	// Transform ISO
 	iso := string(domain.NewIso(efrm.IsoM))

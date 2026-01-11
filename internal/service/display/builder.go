@@ -76,8 +76,7 @@ func (fb *frameBuilder) WithFrameMetadata(
 ) ExposureSettingsBuilder {
 	fb.efrm = r
 
-	fb.frame.FilmID, fb.err = domain.NewFilmID(r.CodeA, r.CodeB)
-	if fb.err != nil {
+	if fb.frame.FilmID, fb.err = domain.NewFilmID(r.CodeA, r.CodeB); fb.err != nil {
 		return fb
 	}
 
@@ -101,13 +100,8 @@ func (fb *frameBuilder) WithFrameMetadata(
 	}
 
 	fb.frame.TakenAt, fb.err = domain.NewDateTime(
-		r.Year,
-		r.Month,
-		r.Day,
-		r.Hour,
-		r.Minute,
-		r.Second,
-	)
+		r.Year, r.Month, r.Day,
+		r.Hour, r.Minute, r.Second)
 	if fb.err != nil {
 		return fb
 	}
@@ -137,42 +131,44 @@ func (fb *frameBuilder) WithExposureSettings(
 		return fb
 	}
 
-	fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, strict)
-	if fb.err != nil {
+	if fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, strict); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.Tv, fb.err = domain.NewTv(fb.efrm.Tv, strict)
-	if fb.err != nil {
+	if fb.frame.MaxAperture != "" && fb.frame.MaxAperture != "00" {
+		fb.frame.MaxAperture = "f/" + fb.frame.MaxAperture
+	}
+
+	if fb.frame.Tv, fb.err = domain.NewTv(fb.efrm.Tv, strict); fb.err != nil {
 		return fb
 	}
 
 	if fb.frame.Tv == "Bulb" {
-		fb.frame.BulbExposureTime, fb.err = domain.NewBulbExposureTime(
-			fb.efrm.BulbExposureTime)
-		if fb.err != nil {
+		if fb.frame.BulbExposureTime, fb.err = domain.NewBulbExposureTime(fb.efrm.BulbExposureTime); fb.err != nil {
 			return fb
 		}
 	}
 
-	fb.frame.Av, fb.err = domain.NewAv(fb.efrm.Av, strict)
-	if fb.err != nil {
+	if fb.frame.Av, fb.err = domain.NewAv(fb.efrm.Av, strict); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.FocalLength = domain.NewFocalLength(fb.efrm.FocalLength)
+	if fb.frame.Av != "" && fb.frame.Av != "00" {
+		fb.frame.Av = "f/" + fb.frame.Av
+	}
+
+	if fb.frame.FocalLength = domain.NewFocalLength(fb.efrm.FocalLength); fb.frame.FocalLength != "" {
+		fb.frame.FocalLength += "mm"
+	}
+
 	fb.frame.IsoDX = domain.NewIso(fb.efrm.IsoDX)
 	fb.frame.IsoM = domain.NewIso(fb.efrm.IsoM)
 
-	fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(
-		fb.efrm.ExposureCompenation, strict)
-	if fb.err != nil {
+	if fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(fb.efrm.ExposureCompenation, strict); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.MultipleExposure, fb.err = domain.NewMultipleExposure(
-		fb.efrm.MultipleExposure)
-	if fb.err != nil {
+	if fb.frame.MultipleExposure, fb.err = domain.NewMultipleExposure(fb.efrm.MultipleExposure); fb.err != nil {
 		return fb
 	}
 
@@ -185,8 +181,7 @@ func (fb *frameBuilder) WithExposureSettings(
 		slog.Any("IsoDX", fb.frame.IsoDX),
 		slog.Any("IsoM", fb.frame.IsoM),
 		slog.Any("ExposureCompensation", fb.frame.ExposureCompensation),
-		slog.Any("MultipleExposure", fb.frame.MultipleExposure),
-	)
+		slog.Any("MultipleExposure", fb.frame.MultipleExposure))
 
 	return fb
 }
@@ -199,38 +194,27 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo(
 		return fb
 	}
 
-	fb.frame.FlashExposureComp, fb.err = domain.NewExposureCompensation(
-		fb.efrm.FlashExposureCompensation,
-		strict,
-	)
-	if fb.err != nil {
+	if fb.frame.FlashExposureComp, fb.err = domain.NewExposureCompensation(fb.efrm.FlashExposureCompensation, strict); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.FlashMode, fb.err = domain.NewFlashMode(fb.efrm.FlashMode)
-	if fb.err != nil {
+	if fb.frame.FlashMode, fb.err = domain.NewFlashMode(fb.efrm.FlashMode); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.MeteringMode, fb.err = domain.NewMeteringMode(fb.efrm.MeteringMode)
-	if fb.err != nil {
+	if fb.frame.MeteringMode, fb.err = domain.NewMeteringMode(fb.efrm.MeteringMode); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.ShootingMode, fb.err = domain.NewShootingMode(fb.efrm.ShootingMode)
-	if fb.err != nil {
+	if fb.frame.ShootingMode, fb.err = domain.NewShootingMode(fb.efrm.ShootingMode); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.FilmAdvanceMode, fb.err = domain.NewFilmAdvanceMode(
-		fb.efrm.FilmAdvanceMode,
-	)
-	if fb.err != nil {
+	if fb.frame.FilmAdvanceMode, fb.err = domain.NewFilmAdvanceMode(fb.efrm.FilmAdvanceMode); fb.err != nil {
 		return fb
 	}
 
-	fb.frame.AFMode, fb.err = domain.NewAutoFocusMode(fb.efrm.AFMode)
-	if fb.err != nil {
+	if fb.frame.AFMode, fb.err = domain.NewAutoFocusMode(fb.efrm.AFMode); fb.err != nil {
 		return fb
 	}
 
@@ -254,8 +238,7 @@ func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints(
 		return fb
 	}
 
-	fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm, strict)
-	if fb.err != nil {
+	if fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm, strict); fb.err != nil {
 		return fb
 	}
 

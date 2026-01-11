@@ -102,7 +102,7 @@ func NewFocalLength(fl uint32) FocalLength {
 		return ""
 	}
 
-	return FocalLength(fmt.Sprintf("%dmm", fl))
+	return FocalLength(strconv.FormatUint(uint64(fl), 10))
 }
 
 type Tv string

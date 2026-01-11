@@ -242,7 +242,7 @@ func Test_NewFocalLength(t *testing.T) {
 		{
 			name:           "valid focal length",
 			focalLength:    50,
-			expectedResult: "50mm",
+			expectedResult: "50",
 		},
 		{
 			name:           "max value returns empty string",
@@ -338,7 +338,7 @@ func Test_NewAv(t *testing.T) {
 			name:           "valid Av value",
 			aperture:       280,
 			strict:         true,
-			expectedResult: "f/2.8",
+			expectedResult: "2.8",
 		},
 		{
 			name:          "invalid Av value with strict mode",
