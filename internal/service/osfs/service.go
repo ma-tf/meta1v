@@ -11,7 +11,7 @@ var _ FileSystem = osFS{}
 type FileSystem interface {
 	Create(name string) (File, error)
 	Open(name string) (File, error)
-	Stat(name string) (os.FileInfo, error)
+	Pipe() (r *os.File, w *os.File, err error)
 }
 
 type File interface {
@@ -20,7 +20,6 @@ type File interface {
 	io.ReaderAt
 	io.Seeker
 	io.Writer
-	Stat() (os.FileInfo, error)
 }
 
 type osFS struct{}
@@ -32,7 +31,7 @@ func (osFS) Create(name string) (File, error) { return os.Create(name) }
 func (osFS) Open(name string) (File, error) { return os.Open(name) }
 
 //nolint:wrapcheck // os package errors are sufficient
-func (osFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
+func (osFS) Pipe() (*os.File, *os.File, error) { return os.Pipe() }
 
 func NewFileSystem() FileSystem {
 	return osFS{}

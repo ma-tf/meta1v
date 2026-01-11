@@ -38,6 +38,9 @@ func New(logger *slog.Logger) *Container {
 		DisplayService:         display.NewService(),
 		DisplayableRollFactory: display.NewDisplayableRollFactory(frameBuilder),
 		CSVService:             csv.NewService(),
-		ExifServiceFactory:     exif.NewServiceFactory(logger),
+		ExifServiceFactory: exif.NewServiceFactory(
+			logger,
+			exif.NewExifToolRunner(fs),
+		),
 	}
 }

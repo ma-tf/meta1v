@@ -189,12 +189,8 @@ func (b *exifBuilder) WithRemarks() *exifBuilder {
 	return b
 }
 
-func (b *exifBuilder) Build() (Exportable, error) {
+func (b *exifBuilder) Build() (*exifMappedFrame, error) {
 	return &b.frame, b.err
-}
-
-type Exportable interface {
-	GetMetadataToWrite() string
 }
 
 type exifMappedFrame struct {
@@ -207,7 +203,7 @@ type exifMappedFrame struct {
 	Iso          string
 }
 
-func (emf *exifMappedFrame) GetMetadataToWrite() string {
+func (emf *exifMappedFrame) FormatAsArgFile() string {
 	var builder strings.Builder
 
 	// Helper function to append tag only if the value is not empty

@@ -71,19 +71,20 @@ func (mr *MockFileSystemMockRecorder) Open(name any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockFileSystem)(nil).Open), name)
 }
 
-// Stat mocks base method.
-func (m *MockFileSystem) Stat(name string) (os.FileInfo, error) {
+// Pipe mocks base method.
+func (m *MockFileSystem) Pipe() (*os.File, *os.File, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stat", name)
-	ret0, _ := ret[0].(os.FileInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "Pipe")
+	ret0, _ := ret[0].(*os.File)
+	ret1, _ := ret[1].(*os.File)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
-// Stat indicates an expected call of Stat.
-func (mr *MockFileSystemMockRecorder) Stat(name any) *gomock.Call {
+// Pipe indicates an expected call of Pipe.
+func (mr *MockFileSystemMockRecorder) Pipe() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockFileSystem)(nil).Stat), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pipe", reflect.TypeOf((*MockFileSystem)(nil).Pipe))
 }
 
 // MockFile is a mock of File interface.
@@ -167,21 +168,6 @@ func (m *MockFile) Seek(offset int64, whence int) (int64, error) {
 func (mr *MockFileMockRecorder) Seek(offset, whence any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Seek", reflect.TypeOf((*MockFile)(nil).Seek), offset, whence)
-}
-
-// Stat mocks base method.
-func (m *MockFile) Stat() (os.FileInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stat")
-	ret0, _ := ret[0].(os.FileInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Stat indicates an expected call of Stat.
-func (mr *MockFileMockRecorder) Stat() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockFile)(nil).Stat))
 }
 
 // Write mocks base method.
