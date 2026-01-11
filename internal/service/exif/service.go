@@ -11,8 +11,7 @@ import (
 type Service interface {
 	WriteEXIF(
 		ctx context.Context,
-		r records.Root,
-		frameNumber int,
+		efrm records.EFRM,
 		targetFile string,
 	) error
 }
@@ -27,19 +26,12 @@ type service struct {
 // the read end as fd 3 to the child process (accessible as /proc/self/fd/3).
 func (s service) WriteEXIF(
 	ctx context.Context,
-	r records.Root,
-	frameNumber int,
+	efrm records.EFRM,
 	targetFile string,
 ) error {
-	exifData, err := newExifBuilder(r, frameNumber).
-		WithAvs().
-		WithTv().
-		WithFocalLength().
-		WithIso().
-		WithRemarks().
-		Build()
+	exifData, err := transformFrameToExif(efrm)
 	if err != nil {
-		return fmt.Errorf("failed to build exportable data: %w", err)
+		return fmt.Errorf("failed to transform frame data: %w", err)
 	}
 
 	err = s.runner.Run(ctx, targetFile, exifData.FormatAsArgFile())

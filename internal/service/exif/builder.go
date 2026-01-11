@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -12,185 +11,126 @@ import (
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-var (
-	ErrMultipleFrames = errors.New("multiple frames with same number found")
-	ErrFrameNotFound  = errors.New("frame not found")
-)
+// transformAperture converts the aperture value to EXIF f-number format.
+func transformAperture(av uint32) (string, error) {
+	avValue, err := domain.NewAv(av, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse aperture: %w", err)
+	}
 
-type exifBuilder struct {
-	efrm        records.EFRM
-	frameNumber int
-	frame       exifMappedFrame
-	err         error
+	if avValue == "00" {
+		return "", nil
+	}
+
+	return strings.TrimPrefix(string(avValue), "f/"), nil
 }
 
-func newExifBuilder(
-	r records.Root,
-	frameNumber int,
-) *exifBuilder {
-	var (
-		efrm *records.EFRM
-		err  error
-	)
-
-	for _, e := range r.EFRMs {
-		if int(e.FrameNumber) == frameNumber {
-			if efrm != nil {
-				err = fmt.Errorf("%w: frame number %d",
-					ErrMultipleFrames, frameNumber)
-
-				break
-			}
-
-			e := e // Create a copy to avoid pointer issues
-			efrm = &e
-		}
-	}
-
-	if efrm == nil && err == nil {
-		err = fmt.Errorf("%w: frame number %d", ErrFrameNotFound, frameNumber)
-	}
-
-	var eframValue records.EFRM
-	if efrm != nil {
-		eframValue = *efrm
-	}
-
-	return &exifBuilder{
-		efrm:        eframValue,
-		frameNumber: frameNumber,
-		frame:       exifMappedFrame{}, //nolint:exhaustruct // will be built step by step
-		err:         err,
-	}
-}
-
-func (b *exifBuilder) WithAvs() *exifBuilder {
-	if b.err != nil {
-		return b
-	}
-
-	var (
-		av    domain.Av
-		maxAv domain.Av
-	)
-
-	av, b.err = domain.NewAv(b.efrm.Av, false)
-	if b.err != nil {
-		return b
-	}
-
-	if av == "00" {
-		b.frame.FNumber = ""
-	} else {
-		b.frame.FNumber = strings.TrimPrefix(string(av), "f/")
-	}
-
-	maxAv, b.err = domain.NewAv(b.efrm.MaxAperture, false)
-	if b.err != nil {
-		return b
+// transformMaxAperture converts the max aperture value to EXIF APEX format.
+func transformMaxAperture(maxAperture uint32) (string, error) {
+	maxAv, err := domain.NewAv(maxAperture, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse max aperture: %w", err)
 	}
 
 	if maxAv == "" || maxAv == "00" {
-		b.frame.MaxAperture = ""
-	} else {
-		var f float64
-
-		mav := strings.TrimPrefix(string(maxAv), "f/")
-
-		f, b.err = strconv.ParseFloat(mav, 64)
-		if b.err != nil {
-			return b
-		}
-
-		const apexConst = 2
-
-		apexMaxAv := apexConst * math.Log2(f)
-		b.frame.MaxAperture = fmt.Sprintf("%.1f", apexMaxAv)
+		return "", nil
 	}
 
-	return b
+	mav := strings.TrimPrefix(string(maxAv), "f/")
+
+	f, parseErr := strconv.ParseFloat(mav, 64)
+	if parseErr != nil {
+		return "", fmt.Errorf(
+			"failed to parse max aperture float: %w",
+			parseErr,
+		)
+	}
+
+	const apexConst = 2
+
+	apexMaxAv := apexConst * math.Log2(f)
+
+	return fmt.Sprintf("%.1f", apexMaxAv), nil
 }
 
-func (b *exifBuilder) WithTv() *exifBuilder {
-	if b.err != nil {
-		return b
-	}
-
-	var (
-		tv               domain.Tv
-		bulbExposureTime domain.BulbExposureTime
-	)
-
-	tv, b.err = domain.NewTv(b.efrm.Tv, false)
-	if b.err != nil {
-		return b
+// transformExposureTime converts the exposure time value to EXIF format.
+func transformExposureTime(tv int32, bulbTime uint32) (string, error) {
+	tvValue, err := domain.NewTv(tv, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse exposure time: %w", err)
 	}
 
 	switch {
-	case tv == "Bulb":
-		bulbExposureTime, b.err = domain.NewBulbExposureTime(
-			b.efrm.BulbExposureTime,
-		)
-		if b.err != nil {
-			return b
+	case tvValue == "Bulb":
+		bulbExposureTime, bulbErr := domain.NewBulbExposureTime(bulbTime)
+		if bulbErr != nil {
+			return "", fmt.Errorf(
+				"failed to parse bulb exposure time: %w",
+				bulbErr,
+			)
 		}
 
-		t, err := time.Parse(time.TimeOnly, string(bulbExposureTime))
-		if err != nil {
-			b.err = err
-
-			return b
+		t, timeErr := time.Parse(time.TimeOnly, string(bulbExposureTime))
+		if timeErr != nil {
+			return "", fmt.Errorf(
+				"failed to parse bulb time format: %w",
+				timeErr,
+			)
 		}
 
 		total := t.Hour()*3600 + t.Minute()*60 + t.Second()
-		b.frame.ExposureTime = strconv.Itoa(total)
-	case b.efrm.Tv > 0:
-		b.frame.ExposureTime = strings.TrimSuffix(string(tv), "\"")
+
+		return strconv.Itoa(total), nil
+	case tv > 0:
+		return strings.TrimSuffix(string(tvValue), "\""), nil
 	default:
-		b.frame.ExposureTime = string(tv)
+		return string(tvValue), nil
 	}
-
-	return b
 }
 
-func (b *exifBuilder) WithFocalLength() *exifBuilder {
-	if b.err != nil {
-		return b
+// transformFrameToExif converts frame record data to EXIF metadata structure.
+func transformFrameToExif(efrm records.EFRM) (*exifMappedFrame, error) {
+	frame := &exifMappedFrame{} //nolint:exhaustruct // fields populated below
+
+	// Transform aperture values
+	fNumber, err := transformAperture(efrm.Av)
+	if err != nil {
+		return nil, err
 	}
 
-	fl := domain.NewFocalLength(b.efrm.FocalLength)
-	b.frame.FocalLength = strings.TrimSuffix(string(fl), "mm")
+	frame.FNumber = fNumber
 
-	return b
-}
-
-func (b *exifBuilder) WithIso() *exifBuilder {
-	if b.err != nil {
-		return b
+	maxAperture, err := transformMaxAperture(efrm.MaxAperture)
+	if err != nil {
+		return nil, err
 	}
 
-	iso := string(domain.NewIso(b.efrm.IsoM))
+	frame.MaxAperture = maxAperture
+
+	// Transform exposure time
+	exposureTime, err := transformExposureTime(efrm.Tv, efrm.BulbExposureTime)
+	if err != nil {
+		return nil, err
+	}
+
+	frame.ExposureTime = exposureTime
+
+	// Transform focal length
+	fl := domain.NewFocalLength(efrm.FocalLength)
+	frame.FocalLength = strings.TrimSuffix(string(fl), "mm")
+
+	// Transform ISO
+	iso := string(domain.NewIso(efrm.IsoM))
 	if iso == "" {
-		iso = string(domain.NewIso(b.efrm.IsoDX))
+		iso = string(domain.NewIso(efrm.IsoDX))
 	}
 
-	b.frame.Iso = iso
+	frame.Iso = iso
 
-	return b
-}
+	// Transform remarks
+	frame.DcDescription = string(domain.NewRemarks(efrm.Remarks))
 
-func (b *exifBuilder) WithRemarks() *exifBuilder {
-	if b.err != nil {
-		return b
-	}
-
-	b.frame.DcDescription = string(domain.NewRemarks(b.efrm.Remarks))
-
-	return b
-}
-
-func (b *exifBuilder) Build() (*exifMappedFrame, error) {
-	return &b.frame, b.err
+	return frame, nil
 }
 
 type exifMappedFrame struct {
