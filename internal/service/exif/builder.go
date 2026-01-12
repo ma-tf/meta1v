@@ -1,3 +1,4 @@
+//go:generate mockgen -destination=./mocks/builder_mock.go -package=exif_test github.com/ma-tf/meta1v/internal/service/exif Builder
 package exif
 
 import (
@@ -10,7 +11,57 @@ import (
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-func transformAperture(av uint32, strict bool) (string, error) {
+type Builder interface {
+	Build(efrm records.EFRM, strict bool) (map[string]string, error)
+}
+
+type builder struct{}
+
+func NewExifBuilder() Builder {
+	return builder{}
+}
+
+func (b builder) Build(
+	efrm records.EFRM,
+	strict bool,
+) (map[string]string, error) {
+	fNumber, err := b.withAperture(efrm.Av, strict)
+	if err != nil {
+		return nil, err
+	}
+
+	maxAperture, err := b.withMaxAperture(efrm.MaxAperture, strict)
+	if err != nil {
+		return nil, err
+	}
+
+	exposureTime, err := b.withExposureTime(
+		efrm.Tv,
+		efrm.BulbExposureTime,
+		strict,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	iso := string(domain.NewIso(efrm.IsoM))
+	if iso == "" {
+		iso = string(domain.NewIso(efrm.IsoDX))
+	}
+
+	return map[string]string{
+		"XMP-dc:description":        string(domain.NewRemarks(efrm.Remarks)),
+		"XMP-exif:FNumber":          fNumber,
+		"XMP-exif:MaxApertureValue": maxAperture,
+		"XMP-exif:FocalLength": string(
+			domain.NewFocalLength(efrm.FocalLength),
+		),
+		"XMP-exif:ExposureTime": exposureTime,
+		"XMP-exif:ISO":          iso,
+	}, nil
+}
+
+func (b builder) withAperture(av uint32, strict bool) (string, error) {
 	avValue, err := domain.NewAv(av, strict)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse aperture: %w", err)
@@ -23,8 +74,10 @@ func transformAperture(av uint32, strict bool) (string, error) {
 	return string(avValue), nil
 }
 
-// transformMaxAperture converts the max aperture value to EXIF APEX format.
-func transformMaxAperture(maxAperture uint32, strict bool) (string, error) {
+func (b builder) withMaxAperture(
+	maxAperture uint32,
+	strict bool,
+) (string, error) {
 	maxAv, err := domain.NewAv(maxAperture, strict)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse max aperture: %w", err)
@@ -49,8 +102,7 @@ func transformMaxAperture(maxAperture uint32, strict bool) (string, error) {
 	return fmt.Sprintf("%.1f", apexMaxAv), nil
 }
 
-// transformExposureTime converts the exposure time value to EXIF format.
-func transformExposureTime(
+func (b builder) withExposureTime(
 	tv int32,
 	bulbTime uint32,
 	strict bool,
@@ -74,86 +126,4 @@ func transformExposureTime(
 	default:
 		return string(tvValue), nil
 	}
-}
-
-// transformFrameToExif converts frame record data to EXIF metadata structure.
-func transformFrameToExif(
-	efrm records.EFRM,
-	strict bool,
-) (*exifMappedFrame, error) {
-	frame := &exifMappedFrame{} //nolint:exhaustruct // fields populated below
-
-	// Transform aperture values
-	fNumber, err := transformAperture(efrm.Av, strict)
-	if err != nil {
-		return nil, err
-	}
-
-	frame.FNumber = fNumber
-
-	maxAperture, err := transformMaxAperture(efrm.MaxAperture, strict)
-	if err != nil {
-		return nil, err
-	}
-
-	frame.MaxAperture = maxAperture
-
-	// Transform exposure time
-	exposureTime, err := transformExposureTime(
-		efrm.Tv, efrm.BulbExposureTime, strict)
-	if err != nil {
-		return nil, err
-	}
-
-	frame.ExposureTime = exposureTime
-
-	// Transform focal length
-	fl := domain.NewFocalLength(efrm.FocalLength)
-	frame.FocalLength = string(fl)
-
-	// Transform ISO
-	iso := string(domain.NewIso(efrm.IsoM))
-	if iso == "" {
-		iso = string(domain.NewIso(efrm.IsoDX))
-	}
-
-	frame.Iso = iso
-
-	// Transform remarks
-	frame.DcDescription = string(domain.NewRemarks(efrm.Remarks))
-
-	return frame, nil
-}
-
-type exifMappedFrame struct {
-	DcDescription string
-
-	FNumber      string
-	MaxAperture  string
-	FocalLength  string
-	ExposureTime string
-	Iso          string
-}
-
-func (emf *exifMappedFrame) FormatAsArgFile() string {
-	var builder strings.Builder
-
-	// Helper function to append tag only if the value is not empty
-	appendTag := func(tag string, value string) {
-		if value != "" {
-			// Write the tag assignment, followed by a newline separator
-			// ExifTool expects: -TAGNAME="VALUE"
-			// The \n is the argument separator for -@ -
-			fmt.Fprintf(&builder, "-%s=%s\n", tag, value)
-		}
-	}
-
-	appendTag("XMP-dc:description", emf.DcDescription)
-	appendTag("XMP-exif:FNumber", emf.FNumber)
-	appendTag("XMP-exif:MaxApertureValue", emf.MaxAperture)
-	appendTag("XMP-exif:FocalLength", emf.FocalLength)
-	appendTag("XMP-exif:ExposureTime", emf.ExposureTime)
-	appendTag("XMP-exif:ISO", emf.Iso)
-
-	return builder.String()
 }

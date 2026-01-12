@@ -41,6 +41,7 @@ func New(logger *slog.Logger) *Container {
 		ExifServiceFactory: exif.NewServiceFactory(
 			logger,
 			exif.NewExifToolRunner(fs),
+			exif.NewExifBuilder(),
 		),
 	}
 }

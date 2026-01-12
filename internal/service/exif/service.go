@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/ma-tf/meta1v/pkg/records"
 )
@@ -18,8 +19,9 @@ type Service interface {
 }
 
 type service struct {
-	log    *slog.Logger
-	runner ToolRunner
+	log     *slog.Logger
+	runner  ToolRunner
+	builder Builder
 }
 
 // WriteEXIF runs exiftool with a user-defined config. It avoids shells and
@@ -31,12 +33,20 @@ func (s service) WriteEXIF(
 	targetFile string,
 	strict bool,
 ) error {
-	exifData, err := transformFrameToExif(efrm, strict)
+	data, err := s.builder.Build(efrm, strict)
 	if err != nil {
-		return fmt.Errorf("failed to transform frame data: %w", err)
+		return fmt.Errorf("failed to build exif data: %w", err)
 	}
 
-	err = s.runner.Run(ctx, targetFile, exifData.FormatAsArgFile())
+	var args strings.Builder
+
+	for tag, value := range data {
+		if value != "" {
+			fmt.Fprintf(&args, "-%s=%s\n", tag, value)
+		}
+	}
+
+	err = s.runner.Run(ctx, targetFile, args.String())
 	if err != nil {
 		return fmt.Errorf("failed to run exiftool: %w", err)
 	}

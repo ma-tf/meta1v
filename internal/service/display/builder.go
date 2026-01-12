@@ -13,7 +13,7 @@ import (
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-type frameBuilder struct {
+type builder struct {
 	log   *slog.Logger
 	efrm  records.EFRM
 	frame DisplayableFrame
@@ -62,7 +62,7 @@ type DisplayableFrameBuilder interface {
 func NewFrameBuilder(
 	log *slog.Logger,
 ) FrameMetadataBuilder {
-	return &frameBuilder{
+	return &builder{
 		log:   log,
 		efrm:  records.EFRM{},     //nolint:exhaustruct // will be built step by step
 		frame: DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
@@ -70,7 +70,7 @@ func NewFrameBuilder(
 	}
 }
 
-func (fb *frameBuilder) WithFrameMetadata(
+func (fb *builder) WithFrameMetadata(
 	ctx context.Context,
 	r records.EFRM,
 ) ExposureSettingsBuilder {
@@ -123,7 +123,7 @@ func (fb *frameBuilder) WithFrameMetadata(
 	return fb
 }
 
-func (fb *frameBuilder) WithExposureSettings(
+func (fb *builder) WithExposureSettings(
 	ctx context.Context,
 	strict bool,
 ) CameraModesBuilder {
@@ -186,7 +186,7 @@ func (fb *frameBuilder) WithExposureSettings(
 	return fb
 }
 
-func (fb *frameBuilder) WithCameraModesAndFlashInfo(
+func (fb *builder) WithCameraModesAndFlashInfo(
 	ctx context.Context,
 	strict bool,
 ) CustomFunctionsBuilder {
@@ -230,7 +230,7 @@ func (fb *frameBuilder) WithCameraModesAndFlashInfo(
 	return fb
 }
 
-func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints(
+func (fb *builder) WithCustomFunctionsAndFocusPoints(
 	ctx context.Context,
 	strict bool,
 ) ThumbnailBuilder {
@@ -264,7 +264,7 @@ func (fb *frameBuilder) WithCustomFunctionsAndFocusPoints(
 	return fb
 }
 
-func (fb *frameBuilder) WithThumbnail(
+func (fb *builder) WithThumbnail(
 	ctx context.Context,
 	t *DisplayableThumbnail,
 ) DisplayableFrameBuilder {
@@ -279,7 +279,7 @@ func (fb *frameBuilder) WithThumbnail(
 	return fb
 }
 
-func (fb *frameBuilder) Build() (DisplayableFrame, error) {
+func (fb *builder) Build() (DisplayableFrame, error) {
 	return fb.frame, fb.err
 }
 
