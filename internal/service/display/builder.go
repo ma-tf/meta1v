@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/builder_mock.go -package=display_test github.com/ma-tf/meta1v/internal/service/display FrameMetadataBuilder,ExposureSettingsBuilder,CameraModesBuilder,CustomFunctionsBuilder,ThumbnailBuilder,DisplayableFrameBuilder
+//go:generate mockgen -destination=./mocks/builder_mock.go -package=display_test github.com/ma-tf/meta1v/internal/service/display Builder
 package display
 
 import (
@@ -6,369 +6,305 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
-	"strconv"
 
 	"github.com/ma-tf/meta1v/pkg/domain"
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
+var (
+	ErrInvalidFilmID               = errors.New("invalid film ID")
+	ErrInvalidFilmLoadedDate       = errors.New("invalid film loaded date")
+	ErrInvalidBatteryLoadedDate    = errors.New("invalid battery loaded date")
+	ErrInvalidCaptureDate          = errors.New("invalid capture date")
+	ErrInvalidMaxAperture          = errors.New("invalid max aperture")
+	ErrInvalidShutterSpeed         = errors.New("invalid shutter speed")
+	ErrInvalidBulbExposureTime     = errors.New("invalid bulb exposure time")
+	ErrInvalidAperture             = errors.New("invalid aperture")
+	ErrInvalidExposureCompensation = errors.New("invalid exposure compensation")
+	ErrInvalidMultipleExposure     = errors.New("invalid multiple exposure")
+	ErrInvalidFlashExposureComp    = errors.New(
+		"invalid flash exposure compensation",
+	)
+	ErrInvalidFlashMode       = errors.New("invalid flash mode")
+	ErrInvalidMeteringMode    = errors.New("invalid metering mode")
+	ErrInvalidShootingMode    = errors.New("invalid shooting mode")
+	ErrInvalidFilmAdvanceMode = errors.New("invalid film advance mode")
+	ErrInvalidAutoFocusMode   = errors.New("invalid auto focus mode")
+)
+
 type builder struct {
-	log   *slog.Logger
-	efrm  records.EFRM
-	frame DisplayableFrame
-	err   error
+	log *slog.Logger
 }
 
-type FrameMetadataBuilder interface {
-	WithFrameMetadata(
+type Builder interface {
+	Build(
 		ctx context.Context,
-		r records.EFRM,
-	) ExposureSettingsBuilder
-}
-
-type ExposureSettingsBuilder interface {
-	WithExposureSettings(
-		ctx context.Context,
+		efrm records.EFRM,
+		thumbnail *DisplayableThumbnail,
 		strict bool,
-	) CameraModesBuilder
+	) (DisplayableFrame, error)
 }
 
-type CameraModesBuilder interface {
-	WithCameraModesAndFlashInfo(
-		ctx context.Context,
-		strict bool,
-	) CustomFunctionsBuilder
+func NewFrameBuilder(log *slog.Logger) Builder {
+	return &builder{log: log}
 }
 
-type CustomFunctionsBuilder interface {
-	WithCustomFunctionsAndFocusPoints(
-		ctx context.Context,
-		strict bool,
-	) ThumbnailBuilder
-}
-
-type ThumbnailBuilder interface {
-	WithThumbnail(
-		ctx context.Context,
-		t *DisplayableThumbnail,
-	) DisplayableFrameBuilder
-}
-
-type DisplayableFrameBuilder interface {
-	Build() (DisplayableFrame, error)
-}
-
-func NewFrameBuilder(
-	log *slog.Logger,
-) FrameMetadataBuilder {
-	return &builder{
-		log:   log,
-		efrm:  records.EFRM{},     //nolint:exhaustruct // will be built step by step
-		frame: DisplayableFrame{}, //nolint:exhaustruct // will be built step by step
-		err:   nil,
-	}
-}
-
-func (fb *builder) WithFrameMetadata(
+func (b *builder) Build(
 	ctx context.Context,
-	r records.EFRM,
-) ExposureSettingsBuilder {
-	fb.efrm = r
-
-	if fb.frame.FilmID, fb.err = domain.NewFilmID(r.CodeA, r.CodeB); fb.err != nil {
-		return fb
-	}
-
-	fb.frame.FilmLoadedAt, fb.err = domain.NewDateTime(
-		r.RollYear, r.RollMonth, r.RollDay,
-		r.RollHour, r.RollMinute, r.RollSecond)
-	if fb.err != nil {
-		return fb
-	}
-
-	fb.frame.BatteryLoadedAt, fb.err = domain.NewDateTime(
-		r.BatteryYear,
-		r.BatteryMonth,
-		r.BatteryDay,
-		r.BatteryHour,
-		r.BatteryMinute,
-		r.BatterySecond,
-	)
-	if fb.err != nil {
-		return fb
-	}
-
-	fb.frame.TakenAt, fb.err = domain.NewDateTime(
-		r.Year, r.Month, r.Day,
-		r.Hour, r.Minute, r.Second)
-	if fb.err != nil {
-		return fb
-	}
-
-	fb.frame.FrameNumber = uint(r.FrameNumber)
-	fb.frame.Remarks = domain.NewRemarks(r.Remarks)
-	fb.frame.UserModifiedRecord = r.IsModifiedRecord != 0
-
-	fb.log.DebugContext(ctx, "parsed frame metadata",
-		slog.Any("FilmID", fb.frame.FilmID),
-		slog.Any("FilmLoadedAt", fb.frame.FilmLoadedAt),
-		slog.Any("BatteryLoadedAt", fb.frame.BatteryLoadedAt),
-		slog.Any("TakenAt", fb.frame.TakenAt),
-		slog.Any("FrameNumber", fb.frame.FrameNumber),
-		slog.Any("Remarks", fb.frame.Remarks),
-		slog.Any("UserModifiedRecord", fb.frame.UserModifiedRecord),
-	)
-
-	return fb
-}
-
-func (fb *builder) WithExposureSettings(
-	ctx context.Context,
+	efrm records.EFRM,
+	thumbnail *DisplayableThumbnail,
 	strict bool,
-) CameraModesBuilder {
-	if fb.err != nil {
-		return fb
+) (DisplayableFrame, error) {
+	var frame DisplayableFrame
+
+	if err := b.withFrameMetadata(&frame, efrm); err != nil {
+		return DisplayableFrame{}, err
 	}
 
-	if fb.frame.MaxAperture, fb.err = domain.NewAv(fb.efrm.MaxAperture, strict); fb.err != nil {
-		return fb
+	b.log.DebugContext(ctx, "parsed frame metadata",
+		slog.String("filmID", string(frame.FilmID)),
+		slog.String("filmLoadedAt", string(frame.FilmLoadedAt)),
+		slog.String("batteryLoadedAt", string(frame.BatteryLoadedAt)),
+		slog.String("takenAt", string(frame.TakenAt)),
+		slog.Uint64("frameNumber", uint64(frame.FrameNumber)),
+		slog.Bool("userModified", frame.UserModifiedRecord),
+	)
+
+	if err := b.withExposureSettings(&frame, efrm, strict); err != nil {
+		return DisplayableFrame{}, err
 	}
 
-	if fb.frame.MaxAperture != "" && fb.frame.MaxAperture != "00" {
-		fb.frame.MaxAperture = "f/" + fb.frame.MaxAperture
+	b.log.DebugContext(ctx, "parsed exposure settings",
+		slog.String("maxAperture", string(frame.MaxAperture)),
+		slog.String("tv", string(frame.Tv)),
+		slog.String("av", string(frame.Av)),
+		slog.String("focalLength", string(frame.FocalLength)),
+	)
+
+	if err := b.withCameraModesAndFlashInfo(&frame, efrm, strict); err != nil {
+		return DisplayableFrame{}, err
 	}
 
-	if fb.frame.Tv, fb.err = domain.NewTv(fb.efrm.Tv, strict); fb.err != nil {
-		return fb
+	b.log.DebugContext(ctx, "parsed camera modes and flash info",
+		slog.String("flashMode", string(frame.FlashMode)),
+		slog.String("meteringMode", string(frame.MeteringMode)),
+		slog.String("shootingMode", string(frame.ShootingMode)),
+		slog.String("afMode", string(frame.AFMode)),
+	)
+
+	if err := b.withCustomFunctionsAndFocusPoints(&frame, efrm, strict); err != nil {
+		return DisplayableFrame{}, err
 	}
 
-	if fb.frame.Tv == "Bulb" {
-		if fb.frame.BulbExposureTime, fb.err = domain.NewBulbExposureTime(fb.efrm.BulbExposureTime); fb.err != nil {
-			return fb
+	b.log.DebugContext(ctx, "parsed custom functions and focus points",
+		slog.Any("customFunctions", frame.CustomFunctions),
+		slog.Any("focusingPoints", frame.FocusingPoints),
+	)
+
+	frame.Thumbnail = thumbnail
+
+	return frame, nil
+}
+
+func (b *builder) withFrameMetadata(
+	frame *DisplayableFrame,
+	efrm records.EFRM,
+) error {
+	filmID, err := domain.NewFilmID(efrm.CodeA, efrm.CodeB)
+	if err != nil {
+		return errors.Join(ErrInvalidFilmID, err)
+	}
+
+	filmLoadedAt, err := domain.NewDateTime(
+		efrm.RollYear, efrm.RollMonth, efrm.RollDay,
+		efrm.RollHour, efrm.RollMinute, efrm.RollSecond)
+	if err != nil {
+		return errors.Join(ErrInvalidFilmLoadedDate, err)
+	}
+
+	batteryLoadedAt, err := domain.NewDateTime(
+		efrm.BatteryYear, efrm.BatteryMonth, efrm.BatteryDay,
+		efrm.BatteryHour, efrm.BatteryMinute, efrm.BatterySecond,
+	)
+	if err != nil {
+		return errors.Join(ErrInvalidBatteryLoadedDate, err)
+	}
+
+	takenAt, err := domain.NewDateTime(
+		efrm.Year, efrm.Month, efrm.Day,
+		efrm.Hour, efrm.Minute, efrm.Second)
+	if err != nil {
+		return errors.Join(ErrInvalidCaptureDate, err)
+	}
+
+	frame.FilmID = filmID
+	frame.FilmLoadedAt = filmLoadedAt
+	frame.BatteryLoadedAt = batteryLoadedAt
+	frame.TakenAt = takenAt
+	frame.FrameNumber = uint(efrm.FrameNumber)
+	frame.Remarks = domain.NewRemarks(efrm.Remarks)
+	frame.UserModifiedRecord = efrm.IsModifiedRecord != 0
+
+	return nil
+}
+
+func (b *builder) withExposureSettings(
+	frame *DisplayableFrame,
+	efrm records.EFRM,
+	strict bool,
+) error {
+	maxAperture, err := formatAperture(efrm.MaxAperture, strict)
+	if err != nil {
+		return errors.Join(ErrInvalidMaxAperture, err)
+	}
+
+	tv, err := domain.NewTv(efrm.Tv, strict)
+	if err != nil {
+		return errors.Join(ErrInvalidShutterSpeed, err)
+	}
+
+	var bulbExposureTime domain.BulbExposureTime
+	if tv == "Bulb" {
+		if bulbExposureTime, err = domain.NewBulbExposureTime(efrm.BulbExposureTime); err != nil {
+			return errors.Join(ErrInvalidBulbExposureTime, err)
 		}
 	}
 
-	if fb.frame.Av, fb.err = domain.NewAv(fb.efrm.Av, strict); fb.err != nil {
-		return fb
+	av, err := formatAperture(efrm.Av, strict)
+	if err != nil {
+		return errors.Join(ErrInvalidAperture, err)
 	}
 
-	if fb.frame.Av != "" && fb.frame.Av != "00" {
-		fb.frame.Av = "f/" + fb.frame.Av
+	focalLength := domain.NewFocalLength(efrm.FocalLength)
+	if focalLength != "" {
+		focalLength += "mm"
 	}
 
-	if fb.frame.FocalLength = domain.NewFocalLength(fb.efrm.FocalLength); fb.frame.FocalLength != "" {
-		fb.frame.FocalLength += "mm"
-	}
-
-	fb.frame.IsoDX = domain.NewIso(fb.efrm.IsoDX)
-	fb.frame.IsoM = domain.NewIso(fb.efrm.IsoM)
-
-	if fb.frame.ExposureCompensation, fb.err = domain.NewExposureCompensation(fb.efrm.ExposureCompenation, strict); fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.MultipleExposure, fb.err = domain.NewMultipleExposure(fb.efrm.MultipleExposure); fb.err != nil {
-		return fb
-	}
-
-	fb.log.DebugContext(ctx, "parsed exposure settings",
-		slog.Any("MaxAperture", fb.frame.MaxAperture),
-		slog.Any("Tv", fb.frame.Tv),
-		slog.Any("BulbExposureTime", fb.frame.BulbExposureTime),
-		slog.Any("Av", fb.frame.Av),
-		slog.Any("FocalLength", fb.frame.FocalLength),
-		slog.Any("IsoDX", fb.frame.IsoDX),
-		slog.Any("IsoM", fb.frame.IsoM),
-		slog.Any("ExposureCompensation", fb.frame.ExposureCompensation),
-		slog.Any("MultipleExposure", fb.frame.MultipleExposure))
-
-	return fb
-}
-
-func (fb *builder) WithCameraModesAndFlashInfo(
-	ctx context.Context,
-	strict bool,
-) CustomFunctionsBuilder {
-	if fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.FlashExposureComp, fb.err = domain.NewExposureCompensation(fb.efrm.FlashExposureCompensation, strict); fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.FlashMode, fb.err = domain.NewFlashMode(fb.efrm.FlashMode); fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.MeteringMode, fb.err = domain.NewMeteringMode(fb.efrm.MeteringMode); fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.ShootingMode, fb.err = domain.NewShootingMode(fb.efrm.ShootingMode); fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.FilmAdvanceMode, fb.err = domain.NewFilmAdvanceMode(fb.efrm.FilmAdvanceMode); fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.AFMode, fb.err = domain.NewAutoFocusMode(fb.efrm.AFMode); fb.err != nil {
-		return fb
-	}
-
-	fb.log.DebugContext(ctx, "parsed camera modes and flash info",
-		slog.Any("FlashExposureComp", fb.frame.FlashExposureComp),
-		slog.Any("FlashMode", fb.frame.FlashMode),
-		slog.Any("MeteringMode", fb.frame.MeteringMode),
-		slog.Any("ShootingMode", fb.frame.ShootingMode),
-		slog.Any("FilmAdvanceMode", fb.frame.FilmAdvanceMode),
-		slog.Any("AFMode", fb.frame.AFMode),
+	exposureCompensation, err := domain.NewExposureCompensation(
+		efrm.ExposureCompenation,
+		strict,
 	)
+	if err != nil {
+		return errors.Join(ErrInvalidExposureCompensation, err)
+	}
 
-	return fb
+	multipleExposure, err := domain.NewMultipleExposure(efrm.MultipleExposure)
+	if err != nil {
+		return errors.Join(ErrInvalidMultipleExposure, err)
+	}
+
+	frame.MaxAperture = maxAperture
+	frame.Tv = tv
+	frame.BulbExposureTime = bulbExposureTime
+	frame.Av = av
+	frame.FocalLength = focalLength
+	frame.IsoDX = domain.NewIso(efrm.IsoDX)
+	frame.IsoM = domain.NewIso(efrm.IsoM)
+	frame.ExposureCompensation = exposureCompensation
+	frame.MultipleExposure = multipleExposure
+
+	return nil
 }
 
-func (fb *builder) WithCustomFunctionsAndFocusPoints(
-	ctx context.Context,
+func (b *builder) withCameraModesAndFlashInfo(
+	frame *DisplayableFrame,
+	efrm records.EFRM,
 	strict bool,
-) ThumbnailBuilder {
-	if fb.err != nil {
-		return fb
-	}
-
-	if fb.frame.CustomFunctions, fb.err = NewCustomFunctions(fb.efrm, strict); fb.err != nil {
-		return fb
-	}
-
-	fb.frame.FocusingPoints = DisplayableFocusPoints{
-		Selection: uint(fb.efrm.FocusingPoint),
-		Points: [8]byte{
-			fb.efrm.FocusPoints1,
-			fb.efrm.FocusPoints2,
-			fb.efrm.FocusPoints3,
-			fb.efrm.FocusPoints4,
-			fb.efrm.FocusPoints5,
-			fb.efrm.FocusPoints6,
-			fb.efrm.FocusPoints7,
-			fb.efrm.FocusPoints8,
-		},
-	}
-
-	fb.log.DebugContext(ctx, "parsed custom functions and focus points",
-		slog.Any("CustomFunctions", fb.frame.CustomFunctions),
-		slog.Any("FocusingPoints", fb.frame.FocusingPoints),
+) error {
+	flashExposureComp, err := domain.NewExposureCompensation(
+		efrm.FlashExposureCompensation,
+		strict,
 	)
-
-	return fb
-}
-
-func (fb *builder) WithThumbnail(
-	ctx context.Context,
-	t *DisplayableThumbnail,
-) DisplayableFrameBuilder {
-	if fb.err != nil {
-		return fb
+	if err != nil {
+		return errors.Join(ErrInvalidFlashExposureComp, err)
 	}
 
-	fb.frame.Thumbnail = t
+	flashMode, err := domain.NewFlashMode(efrm.FlashMode)
+	if err != nil {
+		return errors.Join(ErrInvalidFlashMode, err)
+	}
 
-	fb.log.DebugContext(ctx, "parsed thumbnail") // no printing because it's big
+	meteringMode, err := domain.NewMeteringMode(efrm.MeteringMode)
+	if err != nil {
+		return errors.Join(ErrInvalidMeteringMode, err)
+	}
 
-	return fb
+	shootingMode, err := domain.NewShootingMode(efrm.ShootingMode)
+	if err != nil {
+		return errors.Join(ErrInvalidShootingMode, err)
+	}
+
+	filmAdvanceMode, err := domain.NewFilmAdvanceMode(efrm.FilmAdvanceMode)
+	if err != nil {
+		return errors.Join(ErrInvalidFilmAdvanceMode, err)
+	}
+
+	afMode, err := domain.NewAutoFocusMode(efrm.AFMode)
+	if err != nil {
+		return errors.Join(ErrInvalidAutoFocusMode, err)
+	}
+
+	frame.FlashExposureComp = flashExposureComp
+	frame.FlashMode = flashMode
+	frame.MeteringMode = meteringMode
+	frame.ShootingMode = shootingMode
+	frame.FilmAdvanceMode = filmAdvanceMode
+	frame.AFMode = afMode
+
+	return nil
 }
 
-func (fb *builder) Build() (DisplayableFrame, error) {
-	return fb.frame, fb.err
-}
-
-// --------------------------
-
-var ErrInvalidCustomFunction = errors.New("invalid custom function")
-
-//nolint:gochecknoglobals,mnd // not exported anyway, magic numbers are defined by Canon manual
-var cfMaxRanges = map[int]byte{
-	0:  1,
-	1:  3,
-	2:  1,
-	3:  1,
-	4:  3,
-	5:  3,
-	6:  2,
-	7:  2,
-	8:  2,
-	9:  3,
-	10: 3,
-	11: 3,
-	12: 1,
-	13: 3,
-	14: 1,
-	15: 1,
-	16: 1,
-	17: 2,
-	18: 2,
-	19: 5,
-}
-
-type DisplayableCustomFunctions [20]string
-
-func NewCustomFunctions(
-	r records.EFRM,
+func (b *builder) withCustomFunctionsAndFocusPoints(
+	frame *DisplayableFrame,
+	efrm records.EFRM,
 	strict bool,
-) (DisplayableCustomFunctions, error) {
-	const cfMin = 0
-
+) error {
 	cfs := [20]byte{
-		r.CustomFunction0,
-		r.CustomFunction1,
-		r.CustomFunction2,
-		r.CustomFunction3,
-		r.CustomFunction4,
-		r.CustomFunction5,
-		r.CustomFunction6,
-		r.CustomFunction7,
-		r.CustomFunction8,
-		r.CustomFunction9,
-		r.CustomFunction10,
-		r.CustomFunction11,
-		r.CustomFunction12,
-		r.CustomFunction13,
-		r.CustomFunction14,
-		r.CustomFunction15,
-		r.CustomFunction16,
-		r.CustomFunction17,
-		r.CustomFunction18,
-		r.CustomFunction19,
+		efrm.CustomFunction0, efrm.CustomFunction1, efrm.CustomFunction2, efrm.CustomFunction3,
+		efrm.CustomFunction4, efrm.CustomFunction5, efrm.CustomFunction6, efrm.CustomFunction7,
+		efrm.CustomFunction8, efrm.CustomFunction9, efrm.CustomFunction10, efrm.CustomFunction11,
+		efrm.CustomFunction12, efrm.CustomFunction13, efrm.CustomFunction14, efrm.CustomFunction15,
+		efrm.CustomFunction16, efrm.CustomFunction17, efrm.CustomFunction18, efrm.CustomFunction19,
 	}
 
-	values := [20]string{}
-
-	for i, cf := range cfs {
-		if cf != math.MaxUint8 && (cf < cfMin || cf > cfMaxRanges[i]) {
-			if strict {
-				return DisplayableCustomFunctions{}, fmt.Errorf(
-					"%w %d: out of range (%d-%d): %d",
-					ErrInvalidCustomFunction,
-					i,
-					cfMin,
-					cfMaxRanges[i],
-					cf,
-				)
-			}
-		}
-
-		if cf == math.MaxUint8 {
-			values[i] = " "
-		} else {
-			values[i] = strconv.Itoa(int(cf))
-		}
+	customFunctions, err := domain.NewCustomFunctions(cfs, strict)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to parse custom functions %v: %w",
+			cfs,
+			err,
+		)
 	}
 
-	return values, nil
+	focusingPoints := domain.NewFocusPoints(
+		efrm.FocusingPoint,
+		[8]byte{
+			efrm.FocusPoints1,
+			efrm.FocusPoints2,
+			efrm.FocusPoints3,
+			efrm.FocusPoints4,
+			efrm.FocusPoints5,
+			efrm.FocusPoints6,
+			efrm.FocusPoints7,
+			efrm.FocusPoints8,
+		},
+	)
+
+	frame.CustomFunctions = customFunctions
+	frame.FocusingPoints = focusingPoints
+
+	return nil
 }
 
-type DisplayableFocusPoints struct {
-	Selection uint
-	Points    [8]byte
+func formatAperture(av uint32, strict bool) (domain.Av, error) {
+	result, err := domain.NewAv(av, strict)
+	if err != nil {
+		return "", err //nolint:wrapcheck // wrapped at call sites with context-specific errors
+	}
+
+	if result != "" && result != "00" {
+		result = "f/" + result
+	}
+
+	return result, nil
 }

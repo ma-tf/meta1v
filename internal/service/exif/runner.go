@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"fmt"
+	"errors"
 	"os"
 	"os/exec"
 
@@ -14,6 +14,13 @@ import (
 
 //go:embed exiftool.config
 var exiftoolConfig string
+
+var (
+	ErrCreatePipe          = errors.New("failed to create pipe")
+	ErrStartExifTool       = errors.New("failed to start exiftool")
+	ErrExifToolFailed      = errors.New("exiftool failed")
+	ErrWriteExifToolConfig = errors.New("failed to write exiftool config")
+)
 
 type ToolRunner interface {
 	Run(ctx context.Context, targetFile string, metadata string) error
@@ -35,7 +42,7 @@ func (r *exifToolRunner) Run(
 ) error {
 	rPipe, wPipe, err := r.fs.Pipe()
 	if err != nil {
-		return fmt.Errorf("failed to create pipe: %w", err)
+		return errors.Join(ErrCreatePipe, err)
 	}
 
 	defer rPipe.Close()
@@ -55,7 +62,7 @@ func (r *exifToolRunner) Run(
 	cmd.ExtraFiles = []*os.File{rPipe}
 
 	if err = cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start exiftool: %w", err)
+		return errors.Join(ErrStartExifTool, err)
 	}
 
 	// Write config in a goroutine so we don't risk blocking if the child
@@ -75,11 +82,11 @@ func (r *exifToolRunner) Run(
 	}()
 
 	if err = cmd.Wait(); err != nil {
-		return fmt.Errorf("exiftool failed: %w", err)
+		return errors.Join(ErrExifToolFailed, err)
 	}
 
 	if err = <-writeErr; err != nil {
-		return fmt.Errorf("failed to write exiftool config: %w", err)
+		return errors.Join(ErrWriteExifToolConfig, err)
 	}
 
 	return nil

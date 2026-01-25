@@ -34,13 +34,7 @@ func Test_DisplayableRollFactory_Create(t *testing.T) {
 		rootRecord records.Root
 		strict     bool
 		expect     func(
-			mockFrameMetadataBuilder *display_test.MockFrameMetadataBuilder,
-			mockExposureSettingsBuilder *display_test.MockExposureSettingsBuilder,
-			mockCameraModesBuilder *display_test.MockCameraModesBuilder,
-			mockCustomFunctionsBuilder *display_test.MockCustomFunctionsBuilder,
-			mockThumbnailBuilder *display_test.MockThumbnailBuilder,
-			mockBuilder *display_test.MockDisplayableFrameBuilder,
-			tc testcase,
+			mockBuilder *display_test.MockBuilder,
 		)
 		expectedOutput display.DisplayableRoll
 		expectedError  error
@@ -106,39 +100,10 @@ func Test_DisplayableRollFactory_Create(t *testing.T) {
 				},
 			},
 			expect: func(
-				mockFrameMetadataBuilder *display_test.MockFrameMetadataBuilder,
-				mockExposureSettingsBuilder *display_test.MockExposureSettingsBuilder,
-				mockCameraModesBuilder *display_test.MockCameraModesBuilder,
-				mockCustomFunctionsBuilder *display_test.MockCustomFunctionsBuilder,
-				mockThumbnailBuilder *display_test.MockThumbnailBuilder,
-				mockBuilder *display_test.MockDisplayableFrameBuilder,
-				tc testcase,
+				mockBuilder *display_test.MockBuilder,
 			) {
-				mockFrameMetadataBuilder.EXPECT().
-					WithFrameMetadata(
-						gomock.Any(),
-						gomock.Any(),
-					).
-					Return(mockExposureSettingsBuilder)
-
-				mockExposureSettingsBuilder.EXPECT().
-					WithExposureSettings(gomock.Any(), tc.strict).
-					Return(mockCameraModesBuilder)
-
-				mockCameraModesBuilder.EXPECT().
-					WithCameraModesAndFlashInfo(gomock.Any(), tc.strict).
-					Return(mockCustomFunctionsBuilder)
-
-				mockCustomFunctionsBuilder.EXPECT().
-					WithCustomFunctionsAndFocusPoints(gomock.Any(), tc.strict).
-					Return(mockThumbnailBuilder)
-
-				mockThumbnailBuilder.EXPECT().
-					WithThumbnail(gomock.Any(), gomock.Any()).
-					Return(mockBuilder)
-
 				mockBuilder.EXPECT().
-					Build().
+					Build(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(
 						display.DisplayableFrame{},
 						nil,
@@ -186,39 +151,16 @@ func Test_DisplayableRollFactory_Create(t *testing.T) {
 
 			ctx := t.Context()
 
-			mockFrameMetadataBuilder := display_test.NewMockFrameMetadataBuilder(
-				ctrl,
-			)
-			mockExposureSettingsBuilder := display_test.NewMockExposureSettingsBuilder(
-				ctrl,
-			)
-			mockCameraModesBuilder := display_test.NewMockCameraModesBuilder(
-				ctrl,
-			)
-			mockCustomFunctionsBuilder := display_test.NewMockCustomFunctionsBuilder(
-				ctrl,
-			)
-			mockThumbnailBuilder := display_test.NewMockThumbnailBuilder(
-				ctrl,
-			)
-			mockBuilder := display_test.NewMockDisplayableFrameBuilder(
+			mockBuilder := display_test.NewMockBuilder(
 				ctrl,
 			)
 
 			if tt.expect != nil {
-				tt.expect(
-					mockFrameMetadataBuilder,
-					mockExposureSettingsBuilder,
-					mockCameraModesBuilder,
-					mockCustomFunctionsBuilder,
-					mockThumbnailBuilder,
-					mockBuilder,
-					tt,
-				)
+				tt.expect(mockBuilder)
 			}
 
 			factory := display.NewDisplayableRollFactory(
-				mockFrameMetadataBuilder,
+				mockBuilder,
 			)
 
 			result, err := factory.Create(ctx, tt.rootRecord, tt.strict)
@@ -242,13 +184,7 @@ func Test_DisplayableRollFactory_Create_FrameAndThumbnailErrors(t *testing.T) {
 		rootRecord records.Root
 		strict     bool
 		expect     func(
-			mockFrameMetadataBuilder *display_test.MockFrameMetadataBuilder,
-			mockExposureSettingsBuilder *display_test.MockExposureSettingsBuilder,
-			mockCameraModesBuilder *display_test.MockCameraModesBuilder,
-			mockCustomFunctionsBuilder *display_test.MockCustomFunctionsBuilder,
-			mockThumbnailBuilder *display_test.MockThumbnailBuilder,
-			mockBuilder *display_test.MockDisplayableFrameBuilder,
-			tc testcase,
+			mockBuilder *display_test.MockBuilder,
 		)
 		expectedOutput display.DisplayableRoll
 		expectedError  error
@@ -310,44 +246,10 @@ func Test_DisplayableRollFactory_Create_FrameAndThumbnailErrors(t *testing.T) {
 				EFRMs: outOfRangeEFRMs(),
 			},
 			expect: func(
-				mockFrameMetadataBuilder *display_test.MockFrameMetadataBuilder,
-				mockExposureSettingsBuilder *display_test.MockExposureSettingsBuilder,
-				mockCameraModesBuilder *display_test.MockCameraModesBuilder,
-				mockCustomFunctionsBuilder *display_test.MockCustomFunctionsBuilder,
-				mockThumbnailBuilder *display_test.MockThumbnailBuilder,
-				mockBuilder *display_test.MockDisplayableFrameBuilder,
-				tc testcase,
+				mockBuilder *display_test.MockBuilder,
 			) {
-				mockFrameMetadataBuilder.EXPECT().
-					WithFrameMetadata(
-						gomock.Any(),
-						gomock.Any(),
-					).
-					Return(mockExposureSettingsBuilder).
-					Times(math.MaxUint16)
-
-				mockExposureSettingsBuilder.EXPECT().
-					WithExposureSettings(gomock.Any(), tc.strict).
-					Return(mockCameraModesBuilder).
-					Times(math.MaxUint16)
-
-				mockCameraModesBuilder.EXPECT().
-					WithCameraModesAndFlashInfo(gomock.Any(), tc.strict).
-					Return(mockCustomFunctionsBuilder).
-					Times(math.MaxUint16)
-
-				mockCustomFunctionsBuilder.EXPECT().
-					WithCustomFunctionsAndFocusPoints(gomock.Any(), tc.strict).
-					Return(mockThumbnailBuilder).
-					Times(math.MaxUint16)
-
-				mockThumbnailBuilder.EXPECT().
-					WithThumbnail(gomock.Any(), gomock.Any()).
-					Return(mockBuilder).
-					Times(math.MaxUint16)
-
 				mockBuilder.EXPECT().
-					Build().
+					Build(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(
 						display.DisplayableFrame{},
 						nil,
@@ -376,39 +278,10 @@ func Test_DisplayableRollFactory_Create_FrameAndThumbnailErrors(t *testing.T) {
 				},
 			},
 			expect: func(
-				mockFrameMetadataBuilder *display_test.MockFrameMetadataBuilder,
-				mockExposureSettingsBuilder *display_test.MockExposureSettingsBuilder,
-				mockCameraModesBuilder *display_test.MockCameraModesBuilder,
-				mockCustomFunctionsBuilder *display_test.MockCustomFunctionsBuilder,
-				mockThumbnailBuilder *display_test.MockThumbnailBuilder,
-				mockBuilder *display_test.MockDisplayableFrameBuilder,
-				tc testcase,
+				mockBuilder *display_test.MockBuilder,
 			) {
-				mockFrameMetadataBuilder.EXPECT().
-					WithFrameMetadata(
-						gomock.Any(),
-						gomock.Any(),
-					).
-					Return(mockExposureSettingsBuilder)
-
-				mockExposureSettingsBuilder.EXPECT().
-					WithExposureSettings(gomock.Any(), tc.strict).
-					Return(mockCameraModesBuilder)
-
-				mockCameraModesBuilder.EXPECT().
-					WithCameraModesAndFlashInfo(gomock.Any(), tc.strict).
-					Return(mockCustomFunctionsBuilder)
-
-				mockCustomFunctionsBuilder.EXPECT().
-					WithCustomFunctionsAndFocusPoints(gomock.Any(), tc.strict).
-					Return(mockThumbnailBuilder)
-
-				mockThumbnailBuilder.EXPECT().
-					WithThumbnail(gomock.Any(), gomock.Any()).
-					Return(mockBuilder)
-
 				mockBuilder.EXPECT().
-					Build().
+					Build(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(
 						display.DisplayableFrame{},
 						errExample,
@@ -447,39 +320,16 @@ func Test_DisplayableRollFactory_Create_FrameAndThumbnailErrors(t *testing.T) {
 
 			ctx := t.Context()
 
-			mockFrameMetadataBuilder := display_test.NewMockFrameMetadataBuilder(
-				ctrl,
-			)
-			mockExposureSettingsBuilder := display_test.NewMockExposureSettingsBuilder(
-				ctrl,
-			)
-			mockCameraModesBuilder := display_test.NewMockCameraModesBuilder(
-				ctrl,
-			)
-			mockCustomFunctionsBuilder := display_test.NewMockCustomFunctionsBuilder(
-				ctrl,
-			)
-			mockThumbnailBuilder := display_test.NewMockThumbnailBuilder(
-				ctrl,
-			)
-			mockBuilder := display_test.NewMockDisplayableFrameBuilder(
+			mockBuilder := display_test.NewMockBuilder(
 				ctrl,
 			)
 
 			if tt.expect != nil {
-				tt.expect(
-					mockFrameMetadataBuilder,
-					mockExposureSettingsBuilder,
-					mockCameraModesBuilder,
-					mockCustomFunctionsBuilder,
-					mockThumbnailBuilder,
-					mockBuilder,
-					tt,
-				)
+				tt.expect(mockBuilder)
 			}
 
 			factory := display.NewDisplayableRollFactory(
-				mockFrameMetadataBuilder,
+				mockBuilder,
 			)
 
 			result, err := factory.Create(ctx, tt.rootRecord, tt.strict)

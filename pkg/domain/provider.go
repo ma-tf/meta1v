@@ -19,6 +19,7 @@ type MapProvider struct {
 	fams map[uint32]FilmAdvanceMode
 	afms map[uint32]AutoFocusMode
 	mes  map[uint32]MultipleExposure
+	cfl  map[int]byte
 }
 
 type domainJSON struct {
@@ -31,6 +32,7 @@ type domainJSON struct {
 	FilmAdvanceModes      map[string]string `json:"filmAdvanceModes"`
 	AutoFocusModes        map[string]string `json:"autoFocusModes"`
 	MultipleExposures     map[string]string `json:"multipleExposures"`
+	CustomFunctionsLimits map[string]byte   `json:"customFunctionsLimits"`
 }
 
 func NewMapProvider() *MapProvider {
@@ -48,6 +50,7 @@ func NewMapProvider() *MapProvider {
 		fams: convertMapUint32[FilmAdvanceMode](data.FilmAdvanceModes),
 		afms: convertMapUint32[AutoFocusMode](data.AutoFocusModes),
 		mes:  convertMapUint32[MultipleExposure](data.MultipleExposures),
+		cfl:  convertCustomFunctionsLimits(data.CustomFunctionsLimits),
 	}
 }
 
@@ -68,6 +71,17 @@ func convertMapUint32[V ~string](src map[string]string) map[uint32]V {
 	for k, v := range src {
 		if i, err := strconv.ParseUint(k, 10, 32); err == nil {
 			result[uint32(i)] = V(v)
+		}
+	}
+
+	return result
+}
+
+func convertCustomFunctionsLimits(src map[string]byte) map[int]byte {
+	result := make(map[int]byte, len(src))
+	for k, v := range src {
+		if i, err := strconv.Atoi(k); err == nil {
+			result[i] = v
 		}
 	}
 

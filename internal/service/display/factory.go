@@ -20,7 +20,7 @@ var (
 )
 
 type factory struct {
-	frameBuilder FrameMetadataBuilder
+	frameBuilder Builder
 }
 
 type DisplayableRollFactory interface {
@@ -32,7 +32,7 @@ type DisplayableRollFactory interface {
 }
 
 func NewDisplayableRollFactory(
-	frameBuilder FrameMetadataBuilder,
+	frameBuilder Builder,
 ) DisplayableRollFactory {
 	return &factory{
 		frameBuilder: frameBuilder,
@@ -107,13 +107,7 @@ func (f *factory) getFrames(
 			pt = t
 		}
 
-		framePF, errPF := f.frameBuilder.
-			WithFrameMetadata(ctx, frame).
-			WithExposureSettings(ctx, strict).
-			WithCameraModesAndFlashInfo(ctx, strict).
-			WithCustomFunctionsAndFocusPoints(ctx, strict).
-			WithThumbnail(ctx, pt).
-			Build()
+		framePF, errPF := f.frameBuilder.Build(ctx, frame, pt, strict)
 		if errPF != nil {
 			return nil, errors.Join(ErrFailedToBuildFrame, errPF)
 		}

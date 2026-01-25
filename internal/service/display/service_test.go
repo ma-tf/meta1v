@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/service/display"
+	"github.com/ma-tf/meta1v/pkg/domain"
 )
 
 //nolint:exhaustruct // only partial is needed
@@ -104,8 +105,8 @@ func Test_DisplayRoll(t *testing.T) {
 	}
 }
 
-func newCustomFunctions() display.DisplayableCustomFunctions {
-	return display.DisplayableCustomFunctions{
+func newCustomFunctions() domain.CustomFunctions {
+	return domain.CustomFunctions{
 		"1",
 		"1",
 		"1",
@@ -239,7 +240,7 @@ func Test_DisplayFocusingPoints(t *testing.T) {
 			roll: display.DisplayableRoll{
 				Frames: []display.DisplayableFrame{
 					{
-						FocusingPoints: display.DisplayableFocusPoints{
+						FocusingPoints: domain.FocusPoints{
 							Selection: math.MaxUint32,
 						},
 					},
@@ -261,7 +262,7 @@ func Test_DisplayFocusingPoints(t *testing.T) {
 			roll: display.DisplayableRoll{
 				Frames: []display.DisplayableFrame{
 					{
-						FocusingPoints: display.DisplayableFocusPoints{
+						FocusingPoints: domain.FocusPoints{
 							Selection: 1,
 							Points: [8]byte{
 								0b11111111,

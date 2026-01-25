@@ -279,3 +279,46 @@ func NewMultipleExposure(me uint32) (MultipleExposure, error) {
 
 	return val, nil
 }
+
+type CustomFunctions [20]string
+
+func NewCustomFunctions(cfs [20]byte, strict bool) (CustomFunctions, error) {
+	var (
+		values   = [20]string{}
+		cfLimits = defaultMaps.cfl
+	)
+
+	for i, cf := range cfs {
+		if cf == math.MaxUint8 {
+			values[i] = " "
+
+			continue
+		}
+
+		if strict && cf > cfLimits[i] {
+			return CustomFunctions{}, fmt.Errorf(
+				"%w %d: out of range (0-%d): %d",
+				ErrInvalidCustomFunction,
+				i,
+				cfLimits[i],
+				cf,
+			)
+		}
+
+		values[i] = strconv.Itoa(int(cf))
+	}
+
+	return values, nil
+}
+
+type FocusPoints struct {
+	Selection uint
+	Points    [8]byte
+}
+
+func NewFocusPoints(selection uint32, points [8]byte) FocusPoints {
+	return FocusPoints{
+		Selection: uint(selection),
+		Points:    points,
+	}
+}

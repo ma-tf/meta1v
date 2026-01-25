@@ -2,7 +2,6 @@ package display_test
 
 import (
 	"errors"
-	"math"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/service/display"
@@ -10,68 +9,108 @@ import (
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
-//nolint:exhaustruct // only partial is needed
-func Test_FrameBuilder_WithFrameMetadata(t *testing.T) {
+//nolint:exhaustruct // only partial needed
+func Test_FrameBuilder_FrameMetadata(t *testing.T) {
 	t.Parallel()
 
+	validBaseFrame := func() records.EFRM {
+		return records.EFRM{
+			CodeA:                     12,
+			CodeB:                     34,
+			RollYear:                  2023,
+			RollMonth:                 5,
+			RollDay:                   15,
+			RollHour:                  10,
+			RollMinute:                30,
+			RollSecond:                45,
+			BatteryYear:               2023,
+			BatteryMonth:              5,
+			BatteryDay:                15,
+			BatteryHour:               9,
+			BatteryMinute:             15,
+			BatterySecond:             0,
+			Year:                      2023,
+			Month:                     5,
+			Day:                       15,
+			Hour:                      10,
+			Minute:                    45,
+			Second:                    30,
+			MaxAperture:               280,
+			Tv:                        100,
+			Av:                        280,
+			ExposureCompenation:       100,
+			MultipleExposure:          1,
+			FlashExposureCompensation: 100,
+			FlashMode:                 1,
+			MeteringMode:              1,
+			ShootingMode:              1,
+			FilmAdvanceMode:           99,
+			AFMode:                    1,
+		}
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+
+		if got == nil {
+			t.Fatalf("expected error %v, got nil", want)
+		}
+
+		if !errors.Is(got, want) {
+			t.Fatalf("expected error %v, got %v", want, got)
+		}
+	}
+
 	type testcase struct {
-		name           string
-		frame          records.EFRM
-		strict         bool
-		expectedResult display.DisplayableFrame
-		expectedError  error
+		name          string
+		frame         records.EFRM
+		expectedError error
 	}
 
 	tests := []testcase{
 		{
 			name: "invalid film id",
-			frame: records.EFRM{
-				CodeA: 100,
-				CodeB: 1000,
-			},
-			expectedError: domain.ErrPrefixOutOfRange,
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.CodeA = 100
+				f.CodeB = 1000
+
+				return f
+			}(),
+			expectedError: display.ErrInvalidFilmID,
 		},
 		{
 			name: "invalid film loaded date",
-			frame: records.EFRM{
-				RollYear:  99,
-				RollMonth: 0,
-			},
-			expectedError: domain.ErrInvalidDateTime,
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.RollYear = 99
+				f.RollMonth = 0
+
+				return f
+			}(),
+			expectedError: display.ErrInvalidFilmLoadedDate,
 		},
 		{
 			name: "invalid battery load date",
-			frame: records.EFRM{
-				RollYear:     math.MaxUint16,
-				RollMonth:    math.MaxUint8,
-				RollDay:      math.MaxUint8,
-				RollHour:     math.MaxUint8,
-				RollMinute:   math.MaxUint8,
-				RollSecond:   math.MaxUint8,
-				BatteryYear:  99,
-				BatteryMonth: 0,
-			},
-			expectedError: domain.ErrInvalidDateTime,
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.BatteryYear = 99
+				f.BatteryMonth = 0
+
+				return f
+			}(),
+			expectedError: display.ErrInvalidBatteryLoadedDate,
 		},
 		{
 			name: "invalid capture date",
-			frame: records.EFRM{
-				RollYear:      math.MaxUint16,
-				RollMonth:     math.MaxUint8,
-				RollDay:       math.MaxUint8,
-				RollHour:      math.MaxUint8,
-				RollMinute:    math.MaxUint8,
-				RollSecond:    math.MaxUint8,
-				BatteryYear:   math.MaxUint16,
-				BatteryMonth:  math.MaxUint8,
-				BatteryDay:    math.MaxUint8,
-				BatteryHour:   math.MaxUint8,
-				BatteryMinute: math.MaxUint8,
-				BatterySecond: math.MaxUint8,
-				Year:          99,
-				Month:         0,
-			},
-			expectedError: domain.ErrInvalidDateTime,
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.Year = 99
+				f.Month = 0
+
+				return f
+			}(),
+			expectedError: display.ErrInvalidCaptureDate,
 		},
 	}
 
@@ -80,244 +119,140 @@ func Test_FrameBuilder_WithFrameMetadata(t *testing.T) {
 			t.Parallel()
 
 			ctx := t.Context()
-
 			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
-			result, err := frameBuilder.
-				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx, tt.strict).
-				WithCameraModesAndFlashInfo(ctx, tt.strict).
-				WithCustomFunctionsAndFocusPoints(ctx, tt.strict).
-				WithThumbnail(ctx, nil).
-				Build()
+			_, err := frameBuilder.Build(ctx, tt.frame, nil, false)
 
-			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf("expected error %v, got %v", tt.expectedError, err)
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if result != tt.expectedResult {
-				t.Fatalf("expected result %v, got %v",
-					tt.expectedResult, result)
-			}
+			assertError(t, err, tt.expectedError)
 		})
 	}
 }
 
-//nolint:exhaustruct // only partial is needed
-func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
+//nolint:exhaustruct // only partial needed
+func Test_FrameBuilder_ExposureSettings(t *testing.T) {
 	t.Parallel()
 
+	validBaseFrame := func() records.EFRM {
+		return records.EFRM{
+			CodeA:                     12,
+			CodeB:                     34,
+			RollYear:                  2023,
+			RollMonth:                 5,
+			RollDay:                   15,
+			RollHour:                  10,
+			RollMinute:                30,
+			RollSecond:                45,
+			BatteryYear:               2023,
+			BatteryMonth:              5,
+			BatteryDay:                15,
+			BatteryHour:               9,
+			BatteryMinute:             15,
+			BatterySecond:             0,
+			Year:                      2023,
+			Month:                     5,
+			Day:                       15,
+			Hour:                      10,
+			Minute:                    45,
+			Second:                    30,
+			MaxAperture:               280,
+			Tv:                        100,
+			Av:                        280,
+			ExposureCompenation:       100,
+			MultipleExposure:          1,
+			FlashExposureCompensation: 100,
+			FlashMode:                 1,
+			MeteringMode:              1,
+			ShootingMode:              1,
+			FilmAdvanceMode:           99,
+			AFMode:                    1,
+		}
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+
+		if got == nil {
+			t.Fatalf("expected error %v, got nil", want)
+		}
+
+		if !errors.Is(got, want) {
+			t.Fatalf("expected error %v, got %v", want, got)
+		}
+	}
+
 	type testcase struct {
-		name           string
-		frame          records.EFRM
-		strict         bool
-		expectedResult display.DisplayableFrame
-		expectedError  error
+		name          string
+		frame         records.EFRM
+		strict        bool
+		expectedError error
 	}
 
 	tests := []testcase{
 		{
-			name: "invalid max aperture",
-			frame: records.EFRM{
-				RollYear:            math.MaxUint16,
-				RollMonth:           math.MaxUint8,
-				RollDay:             math.MaxUint8,
-				RollHour:            math.MaxUint8,
-				RollMinute:          math.MaxUint8,
-				RollSecond:          math.MaxUint8,
-				BatteryYear:         math.MaxUint16,
-				BatteryMonth:        math.MaxUint8,
-				BatteryDay:          math.MaxUint8,
-				BatteryHour:         math.MaxUint8,
-				BatteryMinute:       math.MaxUint8,
-				BatterySecond:       math.MaxUint8,
-				Year:                math.MaxUint16,
-				Month:               math.MaxUint8,
-				Day:                 math.MaxUint8,
-				Hour:                math.MaxUint8,
-				Minute:              math.MaxUint8,
-				Second:              math.MaxUint8,
-				MaxAperture:         10,
-				Tv:                  -1,
-				Av:                  0,
-				ExposureCompenation: 0,
-				MultipleExposure:    0,
-				FlashMode:           0,
-				MeteringMode:        0,
-				ShootingMode:        0,
-				FilmAdvanceMode:     10,
-				AFMode:              0,
-			},
+			name: "invalid max aperture in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.MaxAperture = 101
+
+				return f
+			}(),
 			strict:        true,
-			expectedError: domain.ErrInvalidAv,
+			expectedError: display.ErrInvalidMaxAperture,
 		},
 		{
-			name: "invalid shutter speed",
-			frame: records.EFRM{
-				RollYear:            math.MaxUint16,
-				RollMonth:           math.MaxUint8,
-				RollDay:             math.MaxUint8,
-				RollHour:            math.MaxUint8,
-				RollMinute:          math.MaxUint8,
-				RollSecond:          math.MaxUint8,
-				BatteryYear:         math.MaxUint16,
-				BatteryMonth:        math.MaxUint8,
-				BatteryDay:          math.MaxUint8,
-				BatteryHour:         math.MaxUint8,
-				BatteryMinute:       math.MaxUint8,
-				BatterySecond:       math.MaxUint8,
-				Year:                math.MaxUint16,
-				Month:               math.MaxUint8,
-				Day:                 math.MaxUint8,
-				Hour:                math.MaxUint8,
-				Minute:              math.MaxUint8,
-				Second:              math.MaxUint8,
-				Tv:                  1,
-				Av:                  0,
-				ExposureCompenation: 0,
-				MultipleExposure:    0,
-				FlashMode:           0,
-				MeteringMode:        0,
-				ShootingMode:        0,
-				FilmAdvanceMode:     10,
-				AFMode:              0,
-			},
+			name: "invalid tv in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.Tv = 101
+
+				return f
+			}(),
 			strict:        true,
-			expectedError: domain.ErrInvalidTv,
+			expectedError: display.ErrInvalidShutterSpeed,
 		},
 		{
-			name: "invalid bulb shutter speed",
-			frame: records.EFRM{
-				RollYear:         math.MaxUint16,
-				RollMonth:        math.MaxUint8,
-				RollDay:          math.MaxUint8,
-				RollHour:         math.MaxUint8,
-				RollMinute:       math.MaxUint8,
-				RollSecond:       math.MaxUint8,
-				BatteryYear:      math.MaxUint16,
-				BatteryMonth:     math.MaxUint8,
-				BatteryDay:       math.MaxUint8,
-				BatteryHour:      math.MaxUint8,
-				BatteryMinute:    math.MaxUint8,
-				BatterySecond:    math.MaxUint8,
-				Year:             math.MaxUint16,
-				Month:            math.MaxUint8,
-				Day:              math.MaxUint8,
-				Hour:             math.MaxUint8,
-				Minute:           math.MaxUint8,
-				Second:           math.MaxUint8,
-				Tv:               2130706432, // bulb magic number
-				BulbExposureTime: 0,
-			},
-			expectedError: domain.ErrInvalidBulbTime,
+			name: "invalid bulb exposure time",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.Tv = 2130706432 // Bulb
+				f.BulbExposureTime = 0
+
+				return f
+			}(),
+			expectedError: display.ErrInvalidBulbExposureTime,
 		},
 		{
-			name: "invalid aperture",
-			frame: records.EFRM{
-				RollYear:            math.MaxUint16,
-				RollMonth:           math.MaxUint8,
-				RollDay:             math.MaxUint8,
-				RollHour:            math.MaxUint8,
-				RollMinute:          math.MaxUint8,
-				RollSecond:          math.MaxUint8,
-				BatteryYear:         math.MaxUint16,
-				BatteryMonth:        math.MaxUint8,
-				BatteryDay:          math.MaxUint8,
-				BatteryHour:         math.MaxUint8,
-				BatteryMinute:       math.MaxUint8,
-				BatterySecond:       math.MaxUint8,
-				Year:                math.MaxUint16,
-				Month:               math.MaxUint8,
-				Day:                 math.MaxUint8,
-				Hour:                math.MaxUint8,
-				Minute:              math.MaxUint8,
-				Second:              math.MaxUint8,
-				Tv:                  -1,
-				Av:                  10,
-				ExposureCompenation: 0,
-				MultipleExposure:    0,
-				FlashMode:           0,
-				MeteringMode:        0,
-				ShootingMode:        0,
-				FilmAdvanceMode:     10,
-				AFMode:              0,
-			},
+			name: "invalid av in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.Av = 101
+
+				return f
+			}(),
 			strict:        true,
-			expectedError: domain.ErrInvalidAv,
+			expectedError: display.ErrInvalidAperture,
 		},
 		{
-			name: "invalid exposure compensation",
-			frame: records.EFRM{
-				RollYear:            math.MaxUint16,
-				RollMonth:           math.MaxUint8,
-				RollDay:             math.MaxUint8,
-				RollHour:            math.MaxUint8,
-				RollMinute:          math.MaxUint8,
-				RollSecond:          math.MaxUint8,
-				BatteryYear:         math.MaxUint16,
-				BatteryMonth:        math.MaxUint8,
-				BatteryDay:          math.MaxUint8,
-				BatteryHour:         math.MaxUint8,
-				BatteryMinute:       math.MaxUint8,
-				BatterySecond:       math.MaxUint8,
-				Year:                math.MaxUint16,
-				Month:               math.MaxUint8,
-				Day:                 math.MaxUint8,
-				Hour:                math.MaxUint8,
-				Minute:              math.MaxUint8,
-				Second:              math.MaxUint8,
-				Tv:                  -1,
-				Av:                  0,
-				ExposureCompenation: 1,
-				MultipleExposure:    0,
-				FlashMode:           0,
-				MeteringMode:        0,
-				ShootingMode:        0,
-				FilmAdvanceMode:     10,
-				AFMode:              0,
-			},
+			name: "invalid exposure compensation in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.ExposureCompenation = 101
+
+				return f
+			}(),
 			strict:        true,
-			expectedError: domain.ErrUnknownExposureComp,
+			expectedError: display.ErrInvalidExposureCompensation,
 		},
 		{
-			name: "invalid multiple exposure value",
-			frame: records.EFRM{
-				RollYear:            math.MaxUint16,
-				RollMonth:           math.MaxUint8,
-				RollDay:             math.MaxUint8,
-				RollHour:            math.MaxUint8,
-				RollMinute:          math.MaxUint8,
-				RollSecond:          math.MaxUint8,
-				BatteryYear:         math.MaxUint16,
-				BatteryMonth:        math.MaxUint8,
-				BatteryDay:          math.MaxUint8,
-				BatteryHour:         math.MaxUint8,
-				BatteryMinute:       math.MaxUint8,
-				BatterySecond:       math.MaxUint8,
-				Year:                math.MaxUint16,
-				Month:               math.MaxUint8,
-				Day:                 math.MaxUint8,
-				Hour:                math.MaxUint8,
-				Minute:              math.MaxUint8,
-				Second:              math.MaxUint8,
-				Tv:                  -1,
-				Av:                  0,
-				ExposureCompenation: 0,
-				MultipleExposure:    2,
-			},
-			expectedError: domain.ErrUnknownMultipleExposure,
+			name: "invalid multiple exposure in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.MultipleExposure = 101
+
+				return f
+			}(),
+			strict:        true,
+			expectedError: display.ErrInvalidMultipleExposure,
 		},
 	}
 
@@ -326,248 +261,140 @@ func Test_FrameBuilder_WithExposureSettings(t *testing.T) {
 			t.Parallel()
 
 			ctx := t.Context()
-
 			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
-			result, err := frameBuilder.
-				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx, tt.strict).
-				WithCameraModesAndFlashInfo(ctx, false).
-				WithCustomFunctionsAndFocusPoints(ctx, false).
-				WithThumbnail(ctx, nil).
-				Build()
+			_, err := frameBuilder.Build(ctx, tt.frame, nil, tt.strict)
 
-			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf("expected error %v, got %v", tt.expectedError, err)
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if result != tt.expectedResult {
-				t.Fatalf("expected result %v, got %v",
-					tt.expectedResult, result)
-			}
+			assertError(t, err, tt.expectedError)
 		})
 	}
 }
 
-//nolint:exhaustruct // only partial is needed
-func Test_FrameBuilder_WithCameraModesAndFlashInfo(t *testing.T) {
+//nolint:exhaustruct // only partial needed
+func Test_FrameBuilder_CameraModesAndFlash(t *testing.T) {
 	t.Parallel()
 
+	validBaseFrame := func() records.EFRM {
+		return records.EFRM{
+			CodeA:                     12,
+			CodeB:                     34,
+			RollYear:                  2023,
+			RollMonth:                 5,
+			RollDay:                   15,
+			RollHour:                  10,
+			RollMinute:                30,
+			RollSecond:                45,
+			BatteryYear:               2023,
+			BatteryMonth:              5,
+			BatteryDay:                15,
+			BatteryHour:               9,
+			BatteryMinute:             15,
+			BatterySecond:             0,
+			Year:                      2023,
+			Month:                     5,
+			Day:                       15,
+			Hour:                      10,
+			Minute:                    45,
+			Second:                    30,
+			MaxAperture:               280,
+			Tv:                        100,
+			Av:                        280,
+			ExposureCompenation:       100,
+			MultipleExposure:          1,
+			FlashExposureCompensation: 100,
+			FlashMode:                 1,
+			MeteringMode:              1,
+			ShootingMode:              1,
+			FilmAdvanceMode:           99,
+			AFMode:                    1,
+		}
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+
+		if got == nil {
+			t.Fatalf("expected error %v, got nil", want)
+		}
+
+		if !errors.Is(got, want) {
+			t.Fatalf("expected error %v, got %v", want, got)
+		}
+	}
+
 	type testcase struct {
-		name           string
-		frame          records.EFRM
-		strict         bool
-		expectedResult display.DisplayableFrame
-		expectedError  error
+		name          string
+		frame         records.EFRM
+		strict        bool
+		expectedError error
 	}
 
 	tests := []testcase{
 		{
-			name: "invalid flash exposure compensation",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 1,
-				FlashMode:                 0,
-				MeteringMode:              0,
-				ShootingMode:              0,
-				FilmAdvanceMode:           10,
-				AFMode:                    0,
-			},
+			name: "invalid flash exposure compensation in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.FlashExposureCompensation = 101
+
+				return f
+			}(),
 			strict:        true,
-			expectedError: domain.ErrUnknownExposureComp,
+			expectedError: display.ErrInvalidFlashExposureComp,
 		},
 		{
-			name: "invalid flash exposure compensation",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 0,
-				FlashMode:                 2,
-			},
-			expectedError: domain.ErrUnknownFlashMode,
+			name: "invalid flash mode in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.FlashMode = 101
+
+				return f
+			}(),
+			strict:        true,
+			expectedError: display.ErrInvalidFlashMode,
 		},
 		{
-			name: "invalid metering mode",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 0,
-				FlashMode:                 0,
-				MeteringMode:              4,
-			},
-			expectedError: domain.ErrUnknownMeteringMode,
+			name: "invalid metering mode in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.MeteringMode = 101
+
+				return f
+			}(),
+			strict:        true,
+			expectedError: display.ErrInvalidMeteringMode,
 		},
 		{
-			name: "invalid shooting mode",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 0,
-				FlashMode:                 0,
-				MeteringMode:              0,
-				ShootingMode:              6,
-			},
-			expectedError: domain.ErrUnknownShootingMode,
+			name: "invalid shooting mode in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.ShootingMode = 101
+
+				return f
+			}(),
+			strict:        true,
+			expectedError: display.ErrInvalidShootingMode,
 		},
 		{
-			name: "invalid film advance mode",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 0,
-				FlashMode:                 0,
-				MeteringMode:              0,
-				ShootingMode:              0,
-				FilmAdvanceMode:           0,
-			},
-			expectedError: domain.ErrUnknownFilmAdvanceMode,
+			name: "invalid film advance mode in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.FilmAdvanceMode = 101
+
+				return f
+			}(),
+			strict:        true,
+			expectedError: display.ErrInvalidFilmAdvanceMode,
 		},
 		{
-			name: "invalid auto focus mode",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 0,
-				FlashMode:                 0,
-				MeteringMode:              0,
-				ShootingMode:              0,
-				FilmAdvanceMode:           10,
-				AFMode:                    3,
-			},
-			expectedError: domain.ErrUnknownAutoFocusMode,
+			name: "invalid auto focus mode in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.AFMode = 101
+
+				return f
+			}(),
+			strict:        true,
+			expectedError: display.ErrInvalidAutoFocusMode,
 		},
 	}
 
@@ -576,170 +403,130 @@ func Test_FrameBuilder_WithCameraModesAndFlashInfo(t *testing.T) {
 			t.Parallel()
 
 			ctx := t.Context()
-
 			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
-			result, err := frameBuilder.
-				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx, false).
-				WithCameraModesAndFlashInfo(ctx, tt.strict).
-				WithCustomFunctionsAndFocusPoints(ctx, false).
-				WithThumbnail(ctx, nil).
-				Build()
+			_, err := frameBuilder.Build(ctx, tt.frame, nil, tt.strict)
 
-			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf("expected error %v, got %v", tt.expectedError, err)
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if result != tt.expectedResult {
-				t.Fatalf("expected result %v, got %v",
-					tt.expectedResult, result)
-			}
+			assertError(t, err, tt.expectedError)
 		})
 	}
 }
 
-//nolint:exhaustruct // only partial is needed
-func Test_FrameBuilder_CustomFunctionsAndSuccess(t *testing.T) {
+//nolint:exhaustruct // only partial needed
+func Test_FrameBuilder_CustomFunctionsAndFocus(t *testing.T) {
 	t.Parallel()
+
+	validBaseFrame := func() records.EFRM {
+		return records.EFRM{
+			CodeA:                     12,
+			CodeB:                     34,
+			RollYear:                  2023,
+			RollMonth:                 5,
+			RollDay:                   15,
+			RollHour:                  10,
+			RollMinute:                30,
+			RollSecond:                45,
+			BatteryYear:               2023,
+			BatteryMonth:              5,
+			BatteryDay:                15,
+			BatteryHour:               9,
+			BatteryMinute:             15,
+			BatterySecond:             0,
+			Year:                      2023,
+			Month:                     5,
+			Day:                       15,
+			Hour:                      10,
+			Minute:                    45,
+			Second:                    30,
+			MaxAperture:               280,
+			Tv:                        100,
+			Av:                        280,
+			ExposureCompenation:       100,
+			MultipleExposure:          1,
+			FlashExposureCompensation: 100,
+			FlashMode:                 1,
+			MeteringMode:              1,
+			ShootingMode:              1,
+			FilmAdvanceMode:           99,
+			AFMode:                    1,
+		}
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+
+		if got == nil {
+			t.Fatalf("expected error %v, got nil", want)
+		}
+
+		if !errors.Is(got, want) {
+			t.Fatalf("expected error %v, got %v", want, got)
+		}
+	}
+
+	assertResult := func(t *testing.T, got, want display.DisplayableFrame, err error) {
+		t.Helper()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if got != want {
+			t.Fatalf("expected result %+v, got %+v", want, got)
+		}
+	}
 
 	type testcase struct {
 		name           string
 		frame          records.EFRM
 		strict         bool
-		expectedResult display.DisplayableFrame
 		expectedError  error
+		expectedResult display.DisplayableFrame
 	}
 
 	tests := []testcase{
 		{
-			name: "invalid custom functions",
-			frame: records.EFRM{
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				Av:                        0,
-				ExposureCompenation:       0,
-				MultipleExposure:          0,
-				FlashExposureCompensation: 0,
-				FlashMode:                 0,
-				MeteringMode:              0,
-				ShootingMode:              0,
-				FilmAdvanceMode:           10,
-				AFMode:                    0,
-				CustomFunction0:           math.MaxUint8 - 1,
-			},
+			name: "invalid custom function in strict mode",
+			frame: func() records.EFRM {
+				f := validBaseFrame()
+				f.CustomFunction0 = 100
+
+				return f
+			}(),
 			strict:        true,
-			expectedError: display.ErrInvalidCustomFunction,
+			expectedError: domain.ErrInvalidCustomFunction,
 		},
 		{
-			name: "successful build",
-			frame: records.EFRM{
-				CodeA:                     math.MaxUint32,
-				CodeB:                     math.MaxUint32,
-				FocalLength:               math.MaxUint32,
-				RollYear:                  math.MaxUint16,
-				RollMonth:                 math.MaxUint8,
-				RollDay:                   math.MaxUint8,
-				RollHour:                  math.MaxUint8,
-				RollMinute:                math.MaxUint8,
-				RollSecond:                math.MaxUint8,
-				BatteryYear:               math.MaxUint16,
-				BatteryMonth:              math.MaxUint8,
-				BatteryDay:                math.MaxUint8,
-				BatteryHour:               math.MaxUint8,
-				BatteryMinute:             math.MaxUint8,
-				BatterySecond:             math.MaxUint8,
-				Year:                      math.MaxUint16,
-				Month:                     math.MaxUint8,
-				Day:                       math.MaxUint8,
-				Hour:                      math.MaxUint8,
-				Minute:                    math.MaxUint8,
-				Second:                    math.MaxUint8,
-				Tv:                        -1,
-				IsoM:                      math.MaxUint32,
-				IsoDX:                     math.MaxUint32,
-				MaxAperture:               math.MaxUint32,
-				Av:                        math.MaxUint32,
-				ExposureCompenation:       -1,
-				MultipleExposure:          99,
-				FlashExposureCompensation: -1,
-				FlashMode:                 99,
-				MeteringMode:              99,
-				ShootingMode:              99,
-				FilmAdvanceMode:           99,
-				AFMode:                    99,
-				CustomFunction0:           math.MaxUint8,
-				CustomFunction1:           1,
-				CustomFunction2:           math.MaxUint8,
-				CustomFunction3:           math.MaxUint8,
-				CustomFunction4:           math.MaxUint8,
-				CustomFunction5:           math.MaxUint8,
-				CustomFunction6:           math.MaxUint8,
-				CustomFunction7:           math.MaxUint8,
-				CustomFunction8:           math.MaxUint8,
-				CustomFunction9:           math.MaxUint8,
-				CustomFunction10:          math.MaxUint8,
-				CustomFunction11:          math.MaxUint8,
-				CustomFunction12:          math.MaxUint8,
-				CustomFunction13:          math.MaxUint8,
-				CustomFunction14:          math.MaxUint8,
-				CustomFunction15:          math.MaxUint8,
-				CustomFunction16:          math.MaxUint8,
-				CustomFunction17:          math.MaxUint8,
-				CustomFunction18:          math.MaxUint8,
-				CustomFunction19:          math.MaxUint8,
-			},
+			name:  "valid frame",
+			frame: validBaseFrame(),
 			expectedResult: display.DisplayableFrame{
-				CustomFunctions: display.DisplayableCustomFunctions{
-					0:  " ",
-					1:  "1",
-					2:  " ",
-					3:  " ",
-					4:  " ",
-					5:  " ",
-					6:  " ",
-					7:  " ",
-					8:  " ",
-					9:  " ",
-					10: " ",
-					11: " ",
-					12: " ",
-					13: " ",
-					14: " ",
-					15: " ",
-					16: " ",
-					17: " ",
-					18: " ",
-					19: " ",
+				FrameNumber:          0,
+				FilmID:               "12-034",
+				FilmLoadedAt:         "2023-05-15 10:30:45",
+				BatteryLoadedAt:      "2023-05-15 09:15:00",
+				TakenAt:              "2023-05-15 10:45:30",
+				MaxAperture:          "f/2.8",
+				Tv:                   "1\"",
+				Av:                   "f/2.8",
+				FocalLength:          "0mm",
+				IsoDX:                "0",
+				IsoM:                 "0",
+				ExposureCompensation: "+1.0",
+				MultipleExposure:     "ON",
+				FlashExposureComp:    "+1.0",
+				FlashMode:            "ON",
+				MeteringMode:         "Center averaging",
+				ShootingMode:         "Program AE",
+				AFMode:               "One-Shot AF",
+				CustomFunctions: [20]string{
+					"0", "0", "0", "0", "0",
+					"0", "0", "0", "0", "0",
+					"0", "0", "0", "0", "0",
+					"0", "0", "0", "0", "0",
+				},
+				FocusingPoints: domain.FocusPoints{
+					Selection: 0,
+					Points:    [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
 				},
 			},
 		},
@@ -750,37 +537,17 @@ func Test_FrameBuilder_CustomFunctionsAndSuccess(t *testing.T) {
 			t.Parallel()
 
 			ctx := t.Context()
-
 			frameBuilder := display.NewFrameBuilder(newTestLogger())
 
-			result, err := frameBuilder.
-				WithFrameMetadata(ctx, tt.frame).
-				WithExposureSettings(ctx, false).
-				WithCameraModesAndFlashInfo(ctx, false).
-				WithCustomFunctionsAndFocusPoints(ctx, tt.strict).
-				WithThumbnail(ctx, nil).
-				Build()
+			result, err := frameBuilder.Build(ctx, tt.frame, nil, tt.strict)
 
 			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf("expected error %v, got %v", tt.expectedError, err)
-				}
+				assertError(t, err, tt.expectedError)
 
 				return
 			}
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if result != tt.expectedResult {
-				t.Fatalf("expected result %v, got %v",
-					tt.expectedResult, result)
-			}
+			assertResult(t, result, tt.expectedResult, err)
 		})
 	}
 }

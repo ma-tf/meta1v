@@ -2,11 +2,17 @@ package exif
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/ma-tf/meta1v/pkg/records"
+)
+
+var (
+	ErrBuildExifData = errors.New("failed to build exif data")
+	ErrRunExifTool   = errors.New("failed to run exiftool")
 )
 
 type Service interface {
@@ -35,7 +41,7 @@ func (s service) WriteEXIF(
 ) error {
 	data, err := s.builder.Build(efrm, strict)
 	if err != nil {
-		return fmt.Errorf("failed to build exif data: %w", err)
+		return errors.Join(ErrBuildExifData, err)
 	}
 
 	var args strings.Builder
@@ -48,7 +54,7 @@ func (s service) WriteEXIF(
 
 	err = s.runner.Run(ctx, targetFile, args.String())
 	if err != nil {
-		return fmt.Errorf("failed to run exiftool: %w", err)
+		return errors.Join(ErrRunExifTool, err)
 	}
 
 	return nil
