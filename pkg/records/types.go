@@ -47,7 +47,7 @@ type EFRM struct {
 	Tv                        int32   // 0x24-0x27
 	Av                        uint32  // 0x28-0x2B
 	IsoM                      uint32  // 0x2C-0x2F
-	ExposureCompenation       int32   // 0x30-0x33
+	ExposureCompensation      int32   // 0x30-0x33
 	FlashExposureCompensation int32   // 0x34-0x37
 	Year                      uint16  // 0x38-0x39
 	Month                     uint8   // 0x3A

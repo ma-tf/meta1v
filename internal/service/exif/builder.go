@@ -4,6 +4,7 @@ package exif
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -30,9 +31,6 @@ var (
 	ErrParseMaxApertureValue   = errors.New(
 		"failed to parse max aperture value",
 	)
-	ErrParseMaxApertureFloat = errors.New(
-		"failed to parse max aperture float value",
-	)
 	ErrParseExposureTimeValue = errors.New(
 		"failed to parse exposure time value",
 	)
@@ -42,76 +40,76 @@ var (
 	ErrParseFlashModeValue = errors.New("failed to parse flash mode value")
 )
 
+const (
+	TagUserComment          = "EXIF:UserComment"
+	TagDateTimeOriginal     = "EXIF:DateTimeOriginal"
+	TagExposureCompensation = "EXIF:ExposureCompensation"
+	TagFlashExposureComp    = "EXIF:FlashExposureComp"
+	TagFlash                = "EXIF:Flash"
+	TagMeteringMode         = "EXIF:MeteringMode"
+
+	TagFNumber          = "XMP-exif:FNumber"
+	TagMaxApertureValue = "XMP-exif:MaxApertureValue"
+	TagExposureTime     = "XMP-exif:ExposureTime"
+	TagFocalLength      = "XMP-exif:FocalLength"
+	TagISO              = "XMP-exif:ISO"
+
+	TagBatteryLoadedDate = "XMP-AnalogueData:BatteryLoadedDate"
+	TagFilmLoadedDate    = "XMP-AnalogueData:FilmLoadedDate"
+	TagFilmISO           = "XMP-AnalogueData:FilmISO"
+	TagManualISO         = "XMP-AnalogueData:ManualISO"
+	TagFlashMode         = "XMP-AnalogueData:FlashMode"
+	TagShootingMode      = "XMP-AnalogueData:ShootingMode"
+	TagAFMode            = "XMP-AnalogueData:AFMode"
+	TagFilmAdvanceMode   = "XMP-AnalogueData:FilmAdvanceMode"
+	TagMultipleExposure  = "XMP-AnalogueData:MultipleExposure"
+
+	metadataCapacity = 21
+)
+
 type Builder interface {
 	Build(efrm records.EFRM, strict bool) (map[string]string, error)
 }
 
-type builder struct{}
-
-func NewExifBuilder() Builder {
-	return builder{}
+type builder struct {
+	log *slog.Logger
 }
 
-func (b builder) Build(
+func NewExifBuilder(log *slog.Logger) Builder {
+	return &builder{log: log}
+}
+
+func (b *builder) Build(
 	efrm records.EFRM,
 	strict bool,
 ) (map[string]string, error) {
-	metadata := map[string]string{}
+	metadata := make(map[string]string, metadataCapacity)
 
-	frameMeta, err := b.withFrameMetadata(efrm)
-	if err != nil {
+	if err := b.withFrameMetadata(metadata, efrm); err != nil {
 		return nil, err
 	}
 
-	exposure, err := b.withExposureSettings(efrm, strict)
-	if err != nil {
+	if err := b.withExposureSettings(metadata, efrm, strict); err != nil {
 		return nil, err
 	}
 
-	flashSettings, err := b.withFlashSettings(efrm, strict)
-	if err != nil {
+	if err := b.withFlashSettings(metadata, efrm, strict); err != nil {
 		return nil, err
 	}
 
-	cameraModes, err := b.withCameraModes(efrm, strict)
-	if err != nil {
+	if err := b.withCameraModes(metadata, efrm); err != nil {
 		return nil, err
-	}
-
-	for k, v := range frameMeta {
-		if v != "" {
-			metadata[k] = v
-		}
-	}
-
-	for k, v := range exposure {
-		if v != "" {
-			metadata[k] = v
-		}
-	}
-
-	for k, v := range flashSettings {
-		if v != "" {
-			metadata[k] = v
-		}
-	}
-
-	for k, v := range cameraModes {
-		if v != "" {
-			metadata[k] = v
-		}
 	}
 
 	return metadata, nil
 }
 
-func (b builder) withFrameMetadata(
+func (b *builder) withFrameMetadata(
+	metadata map[string]string,
 	efrm records.EFRM,
-) (map[string]string, error) {
-	result := make(map[string]string)
-
+) error {
 	if remarks := string(domain.NewRemarks(efrm.Remarks)); remarks != "" {
-		result["EXIF:UserComment"] = remarks
+		metadata[TagUserComment] = remarks
 	}
 
 	frameDatetime, err := domain.NewDateTime(
@@ -119,9 +117,9 @@ func (b builder) withFrameMetadata(
 		efrm.Hour, efrm.Minute, efrm.Second,
 	)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidCaptureDate, err)
+		return errors.Join(ErrInvalidCaptureDate, err)
 	} else if frameDatetime != "" {
-		result["EXIF:DateTimeOriginal"] = string(frameDatetime)
+		metadata[TagDateTimeOriginal] = string(frameDatetime)
 	}
 
 	batteryDatetime, err := domain.NewDateTime(
@@ -129,9 +127,9 @@ func (b builder) withFrameMetadata(
 		efrm.BatteryHour, efrm.BatteryMinute, efrm.BatterySecond,
 	)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidBatteryLoadedDate, err)
+		return errors.Join(ErrInvalidBatteryLoadedDate, err)
 	} else if batteryDatetime != "" {
-		result["XMP-AnalogueData:BatteryLoadedDate"] = string(batteryDatetime)
+		metadata[TagBatteryLoadedDate] = string(batteryDatetime)
 	}
 
 	rollDatetime, err := domain.NewDateTime(
@@ -139,18 +137,72 @@ func (b builder) withFrameMetadata(
 		efrm.RollHour, efrm.RollMinute, efrm.RollSecond,
 	)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidFilmLoadedDate, err)
+		return errors.Join(ErrInvalidFilmLoadedDate, err)
 	} else if rollDatetime != "" {
-		result["XMP-AnalogueData:FilmLoadedDate"] = string(rollDatetime)
+		metadata[TagFilmLoadedDate] = string(rollDatetime)
 	}
 
-	return result, nil
+	return nil
 }
 
-func (b builder) processApertureValue(av uint32, strict bool) (string, error) {
+func (b *builder) withExposureSettings(
+	metadata map[string]string,
+	efrm records.EFRM,
+	strict bool,
+) error {
+	fNumber, err := b.processApertureValue(efrm.Av, strict)
+	if err != nil {
+		return errors.Join(ErrParseApertureValue, err)
+	} else if fNumber != "" {
+		metadata[TagFNumber] = fNumber
+	}
+
+	maxAv, err := b.processApertureValue(efrm.MaxAperture, strict)
+	if err != nil {
+		return errors.Join(ErrParseMaxApertureValue, err)
+	} else if maxAv != "" {
+		const apexConst = 2.0
+
+		f, _ := strconv.ParseFloat(maxAv, 64)
+		mav := fmt.Sprintf("%.1f", apexConst*math.Log2(f))
+		metadata[TagMaxApertureValue] = mav
+	}
+
+	exposureTime, err := b.processExposureTime(
+		efrm.Tv, efrm.BulbExposureTime, strict,
+	)
+	if err != nil {
+		return err
+	} else if exposureTime != "" {
+		metadata[TagExposureTime] = exposureTime
+	}
+
+	if focalLength := domain.NewFocalLength(efrm.FocalLength); focalLength != "" {
+		metadata[TagFocalLength] = string(focalLength)
+	}
+
+	if isoDX := string(domain.NewIso(efrm.IsoDX)); isoDX != "" {
+		metadata[TagISO], metadata[TagFilmISO] = isoDX, isoDX
+	}
+
+	if isoM := string(domain.NewIso(efrm.IsoM)); isoM != "" {
+		metadata[TagISO], metadata[TagManualISO] = isoM, isoM
+	}
+
+	ec, err := domain.NewExposureCompensation(efrm.ExposureCompensation, strict)
+	if err != nil {
+		return errors.Join(ErrInvalidExposureCompensation, err)
+	} else if ec != "" {
+		metadata[TagExposureCompensation] = string(ec)
+	}
+
+	return nil
+}
+
+func (b *builder) processApertureValue(av uint32, strict bool) (string, error) {
 	avValue, err := domain.NewAv(av, strict)
 	if err != nil {
-		return "", fmt.Errorf("aperture conversion failed: %w", err)
+		return "", err //nolint:wrapcheck // propagated and wrapped by caller
 	}
 
 	if avValue == "" || avValue == "00" {
@@ -160,22 +212,21 @@ func (b builder) processApertureValue(av uint32, strict bool) (string, error) {
 	return string(avValue), nil
 }
 
-func (b builder) processExposureTime(
+func (b *builder) processExposureTime(
 	tv int32,
 	bulbTime uint32,
 	strict bool,
 ) (string, error) {
 	tvValue, err := domain.NewTv(tv, strict)
 	if err != nil {
-		return "", fmt.Errorf("exposure time conversion failed: %w", err)
+		return "", errors.Join(ErrParseExposureTimeValue, err)
 	}
 
 	switch {
 	case tvValue == "Bulb":
 		_, bulbErr := domain.NewBulbExposureTime(bulbTime)
 		if bulbErr != nil {
-			return "",
-				fmt.Errorf("bulb exposure time conversion failed: %w", bulbErr)
+			return "", errors.Join(ErrParseBulbExposureTime, bulbErr)
 		}
 
 		return strconv.FormatUint(uint64(bulbTime), 10), nil
@@ -186,84 +237,24 @@ func (b builder) processExposureTime(
 	}
 }
 
-func (b builder) withExposureSettings(
+func (b *builder) withFlashSettings(
+	metadata map[string]string,
 	efrm records.EFRM,
 	strict bool,
-) (map[string]string, error) {
-	result := make(map[string]string)
-
-	fNumber, err := b.processApertureValue(efrm.Av, strict)
-	if err != nil {
-		return nil, errors.Join(ErrParseApertureValue, err)
-	} else if fNumber != "" {
-		result["XMP-exif:FNumber"] = fNumber
-	}
-
-	maxAv, err := b.processApertureValue(efrm.MaxAperture, strict)
-	if err != nil {
-		return nil, errors.Join(ErrParseMaxApertureValue, err)
-	} else if maxAv != "" {
-		f, parseErr := strconv.ParseFloat(maxAv, 64)
-		if parseErr != nil {
-			return nil, errors.Join(ErrParseMaxApertureFloat, parseErr)
-		}
-
-		const apexConst = 2.0
-
-		mav := fmt.Sprintf("%.1f", apexConst*math.Log2(f))
-		result["XMP-exif:MaxApertureValue"] = mav
-	}
-
-	exposureTime, err := b.processExposureTime(
-		efrm.Tv, efrm.BulbExposureTime, strict,
-	)
-	if err != nil {
-		return nil, errors.Join(ErrParseExposureTimeValue, err)
-	} else if exposureTime != "" {
-		result["XMP-exif:ExposureTime"] = exposureTime
-	}
-
-	if focalLength := domain.NewFocalLength(efrm.FocalLength); focalLength != "" {
-		result["XMP-exif:FocalLength"] = string(focalLength)
-	}
-
-	if isoDX := string(domain.NewIso(efrm.IsoDX)); isoDX != "" {
-		result["XMP-exif:ISO"], result["XMP-AnalogueData:FilmISO"] = isoDX, isoDX
-	}
-
-	if isoM := string(domain.NewIso(efrm.IsoM)); isoM != "" {
-		result["XMP-exif:ISO"], result["XMP-AnalogueData:ManualISO"] = isoM, isoM
-	}
-
-	ec, err := domain.NewExposureCompensation(efrm.ExposureCompenation, strict)
-	if err != nil {
-		return nil, errors.Join(ErrInvalidExposureCompensation, err)
-	} else if ec != "" {
-		result["EXIF:ExposureCompensation"] = string(ec)
-	}
-
-	return result, nil
-}
-
-func (b builder) withFlashSettings(
-	efrm records.EFRM,
-	strict bool,
-) (map[string]string, error) {
-	result := make(map[string]string)
-
+) error {
 	fec, err := domain.NewExposureCompensation(
 		efrm.FlashExposureCompensation,
 		strict,
 	)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidFlashExposureComp, err)
+		return errors.Join(ErrInvalidFlashExposureComp, err)
 	} else if fec != "" {
-		result["EXIF:FlashExposureComp"] = string(fec)
+		metadata[TagFlashExposureComp] = string(fec)
 	}
 
 	flashMode, err := domain.NewFlashMode(efrm.FlashMode)
 	if err != nil {
-		return nil, errors.Join(
+		return errors.Join(
 			ErrInvalidFlashMode, ErrParseFlashModeValue, err,
 		)
 	} else if flashMode != "" {
@@ -281,55 +272,53 @@ func (b builder) withFlashSettings(
 		}
 
 		if flashBitmask != "" {
-			result["EXIF:Flash"] = flashBitmask
+			metadata[TagFlash] = flashBitmask
 		}
 
-		result["XMP-AnalogueData:FlashMode"] = string(flashMode)
+		metadata[TagFlashMode] = string(flashMode)
 	}
 
-	return result, nil
+	return nil
 }
 
-func (b builder) withCameraModes(
+func (b *builder) withCameraModes(
+	metadata map[string]string,
 	efrm records.EFRM,
-	_ bool,
-) (map[string]string, error) {
-	result := make(map[string]string)
-
+) error {
 	mm, err := domain.NewMeteringMode(efrm.MeteringMode)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidMeteringMode, err)
+		return errors.Join(ErrInvalidMeteringMode, err)
 	} else if mm != "" {
-		result["EXIF:MeteringMode"] = string(mm)
+		metadata[TagMeteringMode] = string(mm)
 	}
 
 	sm, err := domain.NewShootingMode(efrm.ShootingMode)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidShootingMode, err)
+		return errors.Join(ErrInvalidShootingMode, err)
 	} else if sm != "" {
-		result["XMP-AnalogueData:ShootingMode"] = string(sm)
+		metadata[TagShootingMode] = string(sm)
 	}
 
 	afm, err := domain.NewAutoFocusMode(efrm.AFMode)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidAutoFocusMode, err)
+		return errors.Join(ErrInvalidAutoFocusMode, err)
 	} else if afm != "" {
-		result["XMP-AnalogueData:AFMode"] = string(afm)
+		metadata[TagAFMode] = string(afm)
 	}
 
 	fam, err := domain.NewFilmAdvanceMode(efrm.FilmAdvanceMode)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidFilmAdvanceMode, err)
+		return errors.Join(ErrInvalidFilmAdvanceMode, err)
 	} else if fam != "" {
-		result["XMP-AnalogueData:FilmAdvanceMode"] = string(fam)
+		metadata[TagFilmAdvanceMode] = string(fam)
 	}
 
 	me, err := domain.NewMultipleExposure(efrm.MultipleExposure)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidMultipleExposure, err)
+		return errors.Join(ErrInvalidMultipleExposure, err)
 	} else if me != "" {
-		result["XMP-AnalogueData:MultipleExposure"] = string(me)
+		metadata[TagMultipleExposure] = string(me)
 	}
 
-	return result, nil
+	return nil
 }

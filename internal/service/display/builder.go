@@ -181,7 +181,7 @@ func (b *builder) withExposureSettings(
 	}
 
 	exposureCompensation, err := domain.NewExposureCompensation(
-		efrm.ExposureCompenation,
+		efrm.ExposureCompensation,
 		strict,
 	)
 	if err != nil {

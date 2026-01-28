@@ -38,7 +38,7 @@ func Test_FrameBuilder_FrameMetadata(t *testing.T) {
 			MaxAperture:               280,
 			Tv:                        100,
 			Av:                        280,
-			ExposureCompenation:       100,
+			ExposureCompensation:      100,
 			MultipleExposure:          1,
 			FlashExposureCompensation: 100,
 			FlashMode:                 1,
@@ -157,7 +157,7 @@ func Test_FrameBuilder_ExposureSettings(t *testing.T) {
 			MaxAperture:               280,
 			Tv:                        100,
 			Av:                        280,
-			ExposureCompenation:       100,
+			ExposureCompensation:      100,
 			MultipleExposure:          1,
 			FlashExposureCompensation: 100,
 			FlashMode:                 1,
@@ -236,7 +236,7 @@ func Test_FrameBuilder_ExposureSettings(t *testing.T) {
 			name: "invalid exposure compensation in strict mode",
 			frame: func() records.EFRM {
 				f := validBaseFrame()
-				f.ExposureCompenation = 101
+				f.ExposureCompensation = 101
 
 				return f
 			}(),
@@ -299,7 +299,7 @@ func Test_FrameBuilder_CameraModesAndFlash(t *testing.T) {
 			MaxAperture:               280,
 			Tv:                        100,
 			Av:                        280,
-			ExposureCompenation:       100,
+			ExposureCompensation:      100,
 			MultipleExposure:          1,
 			FlashExposureCompensation: 100,
 			FlashMode:                 1,
@@ -441,7 +441,7 @@ func Test_FrameBuilder_CustomFunctionsAndFocus(t *testing.T) {
 			MaxAperture:               280,
 			Tv:                        100,
 			Av:                        280,
-			ExposureCompenation:       100,
+			ExposureCompensation:      100,
 			MultipleExposure:          1,
 			FlashExposureCompensation: 100,
 			FlashMode:                 1,
