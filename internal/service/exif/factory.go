@@ -4,11 +4,14 @@ package exif
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 
 	"github.com/ma-tf/meta1v/internal/service/osexec"
 )
+
+var ErrExifToolBinaryNotFound = errors.New("exiftool binary not found in PATH")
 
 type exiftoolCommandFactory struct {
 	lookPath osexec.LookPath
@@ -28,7 +31,7 @@ func NewExiftoolCommandFactory(
 	lookPath osexec.LookPath,
 ) ExiftoolCommandFactory {
 	if _, err := lookPath.LookPath("exiftool"); err != nil {
-		panic("exiftool binary not found in PATH")
+		panic(ErrExifToolBinaryNotFound)
 	}
 
 	return &exiftoolCommandFactory{
