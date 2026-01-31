@@ -11,24 +11,23 @@ import (
 )
 
 var (
-	ErrExifServiceUnavailable = errors.New("exif service unavailable")
-	ErrFailedToInterpretEFD   = errors.New("failed to interpret EFD file")
-	ErrDuplicateFrameNumber   = errors.New("duplicate frame number in EFD file")
-	ErrFrameNumberNotFound    = errors.New("frame number not found in EFD file")
+	ErrFailedToInterpretEFD = errors.New("failed to interpret EFD file")
+	ErrDuplicateFrameNumber = errors.New("duplicate frame number in EFD file")
+	ErrFrameNumberNotFound  = errors.New("frame number not found in EFD file")
 )
 
 type exportUseCase struct {
-	efdService         efd.Service
-	exifServiceFactory exif.ServiceFactory
+	efdService  efd.Service
+	exifService exif.Service
 }
 
 func NewUseCase(
 	efdService efd.Service,
-	exifServiceFactory exif.ServiceFactory,
+	exifService exif.Service,
 ) UseCase {
 	return exportUseCase{
-		efdService:         efdService,
-		exifServiceFactory: exifServiceFactory,
+		efdService:  efdService,
+		exifService: exifService,
 	}
 }
 
@@ -39,11 +38,6 @@ func (uc exportUseCase) ExportExif(
 	targetFile string,
 	strict bool,
 ) error {
-	exifService, err := uc.exifServiceFactory.Create()
-	if err != nil {
-		return errors.Join(ErrExifServiceUnavailable, err)
-	}
-
 	root, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return errors.Join(ErrFailedToInterpretEFD, err)
@@ -75,7 +69,7 @@ func (uc exportUseCase) ExportExif(
 		)
 	}
 
-	err = exifService.WriteEXIF(ctx, efrm, targetFile, strict)
+	err = uc.exifService.WriteEXIF(ctx, efrm, targetFile, strict)
 	if err != nil {
 		return fmt.Errorf("write exif failed: %w", err)
 	}

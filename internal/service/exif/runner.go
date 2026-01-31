@@ -6,8 +6,6 @@ import (
 	"context"
 	_ "embed"
 	"errors"
-	"os"
-	"os/exec"
 
 	"github.com/ma-tf/meta1v/internal/service/osfs"
 )
@@ -19,6 +17,7 @@ var (
 	ErrCreatePipe          = errors.New("failed to create pipe")
 	ErrStartExifTool       = errors.New("failed to start exiftool")
 	ErrExifToolFailed      = errors.New("exiftool failed")
+	ErrContextDone         = errors.New("context done before writing config")
 	ErrWriteExifToolConfig = errors.New("failed to write exiftool config")
 )
 
@@ -27,11 +26,18 @@ type ToolRunner interface {
 }
 
 type exifToolRunner struct {
-	fs osfs.FileSystem
+	fs      osfs.FileSystem
+	factory ExiftoolCommandFactory
 }
 
-func NewExifToolRunner(fs osfs.FileSystem) ToolRunner {
-	return &exifToolRunner{fs: fs}
+func NewExifToolRunner(
+	fs osfs.FileSystem,
+	factory ExiftoolCommandFactory,
+) ToolRunner {
+	return &exifToolRunner{
+		fs:      fs,
+		factory: factory,
+	}
 }
 
 // Run executes exiftool with a config passed via fd 3 and metadata on stdin.
@@ -47,19 +53,9 @@ func (r *exifToolRunner) Run(
 
 	defer rPipe.Close()
 
-	cmd := exec.CommandContext(ctx, "exiftool",
-		"-config", "/proc/self/fd/3",
-		"-m",
-		"-@", "-",
-		targetFile,
-	)
-
 	var out bytes.Buffer
 
-	cmd.Stderr = &out
-	cmd.Stdout = &out
-	cmd.Stdin = bytes.NewBufferString(metadata)
-	cmd.ExtraFiles = []*os.File{rPipe}
+	cmd := r.factory.CreateCommand(ctx, targetFile, &out, metadata, rPipe)
 
 	if err = cmd.Start(); err != nil {
 		return errors.Join(ErrStartExifTool, err)
@@ -71,13 +67,16 @@ func (r *exifToolRunner) Run(
 
 	go func() {
 		defer wPipe.Close()
+		defer close(writeErr)
 
 		select {
 		case <-ctx.Done():
-			writeErr <- ctx.Err()
+			writeErr <- errors.Join(ErrContextDone, ctx.Err())
 		default:
 			_, cfgWriteError := wPipe.WriteString(exiftoolConfig)
-			writeErr <- cfgWriteError
+			if cfgWriteError != nil {
+				writeErr <- errors.Join(ErrWriteExifToolConfig, cfgWriteError)
+			}
 		}
 	}()
 
@@ -86,7 +85,7 @@ func (r *exifToolRunner) Run(
 	}
 
 	if err = <-writeErr; err != nil {
-		return errors.Join(ErrWriteExifToolConfig, err)
+		return err
 	}
 
 	return nil

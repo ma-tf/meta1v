@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/ma-tf/meta1v/pkg/records"
@@ -30,6 +31,18 @@ type service struct {
 	builder Builder
 }
 
+func NewService(
+	log *slog.Logger,
+	runner ToolRunner,
+	builder Builder,
+) Service {
+	return &service{
+		log:     log,
+		runner:  runner,
+		builder: builder,
+	}
+}
+
 // WriteEXIF runs exiftool with a user-defined config. It avoids shells and
 // temporary files by streaming the config over an anonymous pipe and passing
 // the read end as fd 3 to the child process (accessible as /proc/self/fd/3).
@@ -44,9 +57,17 @@ func (s service) WriteEXIF(
 		return errors.Join(ErrBuildExifData, err)
 	}
 
+	keys := make([]string, 0, len(data))
+	for tag := range data {
+		keys = append(keys, tag)
+	}
+
+	sort.Strings(keys)
+
 	var args strings.Builder
 
-	for tag, value := range data {
+	for _, tag := range keys {
+		value := data[tag]
 		if value != "" {
 			fmt.Fprintf(&args, "-%s=%s\n", tag, value)
 		}

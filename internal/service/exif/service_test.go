@@ -137,11 +137,11 @@ func Test_WriteEXIF(t *testing.T) {
 				tt.expect(mockToolRunner, mockBuilder, tt)
 			}
 
-			svc, _ := exif.NewServiceFactory(
+			svc := exif.NewService(
 				logger,
 				mockToolRunner,
 				mockBuilder,
-			).Create()
+			)
 
 			err := svc.WriteEXIF(
 				ctx,

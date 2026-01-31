@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-var _ FileSystem = osFS{}
-
 type FileSystem interface {
 	Create(name string) (File, error)
 	Open(name string) (File, error)
