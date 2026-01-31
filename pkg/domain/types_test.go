@@ -771,3 +771,103 @@ func Test_NewMultipleExposure(t *testing.T) {
 		})
 	}
 }
+
+//nolint:exhaustruct // only partial needed
+func Test_NewCustomFunctions(t *testing.T) {
+	t.Parallel()
+
+	type testcase struct {
+		name           string
+		cfs            [20]byte
+		strict         bool
+		expectedResult domain.CustomFunctions
+		expectedError  error
+	}
+
+	tests := []testcase{
+		{
+			name: "valid Custom Functions",
+			cfs: [20]byte{
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			},
+			strict: true,
+			expectedResult: domain.CustomFunctions{
+				"0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+				"0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+			},
+		},
+		{
+			name: "CustomFunctions with max value set to space",
+			cfs: [20]byte{
+				math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+				math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+				math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+				math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+				math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+			},
+			strict: true,
+			expectedResult: domain.CustomFunctions{
+				" ", " ", " ", " ", " ", " ", " ", " ", " ", " ",
+				" ", " ", " ", " ", " ", " ", " ", " ", " ", " ",
+			},
+		},
+		{
+			name: "invalid CustomFunctions with strict mode",
+			cfs: [20]byte{
+				254, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			},
+			strict:        true,
+			expectedError: domain.ErrInvalidCustomFunction,
+		},
+		{
+			name: "invalid CustomFunctions without strict mode",
+			cfs: [20]byte{
+				254, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			},
+			strict: false,
+			expectedResult: domain.CustomFunctions{
+				"254", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+				"0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfs, err := domain.NewCustomFunctions(tc.cfs, tc.strict)
+
+			if cfs != tc.expectedResult {
+				t.Errorf("expected CustomFunctions %v, got %v",
+					tc.expectedResult, cfs)
+			}
+
+			if !errors.Is(err, tc.expectedError) {
+				t.Errorf("expected error %v, got %v",
+					tc.expectedError, err)
+			}
+		})
+	}
+}
+
+func Test_NewFocusPoints(t *testing.T) {
+	t.Parallel()
+
+	selection := uint32(3)
+	points := [8]byte{1, 0, 1, 0, 1, 0, 1, 0}
+
+	expected := domain.FocusPoints{
+		Selection: uint(selection),
+		Points:    points,
+	}
+
+	result := domain.NewFocusPoints(selection, points)
+
+	if result != expected {
+		t.Errorf("expected FocusPoints %v, got %v", expected, result)
+	}
+}
