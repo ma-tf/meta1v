@@ -1,3 +1,4 @@
+//go:generate mockgen -destination=./mocks/service_mock.go -package=exif_test github.com/ma-tf/meta1v/internal/service/exif Service
 package exif
 
 import (

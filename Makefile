@@ -5,7 +5,7 @@ all: tidy generate lint build test
 generate:
 	go generate ./...
 
-PKGS := $(shell go list ./... 2>/dev/null | grep -Ev '(/test|/mocks|/cmd$$|/osfs$$|^github\.com/ma-tf/meta1v$$)')
+PKGS := $(shell go list ./... 2>/dev/null | grep -Ev '(/test|/mocks|/cmd$$|/osfs$$|/osexec$$|^github\.com/ma-tf/meta1v$$)')
 
 .PHONY: test
 test:

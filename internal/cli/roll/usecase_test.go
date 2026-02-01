@@ -239,14 +239,16 @@ func Test_Export(t *testing.T) {
 			mockFileSystem := osfs_test.NewMockFileSystem(mockCtrl)
 			mockFile := osfs_test.NewMockFile(mockCtrl)
 
-			tt.expect(
-				*mockEFDService,
-				*mockDisplayableRollFactory,
-				*mockFileSystem,
-				*mockCSVService,
-				mockFile,
-				tt,
-			)
+			if tt.expect != nil {
+				tt.expect(
+					*mockEFDService,
+					*mockDisplayableRollFactory,
+					*mockFileSystem,
+					*mockCSVService,
+					mockFile,
+					tt,
+				)
+			}
 
 			uc := roll.NewExportUseCase(
 				mockEFDService,

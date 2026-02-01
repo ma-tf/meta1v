@@ -14,6 +14,7 @@ var (
 	ErrFailedToInterpretEFD = errors.New("failed to interpret EFD file")
 	ErrDuplicateFrameNumber = errors.New("duplicate frame number in EFD file")
 	ErrFrameNumberNotFound  = errors.New("frame number not found in EFD file")
+	ErrWriteEXIFFailed      = errors.New("failed to write EXIF data")
 )
 
 type exportUseCase struct {
@@ -71,7 +72,7 @@ func (uc exportUseCase) ExportExif(
 
 	err = uc.exifService.WriteEXIF(ctx, efrm, targetFile, strict)
 	if err != nil {
-		return fmt.Errorf("write exif failed: %w", err)
+		return errors.Join(ErrWriteEXIFFailed, err)
 	}
 
 	return nil
