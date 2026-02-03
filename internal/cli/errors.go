@@ -3,10 +3,13 @@ package cli
 import "errors"
 
 var (
-	ErrEFDFileMustBeProvided      = errors.New("efd file must be specified")
-	ErrFailedToOpenFile           = errors.New("failed to open specified file")
-	ErrTargetFileMustBeSpecified  = errors.New("target file must be specified")
-	ErrFrameNumberMustBeSpecified = errors.New("frame number must be specified")
-	ErrTooManyArguments           = errors.New("too many arguments provided")
-	ErrFailedToGetStrictFlag      = errors.New("failed to get strict flag")
+	ErrFailedToOpenFile        = errors.New("failed to open specified file")
+	ErrFailedToGetStrictFlag   = errors.New("failed to get strict flag")
+	ErrOutputFileAlreadyExists = errors.New(
+		"output file already exists, use --force/-F to overwrite",
+	)
+	ErrFailedToGetForceFlag        = errors.New("failed to get force flag")
+	ErrForceFlagRequiresTargetFile = errors.New(
+		"--force/-F flag can only be used when exporting to a file",
+	)
 )

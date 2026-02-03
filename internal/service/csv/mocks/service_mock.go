@@ -41,6 +41,34 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
+// ExportCustomFunctions mocks base method.
+func (m *MockService) ExportCustomFunctions(w io.Writer, f display.DisplayableRoll) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportCustomFunctions", w, f)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExportCustomFunctions indicates an expected call of ExportCustomFunctions.
+func (mr *MockServiceMockRecorder) ExportCustomFunctions(w, f any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportCustomFunctions", reflect.TypeOf((*MockService)(nil).ExportCustomFunctions), w, f)
+}
+
+// ExportFrames mocks base method.
+func (m *MockService) ExportFrames(w io.Writer, f display.DisplayableRoll) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportFrames", w, f)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExportFrames indicates an expected call of ExportFrames.
+func (mr *MockServiceMockRecorder) ExportFrames(w, f any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportFrames", reflect.TypeOf((*MockService)(nil).ExportFrames), w, f)
+}
+
 // ExportRoll mocks base method.
 func (m *MockService) ExportRoll(w io.Writer, r display.DisplayableRoll) error {
 	m.ctrl.T.Helper()

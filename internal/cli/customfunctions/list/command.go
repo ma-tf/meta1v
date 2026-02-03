@@ -26,12 +26,9 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 
 For the meaning of each custom function and its respective value, check the
 Canon EOS-1V manual.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
-			if len(args) != 1 {
-				return cli.ErrEFDFileMustBeProvided
-			}
 
 			strict, err := cmd.Flags().GetBool("strict")
 			if err != nil {

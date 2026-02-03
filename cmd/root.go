@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lmittmann/tint"
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions"
 	"github.com/ma-tf/meta1v/internal/cli/exif"
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
@@ -67,7 +68,6 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 				slog.String("cfgFile", viper.ConfigFileUsed()),
 			)
 
-			// Apply timeout to context
 			ctx, cancel := context.WithTimeout(cmd.Context(), config.Timeout)
 			cancelTimeout = cancel
 			cmd.SetContext(ctx)
@@ -95,7 +95,7 @@ func Execute() {
 
 //nolint:gochecknoinits,exhaustruct // cobra boilerplate, slog boilerplate
 func init() {
-	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+	handler := tint.NewHandler(os.Stderr, &tint.Options{
 		Level: logLevel,
 	})
 	logger = slog.New(handler)

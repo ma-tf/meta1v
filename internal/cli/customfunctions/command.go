@@ -3,6 +3,7 @@ package customfunctions
 import (
 	"log/slog"
 
+	"github.com/ma-tf/meta1v/internal/cli/customfunctions/export"
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
 	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
@@ -19,13 +20,21 @@ Canon EOS-1V manual.`,
 		Aliases: []string{"cf"},
 	}
 
-	uc := NewListUseCase(
+	listUseCase := NewListUseCase(
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.DisplayService,
 	)
 
-	cmd.AddCommand(list.NewCommand(log, uc))
+	exportUseCase := NewExportUseCase(
+		ctr.EFDService,
+		ctr.DisplayableRollFactory,
+		ctr.CSVService,
+		ctr.FileSystem,
+	)
+
+	cmd.AddCommand(export.NewCommand(log, exportUseCase))
+	cmd.AddCommand(list.NewCommand(log, listUseCase))
 
 	return cmd
 }

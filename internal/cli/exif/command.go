@@ -10,12 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	requiredArgs           = 3
-	argsMissingTarget      = 2
-	argsMissingFrameNumber = 1
-	argsMissingEFD         = 0
-)
+const requiredArgsCount = 3
 
 var ErrInvalidFrameNumber = errors.New("invalid specified frame number")
 
@@ -34,20 +29,7 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "exif <efd_file> <frame_number> <target_file>",
 		Short: "Use the specified EFD file to write EXIF data to the target file.",
-		Args: func(_ *cobra.Command, args []string) error {
-			switch len(args) {
-			case argsMissingTarget:
-				return cli.ErrTargetFileMustBeSpecified
-			case argsMissingFrameNumber:
-				return cli.ErrFrameNumberMustBeSpecified
-			case argsMissingEFD:
-				return cli.ErrEFDFileMustBeProvided
-			case requiredArgs:
-				return nil
-			default:
-				return cli.ErrTooManyArguments
-			}
-		},
+		Args:  cobra.ExactArgs(requiredArgsCount),
 		RunE: func(command *cobra.Command, args []string) error {
 			ctx := command.Context()
 

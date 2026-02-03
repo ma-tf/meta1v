@@ -3,9 +3,9 @@ package roll
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
+	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/cli/roll/export"
 	"github.com/ma-tf/meta1v/internal/cli/roll/list"
 	"github.com/ma-tf/meta1v/internal/service/csv"
@@ -20,6 +20,7 @@ var (
 	ErrFailedToCreateOutputFile = errors.New(
 		"failed to create output file for roll",
 	)
+	ErrFailedToExport = errors.New("failed to export roll to CSV")
 )
 
 type listUseCase struct {
@@ -84,8 +85,9 @@ func NewExportUseCase(
 func (uc exportUseCase) Export(
 	ctx context.Context,
 	efdFile string,
-	outputFile string,
+	outputFile *string,
 	strict bool,
+	force bool,
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
@@ -97,14 +99,28 @@ func (uc exportUseCase) Export(
 		return errors.Join(ErrFailedToParseFile, err)
 	}
 
-	file, err := uc.fs.Create(outputFile)
-	if err != nil {
-		return errors.Join(ErrFailedToCreateOutputFile, err)
-	}
-	defer file.Close()
+	var writer osfs.File = os.Stdout
 
-	if err = uc.csvService.ExportRoll(file, dr); err != nil {
-		return fmt.Errorf("failed to export roll to CSV: %w", err)
+	if outputFile != nil {
+		flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
+		if force {
+			flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+		}
+
+		const permission = 0o666 // rw-rw-rw-
+		if writer, err = uc.fs.OpenFile(*outputFile, flags, permission); err != nil {
+			if !force && errors.Is(err, os.ErrExist) {
+				return cli.ErrOutputFileAlreadyExists
+			}
+
+			return errors.Join(ErrFailedToCreateOutputFile, err)
+		}
+
+		defer writer.Close()
+	}
+
+	if err = uc.csvService.ExportRoll(writer, dr); err != nil {
+		return errors.Join(ErrFailedToExport, err)
 	}
 
 	return nil

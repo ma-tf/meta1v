@@ -3,6 +3,7 @@ package frame
 import (
 	"log/slog"
 
+	"github.com/ma-tf/meta1v/internal/cli/frame/export"
 	"github.com/ma-tf/meta1v/internal/cli/frame/list"
 	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
@@ -17,13 +18,21 @@ exposure compensation, focus points, custom functions, and more.`,
 		Aliases: []string{"f"},
 	}
 
-	uc := NewListUseCase(
+	listUseCase := NewListUseCase(
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.DisplayService,
 	)
 
-	cmd.AddCommand(list.NewCommand(log, uc))
+	exportUseCase := NewExportUseCase(
+		ctr.EFDService,
+		ctr.DisplayableRollFactory,
+		ctr.CSVService,
+		ctr.FileSystem,
+	)
+
+	cmd.AddCommand(list.NewCommand(log, listUseCase))
+	cmd.AddCommand(export.NewCommand(log, exportUseCase))
 
 	return cmd
 }

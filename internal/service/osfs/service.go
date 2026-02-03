@@ -7,9 +7,10 @@ import (
 )
 
 type FileSystem interface {
-	Create(name string) (File, error)
+	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 	Open(name string) (File, error)
 	Pipe() (r *os.File, w *os.File, err error)
+	Stat(name string) (os.FileInfo, error)
 }
 
 type File interface {
@@ -23,13 +24,18 @@ type File interface {
 type osFS struct{}
 
 //nolint:wrapcheck // os package errors are sufficient
-func (osFS) Create(name string) (File, error) { return os.Create(name) }
+func (osFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
+	return os.OpenFile(name, flag, perm)
+}
 
 //nolint:wrapcheck // os package errors are sufficient
 func (osFS) Open(name string) (File, error) { return os.Open(name) }
 
 //nolint:wrapcheck // os package errors are sufficient
 func (osFS) Pipe() (*os.File, *os.File, error) { return os.Pipe() }
+
+//nolint:wrapcheck // os package errors are sufficient
+func (osFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
 
 func NewFileSystem() FileSystem {
 	return osFS{}

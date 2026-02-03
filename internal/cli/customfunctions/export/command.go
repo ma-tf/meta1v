@@ -15,7 +15,7 @@ const (
 	targetFileIndex = 1
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=export_test github.com/ma-tf/meta1v/internal/cli/roll/export UseCase
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=export_test github.com/ma-tf/meta1v/internal/cli/customfunctions/export UseCase
 type UseCase interface {
 	Export(
 		ctx context.Context,
@@ -26,13 +26,13 @@ type UseCase interface {
 	) error
 }
 
-func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
+func NewCommand(log *slog.Logger, useCase UseCase) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export <efd_file> [target_file]",
 		Args:  cobra.RangeArgs(minArgs, maxArgs),
-		Short: "Export roll information in csv format to stdout or specified file.",
-		Long: `Information about the film roll, including film ID, title, load date,
-frame count, ISO and user provided remarks.`,
+		Short: "Export custom functions information in csv format to stdout or specified file.",
+		Long: `Information about custom functions, including function ID, name, description,
+parameters and user provided remarks.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -62,7 +62,7 @@ frame count, ISO and user provided remarks.`,
 				slog.Bool("force", force),
 			)
 
-			return uc.Export(ctx, args[0], targetFile, strict, force)
+			return useCase.Export(ctx, args[0], targetFile, strict, force)
 		},
 	}
 

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli"
-	"github.com/ma-tf/meta1v/internal/cli/roll/export"
-	export_test "github.com/ma-tf/meta1v/internal/cli/roll/export/mocks"
+	"github.com/ma-tf/meta1v/internal/cli/frame/export"
+	export_test "github.com/ma-tf/meta1v/internal/cli/frame/export/mocks"
 	"github.com/spf13/cobra"
 	"go.uber.org/mock/gomock"
 )
@@ -59,7 +59,7 @@ func Test_NewCommand(t *testing.T) {
 		},
 		{
 			name:          "failed to get force flag",
-			strict:        setFalse(),
+			strict:        setTrue(),
 			force:         nil,
 			args:          []string{"file.efd", "output.csv"},
 			expect:        func(_ export_test.MockUseCase, _ testcase) {},
@@ -67,7 +67,7 @@ func Test_NewCommand(t *testing.T) {
 		},
 		{
 			name:          "force flag without target file",
-			strict:        setFalse(),
+			strict:        setTrue(),
 			force:         setTrue(),
 			args:          []string{"file.efd"},
 			expect:        func(_ export_test.MockUseCase, _ testcase) {},
@@ -91,9 +91,8 @@ func Test_NewCommand(t *testing.T) {
 			force:  setTrue(),
 			args:   []string{"file.efd", "output.csv"},
 			expect: func(uc export_test.MockUseCase, tt testcase) {
-				outputFile := "output.csv"
 				uc.EXPECT().
-					Export(gomock.Any(), tt.args[0], &outputFile, *tt.strict, *tt.force).
+					Export(gomock.Any(), tt.args[0], &tt.args[1], *tt.strict, *tt.force).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -155,6 +154,8 @@ func Test_NewCommand(t *testing.T) {
 			}
 
 			cmd := arrangeCmd(tt, mockUseCase)
+
+			cmd.SetArgs(tt.args)
 
 			err := cmd.Execute()
 

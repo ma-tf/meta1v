@@ -13,86 +13,6 @@ import (
 )
 
 //nolint:exhaustruct // only partial is needed
-func Test_NewCommand_Args(t *testing.T) {
-	t.Parallel()
-
-	buf := &bytes.Buffer{}
-	logger := slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
-		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-
-			return a
-		},
-	}))
-
-	type testcase struct {
-		name          string
-		args          []string
-		expectedError error
-	}
-
-	tests := []testcase{
-		{
-			name:          "no arguments",
-			args:          []string{},
-			expectedError: cli.ErrEFDFileMustBeProvided,
-		},
-		{
-			name:          "only first argument provided (efd file)",
-			args:          []string{"file.efd"},
-			expectedError: cli.ErrFrameNumberMustBeSpecified,
-		},
-		{
-			name:          "only first and second arguments provided (efd file, frame number)",
-			args:          []string{"file.efd", "1"},
-			expectedError: cli.ErrTargetFileMustBeSpecified,
-		},
-		{
-			name:          "too many arguments provided",
-			args:          []string{"file.efd", "1", "target.jpg", "extra_arg"},
-			expectedError: cli.ErrTooManyArguments,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockUseCase := exif_test.NewMockUseCase(ctrl)
-
-			cmd := exif.NewCommand(logger, mockUseCase)
-			cmd.SilenceUsage = true
-			cmd.SetArgs(tt.args)
-
-			err := cmd.Execute()
-
-			if tt.expectedError != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.expectedError)
-				}
-
-				if !errors.Is(err, tt.expectedError) {
-					t.Fatalf("expected error %v, got %v", tt.expectedError, err)
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("expected no error, got %v", err)
-
-				return
-			}
-		})
-	}
-}
-
-//nolint:exhaustruct // only partial is needed
 func Test_NewCommand(t *testing.T) {
 	t.Parallel()
 
@@ -111,11 +31,8 @@ func Test_NewCommand(t *testing.T) {
 		name           string
 		args           []string
 		registerStrict bool
-		expect         func(
-			mockUseCase *exif_test.MockUseCase,
-			tc testcase,
-		)
-		expectedError error
+		expect         func(mockUseCase *exif_test.MockUseCase, tc testcase)
+		expectedError  error
 	}
 
 	tests := []testcase{
@@ -157,15 +74,23 @@ func Test_NewCommand(t *testing.T) {
 		},
 	}
 
-	assertError := func(t *testing.T, got, want error) {
+	assertError := func(t *testing.T, expected, got error) {
 		t.Helper()
 
-		if got == nil {
-			t.Fatalf("expected error %v, got nil", want)
+		if expected != nil {
+			if got == nil {
+				t.Fatalf("expected error %v, got nil", expected)
+			}
+
+			if !errors.Is(got, expected) {
+				t.Fatalf("expected error %v, got %v", expected, got)
+			}
+
+			return
 		}
 
-		if !errors.Is(got, want) {
-			t.Fatalf("expected error %v, got %v", want, got)
+		if got != nil {
+			t.Fatalf("expected no error, got %v", got)
 		}
 	}
 
@@ -193,15 +118,7 @@ func Test_NewCommand(t *testing.T) {
 
 			err := cmd.Execute()
 
-			if tt.expectedError != nil {
-				assertError(t, err, tt.expectedError)
-
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("expected no error, got %v", err)
-			}
+			assertError(t, tt.expectedError, err)
 		})
 	}
 }

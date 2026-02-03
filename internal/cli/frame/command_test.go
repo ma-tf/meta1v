@@ -27,7 +27,7 @@ func Test_NewCommand(t *testing.T) {
 	ctr := container.New(logger)
 	cmd := frame.NewCommand(logger, ctr)
 
-	const expectedSubcommands = 1
+	const expectedSubcommands = 2
 	if len(cmd.Commands()) != expectedSubcommands {
 		t.Fatalf("expected %d subcommand to be registered, got %d",
 			expectedSubcommands, len(cmd.Commands()))

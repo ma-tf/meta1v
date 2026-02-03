@@ -31,19 +31,11 @@ func Test_CommandRun(t *testing.T) {
 		name           string
 		args           []string
 		registerStrict bool
-		expect         func(
-			uc list_test.MockUseCase,
-			tt testcase,
-		)
-		expectedError error
+		expect         func(uc list_test.MockUseCase, tt testcase)
+		expectedError  error
 	}
 
 	tests := []testcase{
-		{
-			name:          "no filename provided",
-			args:          []string{},
-			expectedError: cli.ErrEFDFileMustBeProvided,
-		},
 		{
 			name:           "strict flag not registered",
 			args:           []string{"file.efd"},
@@ -62,15 +54,27 @@ func Test_CommandRun(t *testing.T) {
 		},
 	}
 
-	assertError := func(t *testing.T, got, want error) {
+	assertError := func(t *testing.T, tt testcase, got error) {
 		t.Helper()
 
-		if got == nil {
-			t.Fatalf("expected error %v, got nil", want)
+		if tt.expectedError != nil {
+			if got == nil {
+				t.Fatalf("expected error %v, got nil", tt.expectedError)
+			}
+
+			if !errors.Is(got, tt.expectedError) {
+				t.Fatalf(
+					"expected error %v to be in chain, got %v",
+					tt.expectedError,
+					got,
+				)
+			}
+
+			return
 		}
 
-		if !errors.Is(got, want) {
-			t.Fatalf("expected error %v to be in chain, got %v", want, got)
+		if got != nil {
+			t.Fatalf("unexpected error: %v", got)
 		}
 	}
 
@@ -96,15 +100,7 @@ func Test_CommandRun(t *testing.T) {
 
 			err := cmd.Execute()
 
-			if tt.expectedError != nil {
-				assertError(t, err, tt.expectedError)
-
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			assertError(t, tt, err)
 		})
 	}
 }

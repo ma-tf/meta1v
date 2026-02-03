@@ -22,12 +22,9 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 taking a photograph to stdout.
 
 For the setting focusing points on the camera, check the Canon EOS-1V manual.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
-			if len(args) != 1 {
-				return cli.ErrEFDFileMustBeProvided
-			}
 
 			strict, err := cmd.Flags().GetBool("strict")
 			if err != nil {
