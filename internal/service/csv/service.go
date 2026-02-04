@@ -29,7 +29,7 @@ func (s *service) ExportRoll(w io.Writer, r display.DisplayableRoll) error {
 		"FILM ID,FIRST ROW,FRAMES PER ROW,TITLE,FILM LOADED AT,FRAME COUNT,ISO (DX),REMARKS\n",
 	)
 
-	_, err := fmt.Fprintf(&b, "%s,%s,%s,%s,%s,%s,%s,%s",
+	_, err := fmt.Fprintf(&b, "%s,%s,%s,%s,%s,%s,%s,%s\n",
 		r.FilmID,
 		r.FirstRow,
 		r.PerRow,

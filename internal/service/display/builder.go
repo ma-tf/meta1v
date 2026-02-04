@@ -98,7 +98,10 @@ func (b *builder) Build(
 
 	b.log.DebugContext(ctx, "parsed custom functions and focus points",
 		slog.Any("customFunctions", frame.CustomFunctions),
-		slog.Any("focusingPoints", frame.FocusingPoints),
+		slog.Group("focusingPoints",
+			slog.Uint64("selection", uint64(frame.FocusingPoints.Selection)),
+			slog.Any("points", frame.FocusingPoints.Points),
+		),
 	)
 
 	frame.Thumbnail = thumbnail
