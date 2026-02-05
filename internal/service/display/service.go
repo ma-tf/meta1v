@@ -3,11 +3,9 @@
 package display
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"strconv"
 	"strings"
 )
@@ -231,7 +229,11 @@ func (s *service) renderCustomFunctions(fr DisplayableFrame) string {
 func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) {
 	rows := make([]string, len(r.Frames))
 	for i, fr := range r.Frames {
-		rows[i] = s.renderFocusPoints(fr)
+		rows[i] = fmt.Sprintf("%-*s %-*d %-*s",
+			filmIDWidth, fr.FilmID,
+			frameNumberWidth, fr.FrameNumber,
+			focusingPointsWidth, pad(fr.FocusingPoints, focusingPointsPadding),
+		)
 	}
 
 	header := fmt.Sprintf("%-*s %-*s %-*s",
@@ -245,47 +247,6 @@ func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) {
 	for _, row := range rows {
 		fmt.Fprintln(w, row)
 	}
-}
-
-func (s *service) renderFocusPoints(
-	f DisplayableFrame,
-) string {
-	pf := f.FocusingPoints
-
-	if pf.Selection == math.MaxUint32 {
-		empty := "    \033[30m\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			" \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			"\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			" \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
-			"    \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\033[0m\n"
-
-		s := fmt.Sprintf("%-*s %-*d %-*s",
-			filmIDWidth, f.FilmID,
-			frameNumberWidth, f.FrameNumber,
-			focusingPointsWidth, pad(empty, focusingPointsPadding),
-		)
-
-		return s
-	}
-
-	p := make([]string, len(fpBits))
-	for i, fpBit := range fpBits {
-		p[i] = byteToBox(pf.Points[i], fpBit)
-	}
-
-	printableFocusPoints := "    " + p[0] + "\n" +
-		" " + p[2] + p[1] + "\n" +
-		p[4] + p[3] + "\n" +
-		" " + p[6] + p[5] + "\n" +
-		"    " + p[7] + "\n"
-
-	header := fmt.Sprintf("%-*s %-*d %-*s",
-		filmIDWidth, f.FilmID,
-		frameNumberWidth, f.FrameNumber,
-		focusingPointsWidth, pad(printableFocusPoints, focusingPointsPadding),
-	)
-
-	return header
 }
 
 func (s *service) DisplayThumbnails(w io.Writer, r DisplayableRoll) {
@@ -351,32 +312,4 @@ func pad[S ~string](s S, p int) S {
 	}
 
 	return S(sb.String())
-}
-
-//nolint:gochecknoglobals // not exported anyway
-var fpBits = [8]int{7, 2, 8, 3, 8, 2, 8, 7}
-
-func byteToBox(b byte, l int) string {
-	const emptyBox, filledBox = "\u25AF", "\u25AE"
-
-	var buf bytes.Buffer
-
-	for i, mask := 0, byte(math.MaxInt8+1); i < l; i, mask = i+1, mask>>1 {
-		var (
-			topOrBottomRow  = l == 7
-			startOfFullByte = l == 8 && i == 0
-			endOfBits       = l != 8 && i == l-1
-		)
-
-		switch {
-		case b&mask != 0:
-			buf.WriteString("\033[31m" + filledBox + "\033[0m ")
-		case topOrBottomRow || startOfFullByte || endOfBits:
-			buf.WriteString("\033[31m" + emptyBox + "\033[0m ")
-		default:
-			buf.WriteString(emptyBox + " ")
-		}
-	}
-
-	return buf.String()
 }

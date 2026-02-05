@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"log/slog"
-	"math"
-	"strings"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/service/display"
@@ -200,11 +198,11 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 	}
 }
 
-const esc = "\x1b"
+// const esc = "\x1b"
 
-func ansi(s string) []byte {
-	return []byte(strings.ReplaceAll(s, "<ESC>", esc))
-}
+// func ansi(s string) []byte {
+// 	return []byte(strings.ReplaceAll(s, "<ESC>", esc))
+// }
 
 //nolint:exhaustruct // only partial is needed
 func Test_DisplayFocusingPoints(t *testing.T) {
@@ -218,75 +216,18 @@ func Test_DisplayFocusingPoints(t *testing.T) {
 
 	tests := []testcase{
 		{
-			name: "no focusing points",
-			roll: display.DisplayableRoll{
-				Frames: []display.DisplayableFrame{
-					{},
-				},
-			},
-			expectedOutput: ansi(`FILM ID  FRAME NO. FOCUSING POINTS      
-----------------------------------------
-         0             <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m 
-                    <ESC>[31m▯<ESC>[0m ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ <ESC>[31m▯<ESC>[0m 
-                   <ESC>[31m▯<ESC>[0m ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ <ESC>[31m▯<ESC>[0m 
-                    <ESC>[31m▯<ESC>[0m ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ <ESC>[31m▯<ESC>[0m 
-                       <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m <ESC>[31m▯<ESC>[0m 
-                   
-
-`),
-		},
-		{
-			name: "empty focusing points",
+			name: "successfully print focusing points",
 			roll: display.DisplayableRoll{
 				Frames: []display.DisplayableFrame{
 					{
-						FocusingPoints: domain.FocusPoints{
-							Selection: math.MaxUint32,
-						},
+						FocusingPoints: "focusing points",
 					},
 				},
 			},
-			expectedOutput: ansi(`FILM ID  FRAME NO. FOCUSING POINTS      
+			expectedOutput: []byte(`FILM ID  FRAME NO. FOCUSING POINTS      
 ----------------------------------------
-         0             <ESC>[30m▯ ▯ ▯ ▯ ▯ ▯ ▯
-                    ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯
-                   ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯
-                    ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯ ▯
-                       ▯ ▯ ▯ ▯ ▯ ▯ ▯<ESC>[0m
-                   
-
-`),
-		},
-		{
-			name: "all focusing points",
-			roll: display.DisplayableRoll{
-				Frames: []display.DisplayableFrame{
-					{
-						FocusingPoints: domain.FocusPoints{
-							Selection: 1,
-							Points: [8]byte{
-								0b11111111,
-								0b11111111,
-								0b11111111,
-								0b11111111,
-								0b11111111,
-								0b11111111,
-								0b11111111,
-								0b11111111,
-							},
-						},
-					},
-				},
-			},
-			expectedOutput: ansi(`FILM ID  FRAME NO. FOCUSING POINTS      
-----------------------------------------
-         0             <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m 
-                    <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m 
-                   <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m 
-                    <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m 
-                       <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m <ESC>[31m▮<ESC>[0m 
-                   
-
+         0         focusing points
+     
 `),
 		},
 	}

@@ -853,21 +853,3 @@ func Test_NewCustomFunctions(t *testing.T) {
 		})
 	}
 }
-
-func Test_NewFocusPoints(t *testing.T) {
-	t.Parallel()
-
-	selection := uint32(3)
-	points := [8]byte{1, 0, 1, 0, 1, 0, 1, 0}
-
-	expected := domain.FocusPoints{
-		Selection: uint(selection),
-		Points:    points,
-	}
-
-	result := domain.NewFocusPoints(selection, points)
-
-	if result != expected {
-		t.Errorf("expected FocusPoints %v, got %v", expected, result)
-	}
-}

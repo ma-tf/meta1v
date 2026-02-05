@@ -310,15 +310,3 @@ func NewCustomFunctions(cfs [20]byte, strict bool) (CustomFunctions, error) {
 
 	return values, nil
 }
-
-type FocusPoints struct {
-	Selection uint
-	Points    [8]byte
-}
-
-func NewFocusPoints(selection uint32, points [8]byte) FocusPoints {
-	return FocusPoints{
-		Selection: uint(selection),
-		Points:    points,
-	}
-}

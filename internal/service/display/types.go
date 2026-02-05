@@ -46,10 +46,12 @@ type DisplayableFrame struct {
 	CustomFunctions domain.CustomFunctions
 	Remarks         domain.Remarks
 
-	FocusingPoints domain.FocusPoints
+	FocusingPoints DisplayableFocusPoints
 
 	Thumbnail *DisplayableThumbnail
 }
+
+type DisplayableFocusPoints string
 
 type DisplayableThumbnail struct {
 	Thumbnail string

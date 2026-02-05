@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
+	"strings"
 
 	"github.com/ma-tf/meta1v/pkg/domain"
 	"github.com/ma-tf/meta1v/pkg/records"
@@ -31,6 +33,59 @@ var (
 	ErrInvalidFilmAdvanceMode = errors.New("invalid film advance mode")
 	ErrInvalidAutoFocusMode   = errors.New("invalid auto focus mode")
 )
+
+const (
+	ansiRed   = "\033[31m"
+	ansiGray  = "\033[30m"
+	ansiReset = "\033[0m"
+
+	emptyBox  = "\u25AF"
+	filledBox = "\u25AE"
+
+	redFilledBox = ansiRed + filledBox + ansiReset + " "
+	redEmptyBox  = ansiRed + emptyBox + ansiReset + " "
+	greyBox      = emptyBox + " "
+
+	// - Manual focus is a single redEmptyBox among greyBoxes.
+	// - AI Servo AF is redEmptyBoxes on the edge. with greyBoxes in the interior.
+	// - One-Shot AF has redFilledBoxes for active focus points, redEmptyBoxes for inactive edge points,
+	//   and greyBoxes for inactive interior points.
+
+	emptyFocusPointsGrid = "    " + ansiGray + "\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+		" \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+		"\u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+		" \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF\n" +
+		"    \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF \u25AF" + ansiReset + "\n"
+
+	// focusPointBitCounts defines the number of bits used in each byte of focus point data.
+	// Canon EOS cameras use a 45-point AF grid arranged in 5 rows. The 8 bytes map to:
+	//
+	//		[0]: Row 0 top - 7 bits
+	//		[1]: Row 1 right - 2 bits,  [2]: Row 1 left - 8 bits
+	//		[3]: Row 2 right - 3 bits,  [4]: Row 2 left - 8 bits
+	//		[5]: Row 3 right - 2 bits,  [6]: Row 3 left - 8 bits
+	//		[7]: Row 4 bottom - 7 bits
+
+	topOrBottomRowBits = 7
+	leftSegmentBits    = 8
+
+	topBits                         = topOrBottomRowBits
+	topRightBits, topLeftBits       = 2, leftSegmentBits
+	middleRightBits, middleLeftBits = 3, leftSegmentBits
+	bottomRightBits, bottomLeftBits = 2, leftSegmentBits
+	bottomBits                      = topOrBottomRowBits
+
+	leftmostBitMask = byte(0b10000000)
+)
+
+//nolint:gochecknoglobals // package-level constant for focus point rendering
+var focusPointBitCounts = [8]int{
+	topBits,
+	topRightBits, topLeftBits,
+	middleRightBits, middleLeftBits,
+	bottomRightBits, bottomLeftBits,
+	bottomBits,
+}
 
 type builder struct {
 	log *slog.Logger
@@ -98,10 +153,7 @@ func (b *builder) Build(
 
 	b.log.DebugContext(ctx, "parsed custom functions and focus points",
 		slog.Any("customFunctions", frame.CustomFunctions),
-		slog.Group("focusingPoints",
-			slog.Uint64("selection", uint64(frame.FocusingPoints.Selection)),
-			slog.Any("points", frame.FocusingPoints.Points),
-		),
+		slog.String("focusingPoints", string(frame.FocusingPoints)),
 	)
 
 	frame.Thumbnail = thumbnail
@@ -279,18 +331,20 @@ func (b *builder) withCustomFunctionsAndFocusPoints(
 		)
 	}
 
-	focusingPoints := domain.NewFocusPoints(
+	rawFocusPointsBytes := [8]byte{
+		efrm.FocusPoints1,
+		efrm.FocusPoints2,
+		efrm.FocusPoints3,
+		efrm.FocusPoints4,
+		efrm.FocusPoints5,
+		efrm.FocusPoints6,
+		efrm.FocusPoints7,
+		efrm.FocusPoints8,
+	}
+
+	focusingPoints := b.formatFocusPoints(
 		efrm.FocusingPoint,
-		[8]byte{
-			efrm.FocusPoints1,
-			efrm.FocusPoints2,
-			efrm.FocusPoints3,
-			efrm.FocusPoints4,
-			efrm.FocusPoints5,
-			efrm.FocusPoints6,
-			efrm.FocusPoints7,
-			efrm.FocusPoints8,
-		},
+		rawFocusPointsBytes,
 	)
 
 	frame.CustomFunctions = customFunctions
@@ -310,4 +364,58 @@ func formatAperture(av uint32, strict bool) (domain.Av, error) {
 	}
 
 	return result, nil
+}
+
+func renderFocusPointByte(pointsByte byte, bitCount int) string {
+	var grid strings.Builder
+
+	isTopOrBottomRow := bitCount == topOrBottomRowBits
+	isLeftSegment := bitCount == leftSegmentBits
+
+	for bitIndex, mask := 0, leftmostBitMask; bitIndex < bitCount; bitIndex, mask = bitIndex+1, mask>>1 {
+		isFirstOrLastBit := (isLeftSegment && bitIndex == 0) ||
+			(!isLeftSegment && bitIndex == bitCount-1)
+		isEdge := isTopOrBottomRow || isFirstOrLastBit
+
+		isFocusPointActive := pointsByte&mask != 0
+
+		switch {
+		case isFocusPointActive:
+			grid.WriteString(redFilledBox) // Active focus point
+		case isEdge:
+			grid.WriteString(redEmptyBox) // Edge position, not active
+		default:
+			grid.WriteString(greyBox) // Interior position, not active
+		}
+	}
+
+	return grid.String()
+}
+
+func (b *builder) formatFocusPoints(
+	selection uint32,
+	points [8]byte,
+) DisplayableFocusPoints {
+	if selection == math.MaxUint32 {
+		return DisplayableFocusPoints(emptyFocusPointsGrid)
+	}
+
+	renderedSegments := make([]string, len(focusPointBitCounts))
+	for i, bitCount := range focusPointBitCounts {
+		renderedSegments[i] = renderFocusPointByte(points[i], bitCount)
+	}
+
+	// Assemble the 5-row grid layout:
+	// Row 0:     segment[0]              (7 points, indented)
+	// Row 1:  segment[2] + segment[1]    (10 points: 8 left + 2 right)
+	// Row 2:  segment[4] + segment[3]    (11 points: 8 left + 3 right)
+	// Row 3:  segment[6] + segment[5]    (10 points: 8 left + 2 right)
+	// Row 4:     segment[7]              (7 points, indented)
+	focusPointGrid := "    " + renderedSegments[0] + "\n" +
+		" " + renderedSegments[2] + renderedSegments[1] + "\n" +
+		renderedSegments[4] + renderedSegments[3] + "\n" +
+		" " + renderedSegments[6] + renderedSegments[5] + "\n" +
+		"    " + renderedSegments[7] + "\n"
+
+	return DisplayableFocusPoints(focusPointGrid)
 }
