@@ -198,12 +198,6 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 	}
 }
 
-// const esc = "\x1b"
-
-// func ansi(s string) []byte {
-// 	return []byte(strings.ReplaceAll(s, "<ESC>", esc))
-// }
-
 //nolint:exhaustruct // only partial is needed
 func Test_DisplayFocusingPoints(t *testing.T) {
 	t.Parallel()
@@ -220,14 +214,16 @@ func Test_DisplayFocusingPoints(t *testing.T) {
 			roll: display.DisplayableRoll{
 				Frames: []display.DisplayableFrame{
 					{
-						FocusingPoints: "focusing points",
+						FocusingPoints: `focusing
+points`,
 					},
 				},
 			},
 			expectedOutput: []byte(`FILM ID  FRAME NO. FOCUSING POINTS      
 ----------------------------------------
-         0         focusing points
-     
+         0         focusing
+                   points
+
 `),
 		},
 	}
