@@ -152,6 +152,7 @@ AAA-BB,2024-01-01T12:00:00Z,1,200,50mm,f/1.8,1/125,f/1.8,200,+0.3,+0.7,On,Evalua
 	}
 }
 
+//nolint:exhaustruct // only partial is needed
 func Test_ExportCustomFunctions_Error(t *testing.T) {
 	t.Parallel()
 
@@ -176,6 +177,7 @@ func Test_ExportCustomFunctions_Error(t *testing.T) {
 	}
 }
 
+//nolint:exhaustruct // only partial is needed
 func Test_ExportCustomFunctions_Success(t *testing.T) {
 	t.Parallel()
 

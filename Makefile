@@ -33,4 +33,7 @@ lint:
 launch:
 	go run main.go
 
-
+.PHONY: update
+update:
+	go get -u ./...
+	go mod tidy
