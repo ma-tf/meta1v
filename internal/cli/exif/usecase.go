@@ -41,7 +41,7 @@ func (uc exportUseCase) ExportExif(
 ) error {
 	root, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
-		return errors.Join(ErrFailedToInterpretEFD, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToInterpretEFD, efdFile, err)
 	}
 
 	var (
@@ -72,7 +72,7 @@ func (uc exportUseCase) ExportExif(
 
 	err = uc.exifService.WriteEXIF(ctx, efrm, targetFile, strict)
 	if err != nil {
-		return errors.Join(ErrWriteEXIFFailed, err)
+		return fmt.Errorf("%w on %q: %w", ErrWriteEXIFFailed, targetFile, err)
 	}
 
 	return nil

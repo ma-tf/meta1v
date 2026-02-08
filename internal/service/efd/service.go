@@ -54,7 +54,12 @@ func (s *service) RecordsFromFile(
 ) (records.Root, error) {
 	file, errFile := s.fs.Open(filename)
 	if errFile != nil {
-		return records.Root{}, errors.Join(ErrFailedToOpenFile, errFile)
+		return records.Root{}, fmt.Errorf(
+			"%w %q: %w",
+			ErrFailedToOpenFile,
+			filename,
+			errFile,
+		)
 	}
 	defer file.Close()
 
@@ -68,7 +73,12 @@ func (s *service) RecordsFromFile(
 		}
 
 		if errRaw != nil {
-			return records.Root{}, errors.Join(ErrFailedToReadRecord, errRaw)
+			return records.Root{}, fmt.Errorf(
+				"%w %q: %w",
+				ErrFailedToReadRecord,
+				filename,
+				errRaw,
+			)
 		}
 
 		if errProcess := s.processRecord(ctx, record); errProcess != nil {
@@ -78,7 +88,12 @@ func (s *service) RecordsFromFile(
 
 	root, err := s.builder.Build()
 	if err != nil {
-		return records.Root{}, errors.Join(ErrFailedToBuildRoot, err)
+		return records.Root{}, fmt.Errorf(
+			"%w %q: %w",
+			ErrFailedToBuildRoot,
+			filename,
+			err,
+		)
 	}
 
 	s.log.DebugContext(ctx, "efd records parsed",
@@ -121,6 +136,10 @@ func (s *service) processRecord(ctx context.Context, record records.Raw) error {
 
 		return nil
 	default:
-		return fmt.Errorf("%w: %s", ErrUnknownRecordType, magic)
+		return fmt.Errorf(
+			"%w: found %q, expected EFDF (file record), EFRM (frame record), or EFTP (thumbnail record)",
+			ErrUnknownRecordType,
+			magic,
+		)
 	}
 }

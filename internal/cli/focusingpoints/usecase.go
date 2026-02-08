@@ -3,6 +3,7 @@ package focusingpoints
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
@@ -42,12 +43,12 @@ func (uc listUseCase) List(
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
-		return errors.Join(ErrFailedToReadFile, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToReadFile, filename, err)
 	}
 
 	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
-		return errors.Join(ErrFailedToParseFile, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToParseFile, filename, err)
 	}
 
 	uc.displayService.DisplayFocusingPoints(os.Stdout, dr)

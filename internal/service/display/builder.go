@@ -32,6 +32,7 @@ var (
 	ErrInvalidShootingMode    = errors.New("invalid shooting mode")
 	ErrInvalidFilmAdvanceMode = errors.New("invalid film advance mode")
 	ErrInvalidAutoFocusMode   = errors.New("invalid auto focus mode")
+	ErrInvalidCustomFunctions = errors.New("failed to parse custom functions")
 )
 
 const (
@@ -167,14 +168,14 @@ func (b *builder) withFrameMetadata(
 ) error {
 	filmID, err := domain.NewFilmID(efrm.CodeA, efrm.CodeB)
 	if err != nil {
-		return errors.Join(ErrInvalidFilmID, err)
+		return wrapFrameError(ErrInvalidFilmID, err, efrm.FrameNumber)
 	}
 
 	filmLoadedAt, err := domain.NewDateTime(
 		efrm.RollYear, efrm.RollMonth, efrm.RollDay,
 		efrm.RollHour, efrm.RollMinute, efrm.RollSecond)
 	if err != nil {
-		return errors.Join(ErrInvalidFilmLoadedDate, err)
+		return wrapFrameError(ErrInvalidFilmLoadedDate, err, efrm.FrameNumber)
 	}
 
 	batteryLoadedAt, err := domain.NewDateTime(
@@ -182,14 +183,15 @@ func (b *builder) withFrameMetadata(
 		efrm.BatteryHour, efrm.BatteryMinute, efrm.BatterySecond,
 	)
 	if err != nil {
-		return errors.Join(ErrInvalidBatteryLoadedDate, err)
+		return wrapFrameError(
+			ErrInvalidBatteryLoadedDate, err, efrm.FrameNumber)
 	}
 
 	takenAt, err := domain.NewDateTime(
 		efrm.Year, efrm.Month, efrm.Day,
 		efrm.Hour, efrm.Minute, efrm.Second)
 	if err != nil {
-		return errors.Join(ErrInvalidCaptureDate, err)
+		return wrapFrameError(ErrInvalidCaptureDate, err, efrm.FrameNumber)
 	}
 
 	frame.FilmID = filmID
@@ -210,24 +212,25 @@ func (b *builder) withExposureSettings(
 ) error {
 	maxAperture, err := formatAperture(efrm.MaxAperture, strict)
 	if err != nil {
-		return errors.Join(ErrInvalidMaxAperture, err)
+		return wrapFrameError(ErrInvalidMaxAperture, err, efrm.FrameNumber)
 	}
 
 	tv, err := domain.NewTv(efrm.Tv, strict)
 	if err != nil {
-		return errors.Join(ErrInvalidShutterSpeed, err)
+		return wrapFrameError(ErrInvalidShutterSpeed, err, efrm.FrameNumber)
 	}
 
 	var bulbExposureTime domain.BulbExposureTime
 	if tv == "Bulb" {
 		if bulbExposureTime, err = domain.NewBulbExposureTime(efrm.BulbExposureTime); err != nil {
-			return errors.Join(ErrInvalidBulbExposureTime, err)
+			return wrapFrameError(
+				ErrInvalidBulbExposureTime, err, efrm.FrameNumber)
 		}
 	}
 
 	av, err := formatAperture(efrm.Av, strict)
 	if err != nil {
-		return errors.Join(ErrInvalidAperture, err)
+		return wrapFrameError(ErrInvalidAperture, err, efrm.FrameNumber)
 	}
 
 	focalLength := domain.NewFocalLength(efrm.FocalLength)
@@ -240,12 +243,13 @@ func (b *builder) withExposureSettings(
 		strict,
 	)
 	if err != nil {
-		return errors.Join(ErrInvalidExposureCompensation, err)
+		return wrapFrameError(
+			ErrInvalidExposureCompensation, err, efrm.FrameNumber)
 	}
 
 	multipleExposure, err := domain.NewMultipleExposure(efrm.MultipleExposure)
 	if err != nil {
-		return errors.Join(ErrInvalidMultipleExposure, err)
+		return wrapFrameError(ErrInvalidMultipleExposure, err, efrm.FrameNumber)
 	}
 
 	frame.MaxAperture = maxAperture
@@ -271,32 +275,33 @@ func (b *builder) withCameraModesAndFlashInfo(
 		strict,
 	)
 	if err != nil {
-		return errors.Join(ErrInvalidFlashExposureComp, err)
+		return wrapFrameError(
+			ErrInvalidFlashExposureComp, err, efrm.FrameNumber)
 	}
 
 	flashMode, err := domain.NewFlashMode(efrm.FlashMode)
 	if err != nil {
-		return errors.Join(ErrInvalidFlashMode, err)
+		return wrapFrameError(ErrInvalidFlashMode, err, efrm.FrameNumber)
 	}
 
 	meteringMode, err := domain.NewMeteringMode(efrm.MeteringMode)
 	if err != nil {
-		return errors.Join(ErrInvalidMeteringMode, err)
+		return wrapFrameError(ErrInvalidMeteringMode, err, efrm.FrameNumber)
 	}
 
 	shootingMode, err := domain.NewShootingMode(efrm.ShootingMode)
 	if err != nil {
-		return errors.Join(ErrInvalidShootingMode, err)
+		return wrapFrameError(ErrInvalidShootingMode, err, efrm.FrameNumber)
 	}
 
 	filmAdvanceMode, err := domain.NewFilmAdvanceMode(efrm.FilmAdvanceMode)
 	if err != nil {
-		return errors.Join(ErrInvalidFilmAdvanceMode, err)
+		return wrapFrameError(ErrInvalidFilmAdvanceMode, err, efrm.FrameNumber)
 	}
 
 	afMode, err := domain.NewAutoFocusMode(efrm.AFMode)
 	if err != nil {
-		return errors.Join(ErrInvalidAutoFocusMode, err)
+		return wrapFrameError(ErrInvalidAutoFocusMode, err, efrm.FrameNumber)
 	}
 
 	frame.FlashExposureComp = flashExposureComp
@@ -324,10 +329,10 @@ func (b *builder) withCustomFunctionsAndFocusPoints(
 
 	customFunctions, err := domain.NewCustomFunctions(cfs, strict)
 	if err != nil {
-		return fmt.Errorf(
-			"failed to parse custom functions %v: %w",
-			cfs,
+		return wrapFrameError(
+			fmt.Errorf("%w %q", ErrInvalidCustomFunctions, cfs),
 			err,
+			efrm.FrameNumber,
 		)
 	}
 
@@ -418,4 +423,8 @@ func (b *builder) formatFocusPoints(
 		"    " + renderedSegments[7] + "\n"
 
 	return DisplayableFocusPoints(focusPointGrid)
+}
+
+func wrapFrameError(baseErr, frameErr error, frameNumber uint32) error {
+	return fmt.Errorf("%w in frame %d: %w", baseErr, frameNumber, frameErr)
 }

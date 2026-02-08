@@ -3,6 +3,7 @@ package customfunctions
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -53,16 +54,16 @@ func (uc listUseCase) List(
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
-		return errors.Join(ErrFailedToReadFile, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToReadFile, filename, err)
 	}
 
 	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
-		return errors.Join(ErrFailedToParseFile, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToParseFile, filename, err)
 	}
 
 	if err = uc.displayService.DisplayCustomFunctions(os.Stdout, dr); err != nil {
-		return errors.Join(ErrFailedToDisplay, err)
+		return fmt.Errorf("%w: %w", ErrFailedToDisplay, err)
 	}
 
 	return nil
@@ -98,12 +99,12 @@ func (uc exportUseCase) Export(
 ) error {
 	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
-		return errors.Join(ErrFailedToReadFile, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToReadFile, efdFile, err)
 	}
 
 	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
-		return errors.Join(ErrFailedToParseFile, err)
+		return fmt.Errorf("%w %q: %w", ErrFailedToParseFile, efdFile, err)
 	}
 
 	var writer osfs.File = os.Stdout
@@ -120,14 +121,19 @@ func (uc exportUseCase) Export(
 				return cli.ErrOutputFileAlreadyExists
 			}
 
-			return errors.Join(ErrFailedToCreateOutputFile, err)
+			return fmt.Errorf(
+				"%w %q: %w",
+				ErrFailedToCreateOutputFile,
+				*outputFile,
+				err,
+			)
 		}
 
 		defer writer.Close()
 	}
 
 	if err = uc.csvService.ExportCustomFunctions(writer, dr); err != nil {
-		return errors.Join(ErrFailedToWriteCSV, err)
+		return fmt.Errorf("%w: %w", ErrFailedToWriteCSV, err)
 	}
 
 	return nil

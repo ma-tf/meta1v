@@ -2,7 +2,6 @@ package domain
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -21,11 +20,19 @@ func NewFilmID(prefix, suffix uint32) (FilmID, error) {
 
 	const maxA, maxB = 99, 999
 	if prefix > maxA {
-		return "", fmt.Errorf("%w: %d", ErrPrefixOutOfRange, prefix)
+		return "", fmt.Errorf(
+			"%w: got %d (valid: 0-99)",
+			ErrPrefixOutOfRange,
+			prefix,
+		)
 	}
 
 	if suffix > maxB {
-		return "", fmt.Errorf("%w: %d", ErrSuffixOutOfRange, suffix)
+		return "", fmt.Errorf(
+			"%w: got %d (valid: 0-999)",
+			ErrSuffixOutOfRange,
+			suffix,
+		)
 	}
 
 	s := fmt.Sprintf("%02d-%03d", prefix, suffix)
@@ -77,7 +84,7 @@ func NewDateTime(
 
 	t, err := time.Parse(time.DateTime, rawDate) // performs format validation
 	if err != nil || t.IsZero() {
-		return "", errors.Join(ErrInvalidDateTime, err)
+		return "", fmt.Errorf("%w: %s", ErrInvalidDateTime, rawDate)
 	}
 
 	return ValidatedDatetime(t.Format(time.DateTime)), nil
@@ -116,7 +123,7 @@ func NewTv(tv int32, strict bool) (Tv, error) {
 	if !ok {
 		if strict {
 			return "", fmt.Errorf(
-				"%w: Tv %d is invalid. Please check valid Tv values",
+				"%w: raw value %d",
 				ErrInvalidTv,
 				tv,
 			)
@@ -139,7 +146,7 @@ func NewAv(av uint32, strict bool) (Av, error) {
 	if !ok {
 		if strict {
 			return "", fmt.Errorf(
-				"%w: Av %d is invalid. Please check valid Av values",
+				"%w: raw value %d",
 				ErrInvalidAv,
 				av,
 			)
@@ -175,9 +182,9 @@ func NewExposureCompensation(
 	if !ok {
 		if strict {
 			return "", fmt.Errorf(
-				"%w: exposure compensation %d is invalid. "+
-					"Please check valid exposure compensation values",
-				ErrUnknownExposureComp, ec,
+				"%w: raw value %d",
+				ErrUnknownExposureComp,
+				ec,
 			)
 		}
 
@@ -201,7 +208,7 @@ type FlashMode string
 func NewFlashMode(fm uint32) (FlashMode, error) {
 	val, ok := defaultMaps.GetFlashMode(fm)
 	if !ok {
-		return "", ErrUnknownFlashMode
+		return "", fmt.Errorf("%w: raw value %d", ErrUnknownFlashMode, fm)
 	}
 
 	return val, nil
@@ -212,7 +219,7 @@ type MeteringMode string
 func NewMeteringMode(mm uint32) (MeteringMode, error) {
 	val, ok := defaultMaps.GetMeteringMode(mm)
 	if !ok {
-		return "", ErrUnknownMeteringMode
+		return "", fmt.Errorf("%w: raw value %d", ErrUnknownMeteringMode, mm)
 	}
 
 	return val, nil
@@ -223,7 +230,7 @@ type ShootingMode string
 func NewShootingMode(sm uint32) (ShootingMode, error) {
 	val, ok := defaultMaps.GetShootingMode(sm)
 	if !ok {
-		return "", ErrUnknownShootingMode
+		return "", fmt.Errorf("%w: raw value %d", ErrUnknownShootingMode, sm)
 	}
 
 	return val, nil
@@ -234,7 +241,11 @@ type FilmAdvanceMode string
 func NewFilmAdvanceMode(fam uint32) (FilmAdvanceMode, error) {
 	val, ok := defaultMaps.GetFilmAdvanceMode(fam)
 	if !ok {
-		return "", ErrUnknownFilmAdvanceMode
+		return "", fmt.Errorf(
+			"%w: raw value %d",
+			ErrUnknownFilmAdvanceMode,
+			fam,
+		)
 	}
 
 	return val, nil
@@ -245,7 +256,7 @@ type AutoFocusMode string
 func NewAutoFocusMode(afm uint32) (AutoFocusMode, error) {
 	val, ok := defaultMaps.GetAutoFocusMode(afm)
 	if !ok {
-		return "", ErrUnknownAutoFocusMode
+		return "", fmt.Errorf("%w: raw value %d", ErrUnknownAutoFocusMode, afm)
 	}
 
 	return val, nil
@@ -255,7 +266,10 @@ type BulbExposureTime string
 
 func NewBulbExposureTime(bd uint32) (BulbExposureTime, error) {
 	if bd == 0 { // manual says limits are 1 sec. - 18 hours
-		return "", ErrInvalidBulbTime
+		return "", fmt.Errorf(
+			"%w: got 0 seconds (minimum: 1)",
+			ErrInvalidBulbTime,
+		)
 	}
 
 	const minutesInHour, secondsInMinute = 60, 60
@@ -274,7 +288,11 @@ type MultipleExposure string
 func NewMultipleExposure(me uint32) (MultipleExposure, error) {
 	val, ok := defaultMaps.GetMultipleExposure(me)
 	if !ok {
-		return "", ErrUnknownMultipleExposure
+		return "", fmt.Errorf(
+			"%w: raw value %d",
+			ErrUnknownMultipleExposure,
+			me,
+		)
 	}
 
 	return val, nil

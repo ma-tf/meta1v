@@ -55,7 +55,12 @@ func (s service) WriteEXIF(
 ) error {
 	data, err := s.builder.Build(efrm, strict)
 	if err != nil {
-		return errors.Join(ErrBuildExifData, err)
+		return fmt.Errorf(
+			"%w for frame %d: %w",
+			ErrBuildExifData,
+			efrm.FrameNumber,
+			err,
+		)
 	}
 
 	keys := make([]string, 0, len(data))
@@ -76,7 +81,7 @@ func (s service) WriteEXIF(
 
 	err = s.runner.Run(ctx, targetFile, args.String())
 	if err != nil {
-		return errors.Join(ErrRunExifTool, err)
+		return fmt.Errorf("%w on %q: %w", ErrRunExifTool, targetFile, err)
 	}
 
 	return nil
