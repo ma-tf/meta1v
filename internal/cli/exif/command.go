@@ -32,8 +32,10 @@ type UseCase interface {
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "exif <efd_file> <frame_number> <target_file>",
-		Short: "Use the specified EFD file to write EXIF data to the target file.",
-		Args:  cobra.ExactArgs(requiredArgsCount),
+		Short: "Write EXIF metadata from EFD file to target image file",
+		Long: `Extract exposure metadata (Tv, Av, ISO, exposure compensation) from a specific 
+frame in an EFD file and write it as EXIF data to a target image file.`,
+		Args: cobra.ExactArgs(requiredArgsCount),
 		RunE: func(command *cobra.Command, args []string) error {
 			ctx := command.Context()
 

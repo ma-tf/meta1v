@@ -21,9 +21,9 @@ type UseCase interface {
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
-		Short: "Prints embedded thumbnails as ascii to stdout.",
-		Long: `Information about the thumbnail, including the path, as well as the
-thumbnail converted to ascii.`,
+		Short: "Display embedded thumbnails as ASCII art",
+		Long: `Display embedded thumbnail images as ASCII art, including the file path and 
+rendered ASCII representation.`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

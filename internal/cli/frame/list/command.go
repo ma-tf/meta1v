@@ -21,9 +21,9 @@ type UseCase interface {
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
-		Short: "Prints frame information to stdout.",
-		Long: `Information about the frames on the roll, including Tv, Av, ISO,
-exposure compensation, focus points, custom functions, and more.`,
+		Short: "Display frame information in human-readable format",
+		Long: `Display detailed information about frames including exposure settings (Tv, Av, ISO), 
+exposure compensation, focus points, custom functions, and user-provided remarks.`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

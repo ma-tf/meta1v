@@ -21,9 +21,9 @@ type UseCase interface {
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
-		Short: "Prints roll information to stdout.",
-		Long: `Information about the film roll, including film ID, title, load date,
-frame count, ISO and user provided remarks.`,
+		Short: "Display roll information in human-readable format",
+		Long: `Display film roll information including film ID, title, load date, frame count, 
+ISO, and user-provided remarks.`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

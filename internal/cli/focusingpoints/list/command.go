@@ -21,11 +21,10 @@ type UseCase interface {
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
-		Short: "Print a grid of focusing points grid used by the frames for a specified file.",
-		Long: `Print a rendered grid of focusing points used by the auto focus when
-taking a photograph to stdout.
+		Short: "Display autofocus point grids in human-readable format",
+		Long: `Display rendered grids of autofocus points used when capturing each photograph.
 
-For the setting focusing points on the camera, check the Canon EOS-1V manual.`,
+For setting autofocus points on the camera, refer to the Canon EOS-1V manual.`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

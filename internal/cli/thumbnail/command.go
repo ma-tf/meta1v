@@ -12,9 +12,9 @@ import (
 func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "thumbnail <command>",
-		Short: "Prints embedded thumbnails as ascii to stdout.",
-		Long: `Information about the thumbnail, including the path, as well as the
-thumbnail converted to ascii.`,
+		Short: "Display embedded thumbnail images from EFD files",
+		Long: `Display embedded thumbnail images as ASCII art, including the file path and 
+rendered ASCII representation.`,
 		Aliases: []string{"t", "thumb"},
 	}
 

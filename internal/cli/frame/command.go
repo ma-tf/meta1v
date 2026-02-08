@@ -13,9 +13,10 @@ import (
 func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "frame <command>",
-		Short: "Frame information for a specified file.",
-		Long: `Information about the frames on the roll, including Tv, Av, ISO,
-exposure compensation, focus points, custom functions, and more.`,
+		Short: "List or export frame information from EFD files",
+		Long: `Display or export detailed information about frames on the roll, including 
+exposure settings (Tv, Av, ISO), exposure compensation, focus points, custom functions, 
+and user-provided remarks.`,
 		Aliases: []string{"f"},
 	}
 

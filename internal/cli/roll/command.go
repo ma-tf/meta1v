@@ -13,9 +13,9 @@ import (
 func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "roll <command>",
-		Short: "Roll information for a specified file.",
-		Long: `Information about the film roll, including film ID, title, load date,
-frame count, ISO and user provided remarks.`,
+		Short: "List or export roll information from EFD files",
+		Long: `Display or export film roll information including film ID, title, load date, 
+frame count, ISO, and user-provided remarks.`,
 		Aliases: []string{"r"},
 	}
 

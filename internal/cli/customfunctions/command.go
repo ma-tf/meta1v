@@ -13,10 +13,10 @@ import (
 func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "customfunctions <command>",
-		Short: "Custom functions used by the frames for a specified file.",
-		Long: `Information about the custom functions used by the frames.
+		Short: "List or export custom function settings from EFD files",
+		Long: `Display or export custom function settings used by the frames.
 
-For the meaning of each custom function and its respective value, check the
+For the meaning of each custom function and its respective value, refer to the 
 Canon EOS-1V manual.`,
 		Aliases: []string{"cf"},
 	}

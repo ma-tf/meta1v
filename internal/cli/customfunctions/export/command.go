@@ -34,9 +34,10 @@ func NewCommand(log *slog.Logger, useCase UseCase) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export <efd_file> [target_file]",
 		Args:  cobra.RangeArgs(minArgs, maxArgs),
-		Short: "Export custom functions information in csv format to stdout or specified file.",
-		Long: `Information about custom functions, including function ID, name, description,
-parameters and user provided remarks.`,
+		Short: "Export custom function settings to CSV format",
+		Long: `Export custom function settings to CSV format, including function ID, name, 
+description, parameters, and user-provided remarks. Output can be directed to stdout or 
+saved to a specified file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

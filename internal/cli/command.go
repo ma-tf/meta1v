@@ -9,6 +9,6 @@ import (
 func NewCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "meta1v",
-		Short: "Provides a way to interact with Canon's EFD files.",
+		Short: "Extract and export metadata from Canon EOS-1V EFD files",
 	}
 }

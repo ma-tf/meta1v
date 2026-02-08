@@ -25,10 +25,10 @@ type UseCase interface {
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
-		Short: "Print custom functions used by the frames for a specified file.",
-		Long: `Print a table of the custom functions used by the frames.
+		Short: "Display custom function settings in human-readable format",
+		Long: `Display a table of custom function settings used by the frames.
 
-For the meaning of each custom function and its respective value, check the
+For the meaning of each custom function and its respective value, refer to the 
 Canon EOS-1V manual.`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),

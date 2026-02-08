@@ -12,11 +12,10 @@ import (
 func NewCommand(log *slog.Logger, ctr *container.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "focusingpoints <command>",
-		Short: "Focusing points grid used by the frames for a specified file.",
-		Long: `A rendered grid of focusing points used by the auto focus when
-taking a photograph.
+		Short: "Display autofocus point grids from EFD files",
+		Long: `Display rendered grids of autofocus points used when capturing each photograph.
 
-For the setting focusing points on the camera, check the Canon EOS-1V manual.`,
+For setting autofocus points on the camera, refer to the Canon EOS-1V manual.`,
 		Aliases: []string{"fp"},
 	}
 
