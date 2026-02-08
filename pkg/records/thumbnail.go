@@ -3,7 +3,10 @@ package records
 
 import "image"
 
+// ThumbnailFactory creates RGBA image buffers for thumbnail data.
+// This interface allows for test mocking and alternative image allocation strategies.
 type ThumbnailFactory interface {
+	// NewRGBA creates a new RGBA image with the given dimensions.
 	NewRGBA(rect image.Rectangle) *image.RGBA
 }
 

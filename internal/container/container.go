@@ -1,3 +1,7 @@
+// Package container provides dependency injection for meta1v services.
+//
+// It wires together all the services, repositories, and infrastructure components
+// needed by the application, making them available through a single Container struct.
 package container
 
 import (
@@ -12,6 +16,8 @@ import (
 	"github.com/ma-tf/meta1v/pkg/records"
 )
 
+// Container holds all application dependencies and services.
+// It provides a centralized location for dependency management and injection.
 type Container struct {
 	Logger                 *slog.Logger
 	FileSystem             osfs.FileSystem
@@ -22,6 +28,7 @@ type Container struct {
 	ExifService            exif.Service
 }
 
+// New creates and initializes a Container with all required services and dependencies.
 func New(logger *slog.Logger) *Container {
 	fs := osfs.NewFileSystem()
 	thumbnailFactory := records.NewDefaultThumbnailFactory()

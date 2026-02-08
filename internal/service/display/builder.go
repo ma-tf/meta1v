@@ -14,17 +14,27 @@ import (
 )
 
 var (
-	ErrInvalidFilmID               = errors.New("invalid film ID")
-	ErrInvalidFilmLoadedDate       = errors.New("invalid film loaded date")
-	ErrInvalidBatteryLoadedDate    = errors.New("invalid battery loaded date")
-	ErrInvalidCaptureDate          = errors.New("invalid capture date")
-	ErrInvalidMaxAperture          = errors.New("invalid max aperture")
-	ErrInvalidShutterSpeed         = errors.New("invalid shutter speed")
-	ErrInvalidBulbExposureTime     = errors.New("invalid bulb exposure time")
+	ErrInvalidFilmID = errors.New(
+		"invalid film ID",
+	)
+	ErrInvalidFilmLoadedDate    = errors.New("invalid film loaded date")
+	ErrInvalidBatteryLoadedDate = errors.New(
+		"invalid battery loaded date",
+	)
+	ErrInvalidCaptureDate      = errors.New("invalid capture date")
+	ErrInvalidMaxAperture      = errors.New("invalid max aperture")
+	ErrInvalidShutterSpeed     = errors.New("invalid shutter speed")
+	ErrInvalidBulbExposureTime = errors.New(
+		"invalid bulb exposure time",
+	)
 	ErrInvalidAperture             = errors.New("invalid aperture")
-	ErrInvalidExposureCompensation = errors.New("invalid exposure compensation")
-	ErrInvalidMultipleExposure     = errors.New("invalid multiple exposure")
-	ErrInvalidFlashExposureComp    = errors.New(
+	ErrInvalidExposureCompensation = errors.New(
+		"invalid exposure compensation",
+	)
+	ErrInvalidMultipleExposure = errors.New(
+		"invalid multiple exposure",
+	)
+	ErrInvalidFlashExposureCompensation = errors.New(
 		"invalid flash exposure compensation",
 	)
 	ErrInvalidFlashMode       = errors.New("invalid flash mode")
@@ -270,13 +280,13 @@ func (b *builder) withCameraModesAndFlashInfo(
 	efrm records.EFRM,
 	strict bool,
 ) error {
-	flashExposureComp, err := domain.NewExposureCompensation(
+	flashExposureCompensation, err := domain.NewExposureCompensation(
 		efrm.FlashExposureCompensation,
 		strict,
 	)
 	if err != nil {
 		return wrapFrameError(
-			ErrInvalidFlashExposureComp, err, efrm.FrameNumber)
+			ErrInvalidFlashExposureCompensation, err, efrm.FrameNumber)
 	}
 
 	flashMode, err := domain.NewFlashMode(efrm.FlashMode)
@@ -304,7 +314,7 @@ func (b *builder) withCameraModesAndFlashInfo(
 		return wrapFrameError(ErrInvalidAutoFocusMode, err, efrm.FrameNumber)
 	}
 
-	frame.FlashExposureComp = flashExposureComp
+	frame.FlashExposureCompensation = flashExposureCompensation
 	frame.FlashMode = flashMode
 	frame.MeteringMode = meteringMode
 	frame.ShootingMode = shootingMode

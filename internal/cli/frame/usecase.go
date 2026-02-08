@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	ErrFailedToReadFile  = errors.New("failed read file for frames")
+	ErrFailedToReadFile  = errors.New("failed to read file for frames")
 	ErrFailedToParseFile = errors.New(
 		"failed to parse file for frames",
 	)

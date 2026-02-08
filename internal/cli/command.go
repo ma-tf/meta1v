@@ -1,3 +1,5 @@
+// Package cli provides the root command and CLI interface for the meta1v application.
+// It serves as the entry point for all CLI commands that interact with Canon EFD files.
 package cli
 
 import (

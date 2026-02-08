@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=export_test github.com/ma-tf/meta1v/internal/cli/customfunctions/export UseCase
+
+// Package export provides the CLI command for exporting custom function settings to CSV format.
 package export
 
 import (
@@ -15,8 +18,9 @@ const (
 	targetFileIndex = 1
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=export_test github.com/ma-tf/meta1v/internal/cli/customfunctions/export UseCase
+// UseCase defines the business logic for exporting custom function settings from EFD files.
 type UseCase interface {
+	// Export reads an EFD file and exports custom function settings in CSV format to stdout or a specified file.
 	Export(
 		ctx context.Context,
 		efdFile string,

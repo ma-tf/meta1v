@@ -1,5 +1,4 @@
 //go:generate mockgen -destination=./mocks/factory_mock.go -package=display_test github.com/ma-tf/meta1v/internal/service/display DisplayableRollFactory
-
 package display
 
 import (
@@ -19,11 +18,10 @@ var (
 	ErrFailedToBuildFrame    = errors.New("failed to build frame")
 )
 
-type factory struct {
-	frameBuilder Builder
-}
-
+// DisplayableRollFactory creates DisplayableRoll instances from binary EFD records.
 type DisplayableRollFactory interface {
+	// Create transforms a records.Root into a displayable representation.
+	// The strict parameter controls whether unknown metadata values cause errors.
 	Create(
 		ctx context.Context,
 		r records.Root,
@@ -31,6 +29,11 @@ type DisplayableRollFactory interface {
 	) (DisplayableRoll, error)
 }
 
+type factory struct {
+	frameBuilder Builder
+}
+
+// NewDisplayableRollFactory creates a DisplayableRollFactory with the given frame builder.
 func NewDisplayableRollFactory(
 	frameBuilder Builder,
 ) DisplayableRollFactory {

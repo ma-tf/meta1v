@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=exif_test github.com/ma-tf/meta1v/internal/cli/exif UseCase
+
+// Package exif provides the CLI command for writing EXIF metadata to image files.
 package exif
 
 import (
@@ -14,8 +17,9 @@ const requiredArgsCount = 3
 
 var ErrInvalidFrameNumber = errors.New("invalid specified frame number")
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=exif_test github.com/ma-tf/meta1v/internal/cli/exif UseCase
+// UseCase defines the business logic for exporting EXIF metadata from EFD files.
 type UseCase interface {
+	// ExportExif writes EXIF metadata from a specific frame to a target image file.
 	ExportExif(
 		ctx context.Context,
 		efdFile string,

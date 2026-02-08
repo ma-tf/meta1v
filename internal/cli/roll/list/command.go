@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/roll/list UseCase
+
+// Package list provides the CLI command for listing film roll information from EFD files.
 package list
 
 import (
@@ -9,8 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/roll/list UseCase
+// UseCase defines the business logic for listing film roll information from EFD files.
 type UseCase interface {
+	// List reads an EFD file and prints roll information in a human-readable format.
 	List(ctx context.Context, filename string, strict bool) error
 }
 

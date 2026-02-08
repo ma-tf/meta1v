@@ -1,3 +1,4 @@
+// Package thumbnail provides business logic for displaying embedded thumbnails from EFD files.
 package thumbnail
 
 import (

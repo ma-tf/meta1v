@@ -67,7 +67,10 @@ const (
 	metadataCapacity = 21
 )
 
+// Builder constructs EXIF metadata tag mappings from Canon EFD frame records.
 type Builder interface {
+	// Build converts an EFRM record into a map of EXIF tag names to values.
+	// The strict parameter controls whether unknown metadata values cause errors.
 	Build(efrm records.EFRM, strict bool) (map[string]string, error)
 }
 

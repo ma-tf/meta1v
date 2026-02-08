@@ -420,7 +420,7 @@ func Test_NewExposureCompenation(t *testing.T) {
 		name           string
 		ec             int32
 		strict         bool
-		expectedResult domain.ExposureCompenation
+		expectedResult domain.ExposureCompensation
 		expectedError  error
 	}
 

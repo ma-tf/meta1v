@@ -1,4 +1,9 @@
 //go:generate mockgen -destination=./mocks/service_mock.go -package=csv_test github.com/ma-tf/meta1v/internal/service/csv Service
+
+// Package csv provides CSV export functionality for Canon EFD metadata.
+//
+// It converts displayable roll and frame data into CSV format suitable for
+// spreadsheet applications.
 package csv
 
 import (
@@ -21,9 +26,15 @@ var (
 	)
 )
 
+// Service provides CSV export operations for film roll metadata.
 type Service interface {
+	// ExportRoll writes roll-level metadata (film ID, title, ISO, etc.) as CSV.
 	ExportRoll(w io.Writer, r display.DisplayableRoll) error
+
+	// ExportFrames writes detailed frame-by-frame metadata as CSV.
 	ExportFrames(w io.Writer, f display.DisplayableRoll) error
+
+	// ExportCustomFunctions writes custom function settings for each frame as CSV.
 	ExportCustomFunctions(w io.Writer, cf display.DisplayableRoll) error
 }
 
@@ -78,7 +89,7 @@ func (s *service) ExportFrames(w io.Writer, f display.DisplayableRoll) error {
 			frame.Av,
 			frame.IsoM,
 			frame.ExposureCompensation,
-			frame.FlashExposureComp,
+			frame.FlashExposureCompensation,
 			frame.FlashMode,
 			frame.MeteringMode,
 			frame.ShootingMode,

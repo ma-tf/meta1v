@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	ErrFailedToReadFile         = errors.New("failed read file for roll")
+	ErrFailedToReadFile         = errors.New("failed to read file for roll")
 	ErrFailedToParseFile        = errors.New("failed to parse file for roll")
 	ErrFailedToCreateOutputFile = errors.New(
 		"failed to create output file for roll",

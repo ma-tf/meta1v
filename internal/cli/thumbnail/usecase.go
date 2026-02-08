@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrFailedToReadFile  = errors.New("failed read file for thumbnails")
+	ErrFailedToReadFile  = errors.New("failed to read file for thumbnails")
 	ErrFailedToParseFile = errors.New("failed to parse file for thumbnails")
 )
 

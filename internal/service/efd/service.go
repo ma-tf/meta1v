@@ -1,4 +1,9 @@
 //go:generate mockgen -destination=./mocks/service_mock.go -package=efd_test github.com/ma-tf/meta1v/internal/service/efd Service
+
+// Package efd provides services for reading and parsing Canon EFD binary files.
+//
+// The service reads EFD files, processes the binary records (EFDF, EFRM, EFTP),
+// and constructs a structured representation of the film roll metadata.
 package efd
 
 import (
@@ -23,7 +28,10 @@ var (
 	ErrFailedToParseThumbnail   = errors.New("failed to parse EFTP thumbnail")
 )
 
+// Service provides operations for reading Canon EFD files and extracting structured metadata.
 type Service interface {
+	// RecordsFromFile reads an EFD file and returns the parsed Root structure containing
+	// film roll metadata, frame records, and thumbnails.
 	RecordsFromFile(ctx context.Context, filename string) (records.Root, error)
 }
 

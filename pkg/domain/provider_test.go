@@ -39,7 +39,7 @@ func Test_MapProvider(t *testing.T) {
 		{
 			name: "exposure compensations loaded",
 			fut: func() (string, bool) {
-				v, ok := provider.GetExposureCompenation(100)
+				v, ok := provider.GetExposureCompensation(100)
 
 				return string(v), ok
 			},

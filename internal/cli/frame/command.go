@@ -1,3 +1,4 @@
+// Package frame provides business logic for listing and exporting frame information from EFD files.
 package frame
 
 import (

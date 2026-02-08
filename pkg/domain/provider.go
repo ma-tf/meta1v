@@ -9,10 +9,13 @@ import (
 //go:embed domain.json
 var domainData []byte
 
+// MapProvider provides lookup maps for converting raw Canon camera metadata values
+// to human-readable strings. It loads data from an embedded JSON file containing
+// the canonical mappings for shutter speeds, apertures, flash modes, and other settings.
 type MapProvider struct {
 	tvs  map[int32]Tv
 	avs  map[uint32]Av
-	ecs  map[int32]ExposureCompenation
+	ecs  map[int32]ExposureCompensation
 	fms  map[uint32]FlashMode
 	mms  map[uint32]MeteringMode
 	sms  map[uint32]ShootingMode
@@ -43,7 +46,7 @@ func NewMapProvider() *MapProvider {
 	return &MapProvider{
 		tvs:  convertMapInt32[Tv](data.ShutterSpeeds),
 		avs:  convertMapUint32[Av](data.ApertureValues),
-		ecs:  convertMapInt32[ExposureCompenation](data.ExposureCompensations),
+		ecs:  convertMapInt32[ExposureCompensation](data.ExposureCompensations),
 		fms:  convertMapUint32[FlashMode](data.FlashModes),
 		mms:  convertMapUint32[MeteringMode](data.MeteringModes),
 		sms:  convertMapUint32[ShootingMode](data.ShootingModes),
@@ -88,56 +91,74 @@ func convertCustomFunctionsLimits(src map[string]byte) map[int]byte {
 	return result
 }
 
+// GetTv retrieves the human-readable shutter speed string for a raw Tv value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetTv(tv int32) (Tv, bool) {
 	r, ok := m.tvs[tv]
 
 	return r, ok
 }
 
+// GetAv retrieves the human-readable aperture value for a raw Av value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetAv(av uint32) (Av, bool) {
 	r, ok := m.avs[av]
 
 	return r, ok
 }
 
-func (m *MapProvider) GetExposureCompenation(
+// GetExposureCompensation retrieves the exposure compensation string for a raw value.
+// Returns false if the value is not found in the lookup map.
+func (m *MapProvider) GetExposureCompensation(
 	ec int32,
-) (ExposureCompenation, bool) {
+) (ExposureCompensation, bool) {
 	r, ok := m.ecs[ec]
 
 	return r, ok
 }
 
+// GetFlashMode retrieves the flash mode string for a raw value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetFlashMode(fm uint32) (FlashMode, bool) {
 	r, ok := m.fms[fm]
 
 	return r, ok
 }
 
+// GetMeteringMode retrieves the metering mode string for a raw value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetMeteringMode(mm uint32) (MeteringMode, bool) {
 	r, ok := m.mms[mm]
 
 	return r, ok
 }
 
+// GetShootingMode retrieves the shooting mode string for a raw value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetShootingMode(sm uint32) (ShootingMode, bool) {
 	r, ok := m.sms[sm]
 
 	return r, ok
 }
 
+// GetFilmAdvanceMode retrieves the film advance mode string for a raw value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetFilmAdvanceMode(fam uint32) (FilmAdvanceMode, bool) {
 	r, ok := m.fams[fam]
 
 	return r, ok
 }
 
+// GetAutoFocusMode retrieves the autofocus mode string for a raw value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetAutoFocusMode(afm uint32) (AutoFocusMode, bool) {
 	r, ok := m.afms[afm]
 
 	return r, ok
 }
 
+// GetMultipleExposure retrieves the multiple exposure setting string for a raw value.
+// Returns false if the value is not found in the lookup map.
 func (m *MapProvider) GetMultipleExposure(me uint32) (MultipleExposure, bool) {
 	r, ok := m.mes[me]
 

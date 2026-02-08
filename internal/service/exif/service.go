@@ -1,4 +1,9 @@
 //go:generate mockgen -destination=./mocks/service_mock.go -package=exif_test github.com/ma-tf/meta1v/internal/service/exif Service
+
+// Package exif provides services for writing EXIF metadata to image files using Canon EFD frame data.
+//
+// This package builds EXIF tags from frame metadata and executes exiftool to embed
+// the metadata into target image files.
 package exif
 
 import (
@@ -17,7 +22,10 @@ var (
 	ErrRunExifTool   = errors.New("failed to run exiftool")
 )
 
+// Service provides operations for writing EXIF metadata to image files from Canon EFD frame records.
 type Service interface {
+	// WriteEXIF writes EXIF metadata from an EFRM record to the target image file.
+	// The strict parameter controls whether unknown metadata values cause errors.
 	WriteEXIF(
 		ctx context.Context,
 		efrm records.EFRM,

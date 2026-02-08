@@ -1,5 +1,4 @@
 //go:generate mockgen -destination=./mocks/service_mock.go -package=display_test github.com/ma-tf/meta1v/internal/service/display Service
-
 package display
 
 import (
@@ -20,26 +19,26 @@ const (
 	isoDxWidth        = 8
 	remarksWidth      = 30
 
-	frameNumberWidth       = 9
-	focusingPointsWidth    = 21
-	focusingPointsPadding  = filmIDWidth + frameNumberWidth + 2
-	focalLengthWidth       = 12
-	maxApertureWidth       = 12
-	tvWidth                = 7
-	avWidth                = 7
-	isoMWidth              = 7
-	exposureCompWidth      = 15
-	flashExposureCompWidth = 20
-	flashModeWidth         = 15
-	meteringModeWidth      = 15
-	shootingModeWidth      = 15
-	filmAdvanceModeWidth   = 17
-	afModeWidth            = 12
-	bulbExposureTimeWidth  = 20
-	takenAtWidth           = 20
-	multipleExposureWidth  = 20
-	batteryLoadedAtWidth   = 20
-	customFunctionsWidth   = 2
+	frameNumberWidth               = 9
+	focusingPointsWidth            = 21
+	focusingPointsPadding          = filmIDWidth + frameNumberWidth + 2
+	focalLengthWidth               = 12
+	maxApertureWidth               = 12
+	tvWidth                        = 7
+	avWidth                        = 7
+	isoMWidth                      = 7
+	exposureCompWidth              = 15
+	flashExposureCompensationWidth = 20
+	flashModeWidth                 = 15
+	meteringModeWidth              = 15
+	shootingModeWidth              = 15
+	filmAdvanceModeWidth           = 17
+	afModeWidth                    = 12
+	bulbExposureTimeWidth          = 20
+	takenAtWidth                   = 20
+	multipleExposureWidth          = 20
+	batteryLoadedAtWidth           = 20
+	customFunctionsWidth           = 2
 
 	imageFileWidth   = 64
 	thumbnailWidth   = 64
@@ -53,11 +52,21 @@ var (
 	ErrFrameIndexOutOfRange = errors.New("frame index out of range")
 )
 
+// Service provides formatted text output operations for displaying EFD metadata.
 type Service interface {
+	// DisplayRoll writes formatted roll-level metadata to the writer.
 	DisplayRoll(w io.Writer, r DisplayableRoll)
+
+	// DisplayCustomFunctions writes a table of custom function settings for all frames.
 	DisplayCustomFunctions(w io.Writer, r DisplayableRoll) error
+
+	// DisplayFocusingPoints writes focus point visualizations for all frames.
 	DisplayFocusingPoints(w io.Writer, r DisplayableRoll)
+
+	// DisplayFrames writes a detailed table of frame metadata.
 	DisplayFrames(w io.Writer, r DisplayableRoll)
+
+	// DisplayThumbnails writes ASCII art thumbnails for all frames.
 	DisplayThumbnails(w io.Writer, r DisplayableRoll)
 }
 
@@ -107,7 +116,7 @@ func (s *service) DisplayFrames(w io.Writer, r DisplayableRoll) {
 		avWidth, "AV",
 		isoMWidth, "ISO (M)",
 		exposureCompWidth, "EXPOSURE COMP.",
-		flashExposureCompWidth, "FLASH EXPOSURE COMP.",
+		flashExposureCompensationWidth, "FLASH EXPOSURE COMP.",
 		flashModeWidth, "FLASH MODE",
 		meteringModeWidth, "METERING MODE",
 		shootingModeWidth, "SHOOTING MODE",
@@ -141,7 +150,7 @@ func (s *service) renderFrame(fr DisplayableFrame) string {
 		avWidth, fr.Av,
 		isoMWidth, fr.IsoM,
 		exposureCompWidth, fr.ExposureCompensation,
-		flashExposureCompWidth, fr.FlashExposureComp,
+		flashExposureCompensationWidth, fr.FlashExposureCompensation,
 		flashModeWidth, fr.FlashMode,
 		meteringModeWidth, fr.MeteringMode,
 		shootingModeWidth, fr.ShootingMode,

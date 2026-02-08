@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrFailedToReadFile  = errors.New("failed read file for focusing points")
+	ErrFailedToReadFile  = errors.New("failed to read file for focusing points")
 	ErrFailedToParseFile = errors.New(
 		"failed to parse file for focusing points",
 	)

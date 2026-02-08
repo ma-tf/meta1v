@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/frame/list UseCase
+
+// Package list provides the CLI command for listing frame information from EFD files.
 package list
 
 import (
@@ -9,8 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/frame/list UseCase
+// UseCase defines the business logic for listing frame information from EFD files.
 type UseCase interface {
+	// List reads an EFD file and prints frame information in a human-readable format.
 	List(ctx context.Context, filename string, strict bool) error
 }
 

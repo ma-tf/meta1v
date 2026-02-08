@@ -1,19 +1,29 @@
+// Package records defines the binary structure of Canon EFD files.
+//
+// EFD files store metadata recorded by Canon EOS film cameras.
+// The file format consists of a series of tagged records (EFDF, EFRM, EFTP)
+// that capture information about the film roll, individual frames, and (user linked) thumbnail images.
 package records
 
 import "image"
 
+// Raw represents a raw EFD record with its magic bytes, length, and binary data payload.
 type Raw struct {
 	Magic  [4]byte
 	Length uint64
 	Data   []byte
 }
 
+// Root represents the complete parsed structure of an EFD file,
+// containing film roll metadata (EFDF), frame metadata (EFRM), and thumbnail data (EFTP).
 type Root struct {
 	EFDF  EFDF
 	EFRMs []EFRM
 	EFTPs []EFTP
 }
 
+// EFDF contains metadata about the entire film roll,
+// including embedded film ID, film load date, frame count, ISO, and user-entered title and remarks.
 type EFDF struct {
 	Unknown1   [8]byte
 	Unknown2   [8]byte
@@ -37,6 +47,8 @@ type EFDF struct {
 	Remarks    [256]byte
 }
 
+// EFRM contains detailed metadata for a single frame, including exposure settings, camera modes,
+// timestamps, custom functions, and focus point data. The structure is 512 bytes (0x200).
 type EFRM struct {
 	// Offset 0x10-0x4F (64 bytes from start of data)
 	Unknown1                  [4]byte // 0x10-0x13
@@ -128,6 +140,8 @@ type EFRM struct {
 	Remarks [256]byte // 0x100-0x1FF
 }
 
+// EFTP contains thumbnail image data for a frame, including dimensions, file path reference,
+// and the decoded RGB image.
 type EFTP struct {
 	// Offset 0x10-0x4F (64 bytes from start of data)
 	Index     uint16    // 0x10-0x11

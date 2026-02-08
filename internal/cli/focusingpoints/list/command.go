@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/focusingpoints/list UseCase
+
+// Package list provides the CLI command for displaying focusing point grids from EFD files.
 package list
 
 import (
@@ -9,8 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/focusingpoints/list UseCase
+// UseCase defines the business logic for listing focusing point grids from EFD files.
 type UseCase interface {
+	// List reads an EFD file and prints a grid of focusing points used by the frames in a human-readable format.
 	List(ctx context.Context, filename string, strict bool) error
 }
 

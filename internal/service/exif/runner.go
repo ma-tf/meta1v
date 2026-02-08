@@ -21,7 +21,9 @@ var (
 	ErrWriteExifToolConfig = errors.New("failed to write exiftool config")
 )
 
+// ToolRunner executes exiftool with metadata and configuration.
 type ToolRunner interface {
+	// Run executes exiftool on the target file with the provided metadata tags.
 	Run(ctx context.Context, targetFile string, metadata string) error
 }
 

@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/thumbnail/list UseCase
+
+// Package list provides the CLI command for displaying embedded thumbnails from EFD files.
 package list
 
 import (
@@ -9,8 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/thumbnail/list UseCase
+// UseCase defines the business logic for displaying embedded thumbnails from EFD files.
 type UseCase interface {
+	// DisplayThumbnails reads an EFD file and displays embedded thumbnails as ASCII art to stdout.
 	DisplayThumbnails(ctx context.Context, filename string, strict bool) error
 }
 

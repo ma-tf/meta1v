@@ -1,3 +1,8 @@
+// Package cmd provides the command-line interface for meta1v.
+//
+// It implements the root command and configuration management using Cobra and Viper,
+// including subcommands for viewing roll data, frames, custom functions, focus points,
+// thumbnails, and writing EXIF metadata.
 package cmd
 
 import (
@@ -21,6 +26,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config holds the application configuration loaded from file, environment, or flags.
 type Config struct {
 	Log struct {
 		Level string `mapstructure:"level"`
@@ -84,8 +90,8 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 	}
 )
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs the root command and handles any errors.
+// This is called by main.main() and should only be called once.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {

@@ -1,3 +1,6 @@
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/customfunctions/list UseCase
+
+// Package list provides the CLI command for listing custom function settings from EFD files.
 package list
 
 import (
@@ -9,8 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/customfunctions/list UseCase
+// UseCase defines the business logic for listing custom function settings from EFD files.
 type UseCase interface {
+	// List reads an EFD file and prints custom function settings used by the frames in a human-readable format.
 	List(
 		ctx context.Context,
 		filename string,

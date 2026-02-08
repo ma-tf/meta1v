@@ -11,10 +11,19 @@ import (
 
 var ErrMissingEFDFRecord = errors.New("missing EFDF record")
 
+// RootBuilder accumulates EFD records and constructs a complete Root structure.
+// It ensures that exactly one EFDF record is present and collects all EFRM and EFTP records.
 type RootBuilder interface {
+	// AddEFDF adds the film roll metadata record. Returns an error if called more than once.
 	AddEFDF(ctx context.Context, efdf records.EFDF) error
+
+	// AddEFRM adds a frame metadata record.
 	AddEFRM(ctx context.Context, efrm records.EFRM)
+
+	// AddEFTP adds a thumbnail image record.
 	AddEFTP(ctx context.Context, eftp records.EFTP)
+
+	// Build constructs the final Root structure. Returns an error if no EFDF was added.
 	Build() (records.Root, error)
 }
 

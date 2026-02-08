@@ -1,3 +1,4 @@
+// Package focusingpoints provides business logic for displaying focusing point grids from EFD files.
 package focusingpoints
 
 import (

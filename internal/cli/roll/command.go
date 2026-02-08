@@ -1,3 +1,4 @@
+// Package roll provides business logic for listing and exporting film roll information.
 package roll
 
 import (

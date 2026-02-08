@@ -19,10 +19,18 @@ var (
 	ErrFailedToReadEFRM = errors.New("failed to read EFRM record")
 )
 
+// Reader provides low-level binary reading operations for EFD file records.
 type Reader interface {
+	// ReadRaw reads the next raw record (magic bytes + length + data) from the input stream.
 	ReadRaw(ctx context.Context, r io.Reader) (records.Raw, error)
+
+	// ReadEFDF parses EFDF (film roll metadata) from raw bytes.
 	ReadEFDF(ctx context.Context, data []byte) (records.EFDF, error)
+
+	// ReadEFRM parses EFRM (frame metadata) from raw bytes.
 	ReadEFRM(ctx context.Context, data []byte) (records.EFRM, error)
+
+	// ReadEFTP parses EFTP (thumbnail image) from raw bytes and decodes the RGB image data.
 	ReadEFTP(ctx context.Context, data []byte) (records.EFTP, error)
 }
 
@@ -41,6 +49,7 @@ func NewReader(
 	}
 }
 
+// ReadRaw reads the next raw record (magic bytes + length + data) from the input stream.
 func (b *reader) ReadRaw(
 	ctx context.Context,
 	r io.Reader,
@@ -73,6 +82,7 @@ func (b *reader) ReadRaw(
 	}, nil
 }
 
+// ReadEFDF parses EFDF (film roll metadata) from raw bytes.
 func (b *reader) ReadEFDF(
 	ctx context.Context,
 	data []byte,
@@ -87,6 +97,7 @@ func (b *reader) ReadEFDF(
 	return efdf, nil
 }
 
+// ReadEFRM parses EFRM (frame metadata) from raw bytes.
 func (b *reader) ReadEFRM(
 	ctx context.Context,
 	data []byte,
@@ -101,6 +112,7 @@ func (b *reader) ReadEFRM(
 	return efrm, nil
 }
 
+// ReadEFTP parses EFTP (thumbnail image) from raw bytes and decodes the RGB image data.
 func (b *reader) ReadEFTP(
 	ctx context.Context,
 	data []byte,

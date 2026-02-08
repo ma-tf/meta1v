@@ -13,11 +13,10 @@ import (
 
 var ErrExifToolBinaryNotFound = errors.New("exiftool binary not found in PATH")
 
-type exiftoolCommandFactory struct {
-	lookPath osexec.LookPath
-}
-
+// ExiftoolCommandFactory creates configured exiftool command instances.
 type ExiftoolCommandFactory interface {
+	// CreateCommand builds an exiftool command with all necessary arguments,
+	// pipes, and file descriptors configured for metadata writing.
 	CreateCommand(
 		ctx context.Context,
 		targetFile string,
@@ -27,6 +26,12 @@ type ExiftoolCommandFactory interface {
 	) osexec.Command
 }
 
+type exiftoolCommandFactory struct {
+	lookPath osexec.LookPath
+}
+
+// NewExiftoolCommandFactory creates an ExiftoolCommandFactory.
+// Panics if the exiftool binary is not found in PATH.
 func NewExiftoolCommandFactory(
 	lookPath osexec.LookPath,
 ) ExiftoolCommandFactory {
