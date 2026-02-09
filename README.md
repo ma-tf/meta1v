@@ -17,3 +17,11 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+## Development Prerequisites
+To contribute to this project, you'll need:
+- Go 1.25.7 or later
+- [go-licenses](https://github.com/google/go-licenses) for dependency license tracking:
+    go install github.com/google/go-licenses/v2@latest
+		
+The pre-commit hook automatically generates a NOTICE file with dependency licenses.
