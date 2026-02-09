@@ -7,11 +7,16 @@ import (
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
 	"github.com/ma-tf/meta1v/internal/container"
+	osexec_test "github.com/ma-tf/meta1v/internal/service/osexec/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 //nolint:exhaustruct // only partial is needed
 func Test_NewCommand(t *testing.T) {
 	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	buf := &bytes.Buffer{}
 	logger := slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
@@ -24,7 +29,12 @@ func Test_NewCommand(t *testing.T) {
 		},
 	}))
 
-	ctr := container.New(logger)
+	mockLookPath := osexec_test.NewMockLookPath(ctrl)
+	mockLookPath.EXPECT().
+		LookPath("exiftool").
+		Return("/usr/bin/exiftool", nil)
+
+	ctr := container.New(logger, mockLookPath)
 	cmd := focusingpoints.NewCommand(logger, ctr)
 
 	const expectedSubcommands = 1

@@ -21,6 +21,7 @@ import (
 type Container struct {
 	Logger                 *slog.Logger
 	FileSystem             osfs.FileSystem
+	LookPath               osexec.LookPath
 	EFDService             efd.Service
 	DisplayService         display.Service
 	DisplayableRollFactory display.DisplayableRollFactory
@@ -29,7 +30,7 @@ type Container struct {
 }
 
 // New creates and initializes a Container with all required services and dependencies.
-func New(logger *slog.Logger) *Container {
+func New(logger *slog.Logger, lookPath osexec.LookPath) *Container {
 	fs := osfs.NewFileSystem()
 	thumbnailFactory := records.NewDefaultThumbnailFactory()
 	frameBuilder := display.NewFrameBuilder(logger)
@@ -37,6 +38,7 @@ func New(logger *slog.Logger) *Container {
 	return &Container{
 		Logger:     logger,
 		FileSystem: fs,
+		LookPath:   lookPath,
 		EFDService: efd.NewService(
 			logger,
 			efd.NewRootBuilder(logger),
@@ -50,7 +52,7 @@ func New(logger *slog.Logger) *Container {
 			logger,
 			exif.NewExifToolRunner(
 				fs,
-				exif.NewExiftoolCommandFactory(osexec.NewLookPath()),
+				exif.NewExiftoolCommandFactory(lookPath),
 			),
 			exif.NewExifBuilder(logger),
 		),

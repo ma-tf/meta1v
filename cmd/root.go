@@ -22,6 +22,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli/roll"
 	"github.com/ma-tf/meta1v/internal/cli/thumbnail"
 	"github.com/ma-tf/meta1v/internal/container"
+	"github.com/ma-tf/meta1v/internal/service/osexec"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -126,7 +127,7 @@ func init() {
 		"enable strict mode (fail on unknown metadata values)",
 	)
 
-	ctr := container.New(logger)
+	ctr := container.New(logger, osexec.NewLookPath())
 
 	exifUseCase := exif.NewUseCase(logger, ctr.EFDService, ctr.ExifService)
 
