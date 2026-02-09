@@ -1,4 +1,8 @@
+# meta1v
+
 meta1v is a command-line tool for viewing and manipulating metadata for Canon EOS-1V files of the EFD format.
+
+## Licence
 Copyright (C) 2026  Matt F
 
 This program is free software: you can redistribute it and/or modify
