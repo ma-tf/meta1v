@@ -1,7 +1,9 @@
 package roll_test
 
 import (
+	"bytes"
 	"errors"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -17,6 +19,21 @@ import (
 )
 
 var errExample = errors.New("example error")
+
+//nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
 
 //nolint:exhaustruct // only partial is needed
 func Test_RollListUseCase(t *testing.T) {
@@ -109,7 +126,7 @@ func Test_RollListUseCase(t *testing.T) {
 					)
 
 				mockDisplayService.EXPECT().
-					DisplayRoll(gomock.Any(), tt.roll)
+					DisplayRoll(gomock.Any(), gomock.Any(), tt.roll)
 			},
 			filename: "file.efd",
 			records: records.Root{
@@ -146,7 +163,7 @@ func Test_RollListUseCase(t *testing.T) {
 				tt,
 			)
 
-			uc := roll.NewListUseCase(
+			uc := roll.NewListUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
@@ -346,7 +363,7 @@ func Test_RollExportUseCase(t *testing.T) {
 					Return(mockFile, nil)
 
 				mockCSVService.EXPECT().
-					ExportRoll(mockFile, tt.roll).
+					ExportRoll(gomock.Any(), mockFile, tt.roll).
 					Return(errExample)
 			},
 			expectedError: roll.ErrFailedToExport,
@@ -405,7 +422,7 @@ func Test_RollExportUseCase(t *testing.T) {
 				)
 			}
 
-			uc := roll.NewExportUseCase(
+			uc := roll.NewExportUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockCSVService,
@@ -489,7 +506,7 @@ func Test_RollExportUseCase_Success(t *testing.T) {
 					Return(mockFile, nil)
 
 				mockCSVService.EXPECT().
-					ExportRoll(mockFile, tt.roll).
+					ExportRoll(gomock.Any(), mockFile, tt.roll).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -548,7 +565,7 @@ func Test_RollExportUseCase_Success(t *testing.T) {
 				)
 			}
 
-			uc := roll.NewExportUseCase(
+			uc := roll.NewExportUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockCSVService,

@@ -61,6 +61,11 @@ func (s service) WriteEXIF(
 	targetFile string,
 	strict bool,
 ) error {
+	s.log.InfoContext(ctx, "writing exif data to file",
+		slog.String("target_file", targetFile),
+		slog.Uint64("frame_number", uint64(efrm.FrameNumber)),
+		slog.Bool("strict", strict))
+
 	data, err := s.builder.Build(efrm, strict)
 	if err != nil {
 		return fmt.Errorf(
@@ -70,6 +75,9 @@ func (s service) WriteEXIF(
 			err,
 		)
 	}
+
+	s.log.DebugContext(ctx, "exif data built",
+		slog.Int("tag_count", len(data)))
 
 	keys := make([]string, 0, len(data))
 	for tag := range data {
@@ -87,10 +95,17 @@ func (s service) WriteEXIF(
 		}
 	}
 
+	s.log.DebugContext(ctx, "running exiftool",
+		slog.String("target_file", targetFile))
+
 	err = s.runner.Run(ctx, targetFile, args.String())
 	if err != nil {
 		return fmt.Errorf("%w on %q: %w", ErrRunExifTool, targetFile, err)
 	}
+
+	s.log.InfoContext(ctx, "exif data written successfully",
+		slog.String("target_file", targetFile),
+		slog.Int("tags_written", len(data)))
 
 	return nil
 }

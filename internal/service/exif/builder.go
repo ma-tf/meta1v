@@ -180,7 +180,8 @@ func (b *builder) withExposureSettings(
 		metadata[TagExposureTime] = exposureTime
 	}
 
-	if focalLength := domain.NewFocalLength(efrm.FocalLength); focalLength != "" {
+	focalLength := domain.NewFocalLength(efrm.FocalLength)
+	if focalLength != "" {
 		metadata[TagFocalLength] = string(focalLength)
 	}
 

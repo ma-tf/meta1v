@@ -20,6 +20,7 @@ For setting autofocus points on the camera, refer to the Canon EOS-1V manual.`,
 	}
 
 	uc := NewListUseCase(
+		log,
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.DisplayService,

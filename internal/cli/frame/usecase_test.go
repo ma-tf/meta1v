@@ -1,7 +1,9 @@
 package frame_test
 
 import (
+	"bytes"
 	"errors"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -17,6 +19,21 @@ import (
 )
 
 var errExample = errors.New("example error")
+
+//nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
 
 //nolint:exhaustruct // only partial is needed
 func Test_FrameListUseCase(t *testing.T) {
@@ -111,7 +128,7 @@ func Test_FrameListUseCase(t *testing.T) {
 					)
 
 				mockDisplayService.EXPECT().
-					DisplayFrames(gomock.Any(), tt.roll)
+					DisplayFrames(gomock.Any(), gomock.Any(), tt.roll)
 			},
 			filename: "file.efd",
 			records: records.Root{
@@ -155,7 +172,7 @@ func Test_FrameListUseCase(t *testing.T) {
 				)
 			}
 
-			uc := frame.NewListUseCase(
+			uc := frame.NewListUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
@@ -366,7 +383,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 					Return(mockFile, nil)
 
 				mockCSVService.EXPECT().
-					ExportFrames(mockFile, tt.displayableRoll).
+					ExportFrames(gomock.Any(), mockFile, tt.displayableRoll).
 					Return(errExample)
 			},
 			expectedError: frame.ErrFailedToExport,
@@ -425,7 +442,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 				)
 			}
 
-			uc := frame.NewExportUseCase(
+			uc := frame.NewExportUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockCSVService,
@@ -521,7 +538,7 @@ func Test_FrameExportUseCase_Success(t *testing.T) {
 					Return(mockFile, nil)
 
 				mockCSVService.EXPECT().
-					ExportFrames(mockFile, tt.displayableRoll).
+					ExportFrames(gomock.Any(), mockFile, tt.displayableRoll).
 					Return(nil)
 			},
 		},
@@ -579,7 +596,7 @@ func Test_FrameExportUseCase_Success(t *testing.T) {
 				)
 			}
 
-			uc := frame.NewExportUseCase(
+			uc := frame.NewExportUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockCSVService,

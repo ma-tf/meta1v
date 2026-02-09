@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/ma-tf/meta1v/internal/cli"
@@ -14,6 +15,8 @@ import (
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
 )
+
+const permission = 0o666 // rw-rw-rw-
 
 var (
 	ErrFailedToReadFile  = errors.New("failed read file for custom functions")
@@ -30,17 +33,20 @@ var (
 )
 
 type listUseCase struct {
+	log                    *slog.Logger
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
 	displayService         display.Service
 }
 
 func NewListUseCase(
+	log *slog.Logger,
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
 ) list.UseCase {
 	return listUseCase{
+		log:                    log,
 		efdService:             efdService,
 		displayableRollFactory: displayableRollFactory,
 		displayService:         displayService,
@@ -52,24 +58,38 @@ func (uc listUseCase) List(
 	filename string,
 	strict bool,
 ) error {
+	uc.log.InfoContext(ctx, "starting custom functions list",
+		slog.String("file", filename),
+		slog.Bool("strict", strict))
+
 	records, err := uc.efdService.RecordsFromFile(ctx, filename)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", ErrFailedToReadFile, filename, err)
 	}
+
+	uc.log.DebugContext(ctx, "efd file read",
+		slog.Int("frame_count", len(records.EFRMs)))
 
 	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", ErrFailedToParseFile, filename, err)
 	}
 
-	if err = uc.displayService.DisplayCustomFunctions(os.Stdout, dr); err != nil {
+	uc.log.DebugContext(ctx, "displayable custom functions created",
+		slog.Int("frame_count", len(dr.Frames)))
+
+	err = uc.displayService.DisplayCustomFunctions(ctx, os.Stdout, dr)
+	if err != nil {
 		return fmt.Errorf("%w: %w", ErrFailedToDisplay, err)
 	}
+
+	uc.log.InfoContext(ctx, "custom functions list completed successfully")
 
 	return nil
 }
 
 type exportUseCase struct {
+	log                    *slog.Logger
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
 	csvService             csv.Service
@@ -77,12 +97,14 @@ type exportUseCase struct {
 }
 
 func NewExportUseCase(
+	log *slog.Logger,
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	csvService csv.Service,
 	fs osfs.FileSystem,
 ) export.UseCase {
 	return exportUseCase{
+		log:                    log,
 		efdService:             efdService,
 		displayableRollFactory: displayableRollFactory,
 		csvService:             csvService,
@@ -97,15 +119,27 @@ func (uc exportUseCase) Export(
 	strict bool,
 	force bool,
 ) error {
+	uc.log.InfoContext(ctx, "starting custom functions export",
+		slog.String("efd_file", efdFile),
+		slog.Any("output_file", outputFile),
+		slog.Bool("strict", strict),
+		slog.Bool("force", force))
+
 	records, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", ErrFailedToReadFile, efdFile, err)
 	}
 
+	uc.log.DebugContext(ctx, "efd file read",
+		slog.Int("frame_count", len(records.EFRMs)))
+
 	dr, err := uc.displayableRollFactory.Create(ctx, records, strict)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", ErrFailedToParseFile, efdFile, err)
 	}
+
+	uc.log.DebugContext(ctx, "displayable custom functions created",
+		slog.Int("frame_count", len(dr.Frames)))
 
 	var writer osfs.File = os.Stdout
 
@@ -115,26 +149,27 @@ func (uc exportUseCase) Export(
 			flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 		}
 
-		const permission = 0o666 // rw-rw-rw-
-		if writer, err = uc.fs.OpenFile(*outputFile, flags, permission); err != nil {
+		writer, err = uc.fs.OpenFile(*outputFile, flags, permission)
+		if err != nil {
 			if !force && errors.Is(err, os.ErrExist) {
 				return cli.ErrOutputFileAlreadyExists
 			}
 
-			return fmt.Errorf(
-				"%w %q: %w",
-				ErrFailedToCreateOutputFile,
-				*outputFile,
-				err,
-			)
+			return fmt.Errorf("%w %q: %w",
+				ErrFailedToCreateOutputFile, *outputFile, err)
 		}
 
 		defer writer.Close()
+
+		uc.log.DebugContext(ctx, "output file opened",
+			slog.String("file", *outputFile))
 	}
 
-	if err = uc.csvService.ExportCustomFunctions(writer, dr); err != nil {
+	if err = uc.csvService.ExportCustomFunctions(ctx, writer, dr); err != nil {
 		return fmt.Errorf("%w: %w", ErrFailedToWriteCSV, err)
 	}
+
+	uc.log.InfoContext(ctx, "custom functions export completed successfully")
 
 	return nil
 }

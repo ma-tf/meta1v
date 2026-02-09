@@ -2,9 +2,11 @@
 package display
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"strconv"
 	"strings"
 )
@@ -55,28 +57,59 @@ var (
 // Service provides formatted text output operations for displaying EFD metadata.
 type Service interface {
 	// DisplayRoll writes formatted roll-level metadata to the writer.
-	DisplayRoll(w io.Writer, r DisplayableRoll)
+	DisplayRoll(
+		ctx context.Context,
+		w io.Writer,
+		r DisplayableRoll,
+	)
 
 	// DisplayCustomFunctions writes a table of custom function settings for all frames.
-	DisplayCustomFunctions(w io.Writer, r DisplayableRoll) error
+	DisplayCustomFunctions(
+		ctx context.Context,
+		w io.Writer,
+		r DisplayableRoll,
+	) error
 
 	// DisplayFocusingPoints writes focus point visualizations for all frames.
-	DisplayFocusingPoints(w io.Writer, r DisplayableRoll)
+	DisplayFocusingPoints(
+		ctx context.Context,
+		w io.Writer,
+		r DisplayableRoll,
+	)
 
 	// DisplayFrames writes a detailed table of frame metadata.
-	DisplayFrames(w io.Writer, r DisplayableRoll)
+	DisplayFrames(
+		ctx context.Context,
+		w io.Writer,
+		r DisplayableRoll,
+	)
 
 	// DisplayThumbnails writes ASCII art thumbnails for all frames.
-	DisplayThumbnails(w io.Writer, r DisplayableRoll)
+	DisplayThumbnails(
+		ctx context.Context,
+		w io.Writer,
+		r DisplayableRoll,
+	)
 }
 
-type service struct{}
-
-func NewService() Service {
-	return &service{}
+type service struct {
+	log *slog.Logger
 }
 
-func (s *service) DisplayRoll(w io.Writer, r DisplayableRoll) {
+func NewService(log *slog.Logger) Service {
+	return &service{
+		log: log,
+	}
+}
+
+func (s *service) DisplayRoll(
+	ctx context.Context,
+	w io.Writer,
+	r DisplayableRoll,
+) {
+	s.log.InfoContext(ctx, "formatting roll display",
+		slog.String("film_id", string(r.FilmID)))
+
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, "FILM ID",
 		firstRowWidth, "FIRST ROW",
@@ -101,9 +134,19 @@ func (s *service) DisplayRoll(w io.Writer, r DisplayableRoll) {
 		remarksWidth, truncate(r.Remarks, remarksWidth),
 	)
 	fmt.Fprintln(w, row)
+
+	s.log.DebugContext(ctx, "roll display formatted")
 }
 
-func (s *service) DisplayFrames(w io.Writer, r DisplayableRoll) {
+func (s *service) DisplayFrames(
+	ctx context.Context,
+	w io.Writer,
+	r DisplayableRoll,
+) {
+	s.log.InfoContext(ctx, "formatting frames display",
+		slog.String("film_id", string(r.FilmID)),
+		slog.Int("frame_count", len(r.Frames)))
+
 	//nolint:golines // more readable this way
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, "FILM ID",
@@ -135,6 +178,9 @@ func (s *service) DisplayFrames(w io.Writer, r DisplayableRoll) {
 		row := s.renderFrame(fr)
 		fmt.Fprintln(w, row)
 	}
+
+	s.log.DebugContext(ctx, "frames display formatted",
+		slog.Int("frame_count", len(r.Frames)))
 }
 
 func (s *service) renderFrame(fr DisplayableFrame) string {
@@ -166,7 +212,15 @@ func (s *service) renderFrame(fr DisplayableFrame) string {
 	return row
 }
 
-func (s *service) DisplayCustomFunctions(w io.Writer, r DisplayableRoll) error {
+func (s *service) DisplayCustomFunctions(
+	ctx context.Context,
+	w io.Writer,
+	r DisplayableRoll,
+) error {
+	s.log.InfoContext(ctx, "formatting custom functions display",
+		slog.String("film_id", string(r.FilmID)),
+		slog.Int("frame_count", len(r.Frames)))
+
 	//nolint:golines // more readable this way
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s",
 		filmIDWidth, "FILM ID",
@@ -200,6 +254,9 @@ func (s *service) DisplayCustomFunctions(w io.Writer, r DisplayableRoll) error {
 		row := s.renderCustomFunctions(fr)
 		fmt.Fprintln(w, row)
 	}
+
+	s.log.DebugContext(ctx, "custom functions display formatted",
+		slog.Int("frame_count", len(r.Frames)))
 
 	return nil
 }
@@ -235,7 +292,15 @@ func (s *service) renderCustomFunctions(fr DisplayableFrame) string {
 	return row
 }
 
-func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) {
+func (s *service) DisplayFocusingPoints(
+	ctx context.Context,
+	w io.Writer,
+	r DisplayableRoll,
+) {
+	s.log.InfoContext(ctx, "formatting focusing points display",
+		slog.String("film_id", string(r.FilmID)),
+		slog.Int("frame_count", len(r.Frames)))
+
 	rows := make([]string, len(r.Frames))
 	for i, fr := range r.Frames {
 		rows[i] = fmt.Sprintf("%-*s %-*d %-*s",
@@ -256,9 +321,20 @@ func (s *service) DisplayFocusingPoints(w io.Writer, r DisplayableRoll) {
 	for _, row := range rows {
 		fmt.Fprintln(w, row)
 	}
+
+	s.log.DebugContext(ctx, "focusing points display formatted",
+		slog.Int("frame_count", len(r.Frames)))
 }
 
-func (s *service) DisplayThumbnails(w io.Writer, r DisplayableRoll) {
+func (s *service) DisplayThumbnails(
+	ctx context.Context,
+	w io.Writer,
+	r DisplayableRoll,
+) {
+	s.log.InfoContext(ctx, "formatting thumbnails display",
+		slog.String("film_id", string(r.FilmID)),
+		slog.Int("frame_count", len(r.Frames)))
+
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s",
 		filmIDWidth, "FILM ID",
 		frameNumberWidth, "FRAME NO.",
@@ -271,6 +347,9 @@ func (s *service) DisplayThumbnails(w io.Writer, r DisplayableRoll) {
 	for _, fr := range r.Frames {
 		s.displayThumbnail(w, fr)
 	}
+
+	s.log.DebugContext(ctx, "thumbnails display formatted",
+		slog.Int("frame_count", len(r.Frames)))
 }
 
 func (s *service) displayThumbnail(w io.Writer, fr DisplayableFrame) {

@@ -19,6 +19,7 @@ rendered ASCII representation.`,
 	}
 
 	uc := NewThumbnailListUseCase(
+		log,
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.DisplayService,

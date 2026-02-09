@@ -1,7 +1,9 @@
 package customfunctions_test
 
 import (
+	"bytes"
 	"errors"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -17,6 +19,21 @@ import (
 )
 
 var errExample = errors.New("example error")
+
+//nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
 
 //nolint:exhaustruct // only partial is needed
 func Test_CustomFunctionsUseCase_List(t *testing.T) {
@@ -107,7 +124,7 @@ func Test_CustomFunctionsUseCase_List(t *testing.T) {
 						nil,
 					)
 				mockDisplayService.EXPECT().
-					DisplayCustomFunctions(gomock.Any(), tt.roll).
+					DisplayCustomFunctions(gomock.Any(), gomock.Any(), tt.roll).
 					Return(customfunctions.ErrFailedToDisplay)
 			},
 			filename: "file.efd",
@@ -142,7 +159,7 @@ func Test_CustomFunctionsUseCase_List(t *testing.T) {
 						nil,
 					)
 				mockDisplayService.EXPECT().
-					DisplayCustomFunctions(gomock.Any(), tt.roll).
+					DisplayCustomFunctions(gomock.Any(), gomock.Any(), tt.roll).
 					Return(nil)
 			},
 			filename: "file.efd",
@@ -181,7 +198,7 @@ func Test_CustomFunctionsUseCase_List(t *testing.T) {
 				)
 			}
 
-			uc := customfunctions.NewListUseCase(
+			uc := customfunctions.NewListUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
@@ -365,7 +382,7 @@ func Test_CustomFunctionsUseCase_Export(t *testing.T) {
 					Return(mockFile, nil)
 
 				mockCSVService.EXPECT().
-					ExportCustomFunctions(mockFile, tt.displayableRoll).
+					ExportCustomFunctions(gomock.Any(), mockFile, tt.displayableRoll).
 					Return(errExample)
 			},
 			expectedError: customfunctions.ErrFailedToWriteCSV,
@@ -400,7 +417,7 @@ func Test_CustomFunctionsUseCase_Export(t *testing.T) {
 					Return(mockFile, nil)
 
 				mockCSVService.EXPECT().
-					ExportCustomFunctions(mockFile, gomock.Any()).
+					ExportCustomFunctions(gomock.Any(), mockFile, gomock.Any()).
 					Return(nil)
 			},
 		},
@@ -434,7 +451,7 @@ func Test_CustomFunctionsUseCase_Export(t *testing.T) {
 				)
 			}
 
-			uc := customfunctions.NewExportUseCase(
+			uc := customfunctions.NewExportUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockCSVService,

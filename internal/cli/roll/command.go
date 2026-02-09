@@ -20,12 +20,14 @@ frame count, ISO, and user-provided remarks.`,
 	}
 
 	listUseCase := NewListUseCase(
+		log,
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.DisplayService,
 	)
 
 	exportUseCase := NewExportUseCase(
+		log,
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.CSVService,

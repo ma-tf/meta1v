@@ -7,9 +7,11 @@
 package csv
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"strings"
 
 	"github.com/ma-tf/meta1v/internal/service/display"
@@ -29,27 +31,52 @@ var (
 // Service provides CSV export operations for film roll metadata.
 type Service interface {
 	// ExportRoll writes roll-level metadata (film ID, title, ISO, etc.) as CSV.
-	ExportRoll(w io.Writer, r display.DisplayableRoll) error
+	ExportRoll(
+		ctx context.Context,
+		w io.Writer,
+		r display.DisplayableRoll,
+	) error
 
 	// ExportFrames writes detailed frame-by-frame metadata as CSV.
-	ExportFrames(w io.Writer, f display.DisplayableRoll) error
+	ExportFrames(
+		ctx context.Context,
+		w io.Writer,
+		f display.DisplayableRoll,
+	) error
 
 	// ExportCustomFunctions writes custom function settings for each frame as CSV.
-	ExportCustomFunctions(w io.Writer, cf display.DisplayableRoll) error
+	ExportCustomFunctions(
+		ctx context.Context,
+		w io.Writer,
+		cf display.DisplayableRoll,
+	) error
 }
 
-type service struct{}
-
-func NewService() Service {
-	return &service{}
+type service struct {
+	log *slog.Logger
 }
 
-func (s *service) ExportRoll(w io.Writer, r display.DisplayableRoll) error {
+func NewService(log *slog.Logger) Service {
+	return &service{
+		log: log,
+	}
+}
+
+func (s *service) ExportRoll(
+	ctx context.Context,
+	w io.Writer,
+	r display.DisplayableRoll,
+) error {
+	s.log.InfoContext(ctx, "exporting roll to csv",
+		slog.String("film_id", string(r.FilmID)))
+
 	var b strings.Builder
 
 	_, _ = b.WriteString(
 		"FILM ID,FIRST ROW,FRAMES PER ROW,TITLE,FILM LOADED AT,FRAME COUNT,ISO (DX),REMARKS\n",
 	)
+
+	s.log.DebugContext(ctx, "csv headers written")
 
 	_, _ = fmt.Fprintf(&b, "%s,%s,%s,%s,%s,%s,%s,%s\n",
 		r.FilmID,
@@ -65,15 +92,28 @@ func (s *service) ExportRoll(w io.Writer, r display.DisplayableRoll) error {
 		return errors.Join(ErrFailedToWriteRollHeader, err)
 	}
 
+	s.log.InfoContext(ctx, "roll csv export completed",
+		slog.Int("bytes_written", b.Len()))
+
 	return nil
 }
 
-func (s *service) ExportFrames(w io.Writer, f display.DisplayableRoll) error {
+func (s *service) ExportFrames(
+	ctx context.Context,
+	w io.Writer,
+	f display.DisplayableRoll,
+) error {
+	s.log.InfoContext(ctx, "exporting frames to csv",
+		slog.String("film_id", string(f.FilmID)),
+		slog.Int("frame_count", len(f.Frames)))
+
 	var b strings.Builder
 
 	_, _ = b.WriteString(
 		"FILM ID,FILM LOADED AT,FRAME NUMBER,ISO (DX),FOCAL LENGTH,MAX APERTURE,Tv,Av,ISO (M),EXPOSURE COMPENSATION,FLASH EXPOSURE COMPENSATION,FLASH MODE,METERING MODE,SHOOTING MODE,FILM ADVANCE  MODE,AUTOFOCUS MODE,BULB EXPSOSURE TIME,TAKEN AT,MULTIPLE EXPOSURE,BATTERY LOADED AT,REMARKS,USER MODIFIED RECORD\n",
 	)
+
+	s.log.DebugContext(ctx, "csv headers written")
 
 	for _, frame := range f.Frames {
 		_, _ = fmt.Fprintf(
@@ -104,22 +144,36 @@ func (s *service) ExportFrames(w io.Writer, f display.DisplayableRoll) error {
 		)
 	}
 
+	s.log.DebugContext(ctx, "frame data written",
+		slog.Int("frame_count", len(f.Frames)))
+
 	if _, err := w.Write([]byte(b.String())); err != nil {
 		return errors.Join(ErrFailedToWriteFrames, err)
 	}
+
+	s.log.InfoContext(ctx, "frames csv export completed",
+		slog.Int("bytes_written", b.Len()),
+		slog.Int("frame_count", len(f.Frames)))
 
 	return nil
 }
 
 func (s *service) ExportCustomFunctions(
+	ctx context.Context,
 	w io.Writer,
 	cf display.DisplayableRoll,
 ) error {
+	s.log.InfoContext(ctx, "exporting custom functions to csv",
+		slog.String("film_id", string(cf.FilmID)),
+		slog.Int("frame_count", len(cf.Frames)))
+
 	var b strings.Builder
 
 	_, _ = b.WriteString(
 		"FILM ID,FRAME NO.,C.Fn-1,C.Fn-2,C.Fn-3,C.Fn-4,C.Fn-5,C.Fn-6,C.Fn-7,C.Fn-8,C.Fn-9,C.Fn-10,C.Fn-11,C.Fn-12,C.Fn-13,C.Fn-14,C.Fn-15,C.Fn-16,C.Fn-17,C.Fn-18,C.Fn-19,C.Fn-20\n",
 	)
+
+	s.log.DebugContext(ctx, "csv headers written")
 
 	for _, frame := range cf.Frames {
 		_, _ = fmt.Fprintf(&b, "%s,%d,%s\n",
@@ -128,9 +182,16 @@ func (s *service) ExportCustomFunctions(
 			strings.Join(frame.CustomFunctions[:], ","))
 	}
 
+	s.log.DebugContext(ctx, "custom functions data written",
+		slog.Int("frame_count", len(cf.Frames)))
+
 	if _, err := w.Write([]byte(b.String())); err != nil {
 		return errors.Join(ErrFailedToWriteCustomFunctions, err)
 	}
+
+	s.log.InfoContext(ctx, "custom functions csv export completed",
+		slog.Int("bytes_written", b.Len()),
+		slog.Int("frame_count", len(cf.Frames)))
 
 	return nil
 }

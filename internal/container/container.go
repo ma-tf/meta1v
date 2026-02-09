@@ -43,9 +43,9 @@ func New(logger *slog.Logger) *Container {
 			efd.NewReader(logger, thumbnailFactory),
 			fs,
 		),
-		DisplayService:         display.NewService(),
+		DisplayService:         display.NewService(logger),
 		DisplayableRollFactory: display.NewDisplayableRollFactory(frameBuilder),
-		CSVService:             csv.NewService(),
+		CSVService:             csv.NewService(logger),
 		ExifService: exif.NewService(
 			logger,
 			exif.NewExifToolRunner(

@@ -22,12 +22,14 @@ Canon EOS-1V manual.`,
 	}
 
 	listUseCase := NewListUseCase(
+		log,
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.DisplayService,
 	)
 
 	exportUseCase := NewExportUseCase(
+		log,
 		ctr.EFDService,
 		ctr.DisplayableRollFactory,
 		ctr.CSVService,

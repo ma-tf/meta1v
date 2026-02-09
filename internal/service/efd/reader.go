@@ -88,7 +88,11 @@ func (b *reader) ReadEFDF(
 	data []byte,
 ) (records.EFDF, error) {
 	var efdf records.EFDF
-	if err := binary.Read(bytes.NewReader(data), binary.LittleEndian, &efdf); err != nil {
+	if err := binary.Read(
+		bytes.NewReader(data),
+		binary.LittleEndian,
+		&efdf,
+	); err != nil {
 		return records.EFDF{}, errors.Join(ErrFailedToReadEFDF, err)
 	}
 
@@ -103,7 +107,11 @@ func (b *reader) ReadEFRM(
 	data []byte,
 ) (records.EFRM, error) {
 	var efrm records.EFRM
-	if err := binary.Read(bytes.NewReader(data), binary.LittleEndian, &efrm); err != nil {
+	if err := binary.Read(
+		bytes.NewReader(data),
+		binary.LittleEndian,
+		&efrm,
+	); err != nil {
 		return records.EFRM{}, errors.Join(ErrFailedToReadEFRM, err)
 	}
 

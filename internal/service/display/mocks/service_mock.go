@@ -10,6 +10,7 @@
 package display_test
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -42,63 +43,63 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // DisplayCustomFunctions mocks base method.
-func (m *MockService) DisplayCustomFunctions(w io.Writer, r display.DisplayableRoll) error {
+func (m *MockService) DisplayCustomFunctions(ctx context.Context, w io.Writer, r display.DisplayableRoll) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DisplayCustomFunctions", w, r)
+	ret := m.ctrl.Call(m, "DisplayCustomFunctions", ctx, w, r)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DisplayCustomFunctions indicates an expected call of DisplayCustomFunctions.
-func (mr *MockServiceMockRecorder) DisplayCustomFunctions(w, r any) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisplayCustomFunctions(ctx, w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayCustomFunctions", reflect.TypeOf((*MockService)(nil).DisplayCustomFunctions), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayCustomFunctions", reflect.TypeOf((*MockService)(nil).DisplayCustomFunctions), ctx, w, r)
 }
 
 // DisplayFocusingPoints mocks base method.
-func (m *MockService) DisplayFocusingPoints(w io.Writer, r display.DisplayableRoll) {
+func (m *MockService) DisplayFocusingPoints(ctx context.Context, w io.Writer, r display.DisplayableRoll) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DisplayFocusingPoints", w, r)
+	m.ctrl.Call(m, "DisplayFocusingPoints", ctx, w, r)
 }
 
 // DisplayFocusingPoints indicates an expected call of DisplayFocusingPoints.
-func (mr *MockServiceMockRecorder) DisplayFocusingPoints(w, r any) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisplayFocusingPoints(ctx, w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayFocusingPoints", reflect.TypeOf((*MockService)(nil).DisplayFocusingPoints), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayFocusingPoints", reflect.TypeOf((*MockService)(nil).DisplayFocusingPoints), ctx, w, r)
 }
 
 // DisplayFrames mocks base method.
-func (m *MockService) DisplayFrames(w io.Writer, r display.DisplayableRoll) {
+func (m *MockService) DisplayFrames(ctx context.Context, w io.Writer, r display.DisplayableRoll) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DisplayFrames", w, r)
+	m.ctrl.Call(m, "DisplayFrames", ctx, w, r)
 }
 
 // DisplayFrames indicates an expected call of DisplayFrames.
-func (mr *MockServiceMockRecorder) DisplayFrames(w, r any) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisplayFrames(ctx, w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayFrames", reflect.TypeOf((*MockService)(nil).DisplayFrames), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayFrames", reflect.TypeOf((*MockService)(nil).DisplayFrames), ctx, w, r)
 }
 
 // DisplayRoll mocks base method.
-func (m *MockService) DisplayRoll(w io.Writer, r display.DisplayableRoll) {
+func (m *MockService) DisplayRoll(ctx context.Context, w io.Writer, r display.DisplayableRoll) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DisplayRoll", w, r)
+	m.ctrl.Call(m, "DisplayRoll", ctx, w, r)
 }
 
 // DisplayRoll indicates an expected call of DisplayRoll.
-func (mr *MockServiceMockRecorder) DisplayRoll(w, r any) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisplayRoll(ctx, w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayRoll", reflect.TypeOf((*MockService)(nil).DisplayRoll), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayRoll", reflect.TypeOf((*MockService)(nil).DisplayRoll), ctx, w, r)
 }
 
 // DisplayThumbnails mocks base method.
-func (m *MockService) DisplayThumbnails(w io.Writer, r display.DisplayableRoll) {
+func (m *MockService) DisplayThumbnails(ctx context.Context, w io.Writer, r display.DisplayableRoll) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DisplayThumbnails", w, r)
+	m.ctrl.Call(m, "DisplayThumbnails", ctx, w, r)
 }
 
 // DisplayThumbnails indicates an expected call of DisplayThumbnails.
-func (mr *MockServiceMockRecorder) DisplayThumbnails(w, r any) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisplayThumbnails(ctx, w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayThumbnails", reflect.TypeOf((*MockService)(nil).DisplayThumbnails), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisplayThumbnails", reflect.TypeOf((*MockService)(nil).DisplayThumbnails), ctx, w, r)
 }

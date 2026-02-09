@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
@@ -18,15 +19,18 @@ var (
 )
 
 type exportUseCase struct {
+	log         *slog.Logger
 	efdService  efd.Service
 	exifService exif.Service
 }
 
 func NewUseCase(
+	log *slog.Logger,
 	efdService efd.Service,
 	exifService exif.Service,
 ) UseCase {
 	return exportUseCase{
+		log:         log,
 		efdService:  efdService,
 		exifService: exifService,
 	}
@@ -39,10 +43,19 @@ func (uc exportUseCase) ExportExif(
 	targetFile string,
 	strict bool,
 ) error {
+	uc.log.InfoContext(ctx, "starting exif export",
+		slog.String("efd_file", efdFile),
+		slog.Int("frame", frame),
+		slog.String("target_file", targetFile),
+		slog.Bool("strict", strict))
+
 	root, err := uc.efdService.RecordsFromFile(ctx, efdFile)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", ErrFailedToInterpretEFD, efdFile, err)
 	}
+
+	uc.log.DebugContext(ctx, "efd file parsed",
+		slog.Int("frame_count", len(root.EFRMs)))
 
 	var (
 		efrm  records.EFRM
@@ -70,10 +83,16 @@ func (uc exportUseCase) ExportExif(
 		)
 	}
 
+	uc.log.DebugContext(ctx, "frame located",
+		slog.Uint64("frame_number", uint64(efrm.FrameNumber)))
+
 	err = uc.exifService.WriteEXIF(ctx, efrm, targetFile, strict)
 	if err != nil {
 		return fmt.Errorf("%w on %q: %w", ErrWriteEXIFFailed, targetFile, err)
 	}
+
+	uc.log.InfoContext(ctx, "exif export completed successfully",
+		slog.String("target_file", targetFile))
 
 	return nil
 }

@@ -3,6 +3,7 @@ package csv_test
 import (
 	"bytes"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/service/csv"
@@ -19,6 +20,21 @@ func (fw *failWriter) Write(_ []byte) (int, error) {
 }
 
 //nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
+
+//nolint:exhaustruct // only partial is needed
 func Test_ExportRoll_Error(t *testing.T) {
 	t.Parallel()
 
@@ -26,7 +42,9 @@ func Test_ExportRoll_Error(t *testing.T) {
 	writer := &failWriter{}
 	expectedError := csv.ErrFailedToWriteRollHeader
 
-	err := csv.NewService().ExportRoll(writer, dr)
+	ctx := t.Context()
+
+	err := csv.NewService(newTestLogger()).ExportRoll(ctx, writer, dr)
 
 	if !errors.Is(err, expectedError) {
 		t.Errorf(
@@ -58,9 +76,11 @@ AAA-BB,2024-01-01,5,My Film Roll,2024-01-01T12:00:00Z,36,200,This is a test roll
 `,
 	)
 
-	svc := csv.NewService()
+	ctx := t.Context()
 
-	err := svc.ExportRoll(writer, dr)
+	svc := csv.NewService(newTestLogger())
+
+	err := svc.ExportRoll(ctx, writer, dr)
 	if err != nil {
 		t.Errorf("unexpected error: got %v, want %v", err, nil)
 	}
@@ -86,7 +106,9 @@ func Test_ExportFrames_Error(t *testing.T) {
 	writer := &failWriter{}
 	expectedError := csv.ErrFailedToWriteFrames
 
-	err := csv.NewService().ExportFrames(writer, dr)
+	ctx := t.Context()
+
+	err := csv.NewService(newTestLogger()).ExportFrames(ctx, writer, dr)
 
 	if !errors.Is(err, expectedError) {
 		t.Errorf(
@@ -136,9 +158,11 @@ AAA-BB,2024-01-01T12:00:00Z,1,200,50mm,f/1.8,1/125,f/1.8,200,+0.3,+0.7,On,Evalua
 `,
 	)
 
-	svc := csv.NewService()
+	ctx := t.Context()
 
-	err := svc.ExportFrames(writer, dr)
+	svc := csv.NewService(newTestLogger())
+
+	err := svc.ExportFrames(ctx, writer, dr)
 	if err != nil {
 		t.Errorf("unexpected error: got %v, want %v", err, nil)
 	}
@@ -164,9 +188,11 @@ func Test_ExportCustomFunctions_Error(t *testing.T) {
 	writer := &failWriter{}
 	expectedError := csv.ErrFailedToWriteCustomFunctions
 
-	svc := csv.NewService()
+	ctx := t.Context()
 
-	err := svc.ExportCustomFunctions(writer, dr)
+	svc := csv.NewService(newTestLogger())
+
+	err := svc.ExportCustomFunctions(ctx, writer, dr)
 
 	if !errors.Is(err, expectedError) {
 		t.Errorf(
@@ -218,9 +244,11 @@ AAA-BB,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 `,
 	)
 
-	svc := csv.NewService()
+	ctx := t.Context()
 
-	err := svc.ExportCustomFunctions(writer, dr)
+	svc := csv.NewService(newTestLogger())
+
+	err := svc.ExportCustomFunctions(ctx, writer, dr)
 	if err != nil {
 		t.Errorf("unexpected error: got %v, want %v", err, nil)
 	}

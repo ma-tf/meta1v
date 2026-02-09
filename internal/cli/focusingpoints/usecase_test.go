@@ -1,7 +1,9 @@
 package focusingpoints_test
 
 import (
+	"bytes"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
@@ -13,6 +15,21 @@ import (
 )
 
 var errExample = errors.New("example error")
+
+//nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
 
 //nolint:exhaustruct // only partial is needed
 func Test_List(t *testing.T) {
@@ -103,7 +120,7 @@ func Test_List(t *testing.T) {
 						nil,
 					)
 				mockDisplayService.EXPECT().
-					DisplayFocusingPoints(gomock.Any(), tt.roll)
+					DisplayFocusingPoints(gomock.Any(), gomock.Any(), tt.roll)
 			},
 			filename: "file.efd",
 			records: records.Root{
@@ -141,7 +158,7 @@ func Test_List(t *testing.T) {
 				)
 			}
 
-			uc := focusingpoints.NewListUseCase(
+			uc := focusingpoints.NewListUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,

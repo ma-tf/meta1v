@@ -60,19 +60,18 @@ func (s *service) RecordsFromFile(
 	ctx context.Context,
 	filename string,
 ) (records.Root, error) {
+	s.log.InfoContext(ctx, "parsing efd file", slog.String("file", filename))
+
 	file, errFile := s.fs.Open(filename)
 	if errFile != nil {
-		return records.Root{}, fmt.Errorf(
-			"%w %q: %w",
-			ErrFailedToOpenFile,
-			filename,
-			errFile,
-		)
+		return records.Root{}, fmt.Errorf("%w %q: %w",
+			ErrFailedToOpenFile, filename, errFile)
 	}
 	defer file.Close()
 
-	s.log.DebugContext(ctx, "opened file:",
-		slog.String("filename", filename))
+	s.log.DebugContext(ctx, "opened file:", slog.String("filename", filename))
+
+	recordCount := 0
 
 	for {
 		record, errRaw := s.reader.ReadRaw(ctx, file)
@@ -81,30 +80,28 @@ func (s *service) RecordsFromFile(
 		}
 
 		if errRaw != nil {
-			return records.Root{}, fmt.Errorf(
-				"%w %q: %w",
-				ErrFailedToReadRecord,
-				filename,
-				errRaw,
-			)
+			return records.Root{}, fmt.Errorf("%w %q: %w",
+				ErrFailedToReadRecord, filename, errRaw)
 		}
+
+		recordCount++
 
 		if errProcess := s.processRecord(ctx, record); errProcess != nil {
 			return records.Root{}, errProcess
 		}
 	}
 
+	s.log.DebugContext(ctx, "all records read",
+		slog.Int("total_records", recordCount))
+
 	root, err := s.builder.Build()
 	if err != nil {
-		return records.Root{}, fmt.Errorf(
-			"%w %q: %w",
-			ErrFailedToBuildRoot,
-			filename,
-			err,
-		)
+		return records.Root{}, fmt.Errorf("%w %q: %w",
+			ErrFailedToBuildRoot, filename, err)
 	}
 
-	s.log.DebugContext(ctx, "efd records parsed",
+	s.log.InfoContext(ctx, "efd file parsed successfully",
+		slog.String("file", filename),
 		slog.Int("efrms", len(root.EFRMs)),
 		slog.Int("eftps", len(root.EFTPs)))
 
@@ -124,6 +121,8 @@ func (s *service) processRecord(ctx context.Context, record records.Raw) error {
 			return errors.Join(ErrFailedToAddRecord, err)
 		}
 
+		s.log.DebugContext(ctx, "efdf record processed")
+
 		return nil
 	case "EFRM":
 		efrm, errRead := s.reader.ReadEFRM(ctx, record.Data)
@@ -133,6 +132,9 @@ func (s *service) processRecord(ctx context.Context, record records.Raw) error {
 
 		s.builder.AddEFRM(ctx, efrm)
 
+		s.log.DebugContext(ctx, "efrm record processed",
+			slog.Uint64("frame_number", uint64(efrm.FrameNumber)))
+
 		return nil
 	case "EFTP":
 		eftp, errRead := s.reader.ReadEFTP(ctx, record.Data)
@@ -141,6 +143,9 @@ func (s *service) processRecord(ctx context.Context, record records.Raw) error {
 		}
 
 		s.builder.AddEFTP(ctx, eftp)
+
+		s.log.DebugContext(ctx, "eftp record processed",
+			slog.Uint64("index", uint64(eftp.Index)))
 
 		return nil
 	default:

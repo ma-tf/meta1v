@@ -1,8 +1,9 @@
 package thumbnail_test
 
 import (
-	"context"
+	"bytes"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli/thumbnail"
@@ -14,6 +15,21 @@ import (
 )
 
 var errExample = errors.New("example error")
+
+//nolint:exhaustruct // only partial is needed
+func newTestLogger() *slog.Logger {
+	buf := &bytes.Buffer{}
+
+	return slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+
+			return a
+		},
+	}))
+}
 
 //nolint:exhaustruct // only partial is needed
 func Test_List(t *testing.T) {
@@ -110,7 +126,7 @@ func Test_List(t *testing.T) {
 					)
 
 				mockDisplayService.EXPECT().
-					DisplayThumbnails(gomock.Any(), tt.roll)
+					DisplayThumbnails(gomock.Any(), gomock.Any(), tt.roll)
 			},
 			filename: "file.efd",
 			records: records.Root{
@@ -142,6 +158,8 @@ func Test_List(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
+			ctx := t.Context()
+
 			mockEFDService := efd_test.NewMockService(ctrl)
 			mockDisplayableRollFactory := display_test.NewMockDisplayableRollFactory(
 				ctrl,
@@ -157,14 +175,14 @@ func Test_List(t *testing.T) {
 				)
 			}
 
-			uc := thumbnail.NewThumbnailListUseCase(
+			uc := thumbnail.NewThumbnailListUseCase(newTestLogger(),
 				mockEFDService,
 				mockDisplayableRollFactory,
 				mockDisplayService,
 			)
 
 			err := uc.DisplayThumbnails(
-				context.Background(),
+				ctx,
 				tt.filename,
 				tt.strict,
 			)

@@ -378,28 +378,25 @@ type CustomFunctions [20]string
 // Unset values (math.MaxUint8) are represented as a single space " ".
 func NewCustomFunctions(cfs [20]byte, strict bool) (CustomFunctions, error) {
 	var (
-		values   = [20]string{}
+		values   = CustomFunctions{}
 		cfLimits = defaultMaps.cfl
 	)
 
-	for i, cf := range cfs {
-		if cf == math.MaxUint8 {
+	for i := range cfs {
+		if cfs[i] == math.MaxUint8 {
 			values[i] = " "
 
 			continue
 		}
 
-		if strict && cf > cfLimits[i] {
+		cfLimit, ok := cfLimits[i]
+		if strict && ok && cfs[i] > cfLimit {
 			return CustomFunctions{}, fmt.Errorf(
 				"%w %d: out of range (0-%d): %d",
-				ErrInvalidCustomFunction,
-				i,
-				cfLimits[i],
-				cf,
-			)
+				ErrInvalidCustomFunction, i, cfLimit, cfs[i])
 		}
 
-		values[i] = strconv.Itoa(int(cf))
+		values[i] = strconv.Itoa(int(cfs[i]))
 	}
 
 	return values, nil

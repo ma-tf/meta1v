@@ -88,10 +88,12 @@ func Test_DisplayRoll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			svc := display.NewService()
+			ctx := t.Context()
+
+			svc := display.NewService(newTestLogger())
 
 			var b bytes.Buffer
-			svc.DisplayRoll(&b, tt.roll)
+			svc.DisplayRoll(ctx, &b, tt.roll)
 
 			if !bytes.Equal(b.Bytes(), tt.expectedOutput) {
 				t.Errorf("unexpected output:\n got:\n%s\nwant:\n%s",
@@ -162,11 +164,13 @@ func Test_DisplayCustomFunctions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			svc := display.NewService()
+			ctx := t.Context()
+
+			svc := display.NewService(newTestLogger())
 
 			var b bytes.Buffer
 
-			err := svc.DisplayCustomFunctions(&b, tt.roll)
+			err := svc.DisplayCustomFunctions(ctx, &b, tt.roll)
 
 			if tt.expectedError != nil {
 				if err == nil {
@@ -232,10 +236,12 @@ points`,
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			svc := display.NewService()
+			ctx := t.Context()
+
+			svc := display.NewService(newTestLogger())
 
 			var b bytes.Buffer
-			svc.DisplayFocusingPoints(&b, tt.roll)
+			svc.DisplayFocusingPoints(ctx, &b, tt.roll)
 
 			if !bytes.Equal(b.Bytes(), tt.expectedOutput) {
 				t.Errorf("unexpected output:\n got:\n%s\nwant:\n%s",
@@ -319,10 +325,12 @@ func Test_DisplayFrame(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			svc := display.NewService()
+			ctx := t.Context()
+
+			svc := display.NewService(newTestLogger())
 
 			var b bytes.Buffer
-			svc.DisplayFrames(&b, display.DisplayableRoll{
+			svc.DisplayFrames(ctx, &b, display.DisplayableRoll{
 				Frames: []display.DisplayableFrame{tt.frame},
 			})
 
@@ -387,10 +395,12 @@ func Test_DisplayThumbnail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			svc := display.NewService()
+			ctx := t.Context()
+
+			svc := display.NewService(newTestLogger())
 
 			var b bytes.Buffer
-			svc.DisplayThumbnails(&b, tt.thumbnail)
+			svc.DisplayThumbnails(ctx, &b, tt.thumbnail)
 
 			if !bytes.Equal(b.Bytes(), tt.expectedOutput) {
 				t.Errorf("unexpected output:\n got:\n%s\nwant:\n%s",

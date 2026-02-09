@@ -158,7 +158,8 @@ func (b *builder) Build(
 		slog.String("afMode", string(frame.AFMode)),
 	)
 
-	if err := b.withCustomFunctionsAndFocusPoints(&frame, efrm, strict); err != nil {
+	err := b.withCustomFunctionsAndFocusPoints(&frame, efrm, strict)
+	if err != nil {
 		return DisplayableFrame{}, err
 	}
 
@@ -232,7 +233,9 @@ func (b *builder) withExposureSettings(
 
 	var bulbExposureTime domain.BulbExposureTime
 	if tv == "Bulb" {
-		if bulbExposureTime, err = domain.NewBulbExposureTime(efrm.BulbExposureTime); err != nil {
+		if bulbExposureTime, err = domain.NewBulbExposureTime(
+			efrm.BulbExposureTime,
+		); err != nil {
 			return wrapFrameError(
 				ErrInvalidBulbExposureTime, err, efrm.FrameNumber)
 		}
