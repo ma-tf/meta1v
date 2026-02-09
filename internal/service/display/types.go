@@ -4,7 +4,7 @@
 // suitable for console output, CSV export, and other display formats.
 package display
 
-import "github.com/ma-tf/meta1v/pkg/domain"
+import "github.com/ma-tf/meta1v/internal/domain"
 
 // DisplayableRoll represents formatted film roll metadata ready for display or export.
 type DisplayableRoll struct {

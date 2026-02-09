@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
-	"github.com/ma-tf/meta1v/pkg/records"
 	"go.uber.org/mock/gomock"
 )
 

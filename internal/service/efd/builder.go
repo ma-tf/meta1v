@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/records"
 )
 
 var ErrMissingEFDFRecord = errors.New("missing EFDF record")

@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/domain"
 	"github.com/ma-tf/meta1v/internal/service/csv"
 	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/pkg/domain"
 )
 
 var errExample = errors.New("example error")

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ma-tf/meta1v/pkg/domain"
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/domain"
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/qeesung/image2ascii/convert"
 )
 

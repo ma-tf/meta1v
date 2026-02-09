@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/records"
 )
 
 var (

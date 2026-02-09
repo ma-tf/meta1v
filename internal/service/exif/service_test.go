@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/exif"
 	exif_test "github.com/ma-tf/meta1v/internal/service/exif/mocks"
-	"github.com/ma-tf/meta1v/pkg/records"
 	"go.uber.org/mock/gomock"
 )
 

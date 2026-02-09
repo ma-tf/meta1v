@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/records"
 )
 
 func Test_ThumbnailFactory_NewRGBA(t *testing.T) {

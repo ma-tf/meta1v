@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
+	records "github.com/ma-tf/meta1v/internal/records"
 	display "github.com/ma-tf/meta1v/internal/service/display"
-	records "github.com/ma-tf/meta1v/pkg/records"
 	gomock "go.uber.org/mock/gomock"
 )
 

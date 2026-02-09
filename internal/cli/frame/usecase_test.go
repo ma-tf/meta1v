@@ -9,12 +9,12 @@ import (
 
 	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/cli/frame"
+	"github.com/ma-tf/meta1v/internal/records"
 	csv_test "github.com/ma-tf/meta1v/internal/service/csv/mocks"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
 	osfs_test "github.com/ma-tf/meta1v/internal/service/osfs/mocks"
-	"github.com/ma-tf/meta1v/pkg/records"
 	"go.uber.org/mock/gomock"
 )
 

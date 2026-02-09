@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/domain"
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/pkg/domain"
-	"github.com/ma-tf/meta1v/pkg/records"
 )
 
 //nolint:exhaustruct // only partial needed

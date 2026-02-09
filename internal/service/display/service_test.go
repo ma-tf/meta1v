@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/domain"
 	"github.com/ma-tf/meta1v/internal/service/display"
-	"github.com/ma-tf/meta1v/pkg/domain"
 )
 
 //nolint:exhaustruct // only partial is needed

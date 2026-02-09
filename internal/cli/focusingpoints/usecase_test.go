@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli/focusingpoints"
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
-	"github.com/ma-tf/meta1v/pkg/records"
 	"go.uber.org/mock/gomock"
 )
 

@@ -9,8 +9,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/ma-tf/meta1v/pkg/domain"
-	"github.com/ma-tf/meta1v/pkg/records"
+	"github.com/ma-tf/meta1v/internal/domain"
+	"github.com/ma-tf/meta1v/internal/records"
 )
 
 var (

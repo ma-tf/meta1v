@@ -13,8 +13,8 @@ import (
 	"io"
 	"log/slog"
 
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
-	"github.com/ma-tf/meta1v/pkg/records"
 )
 
 var (

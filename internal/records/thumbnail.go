@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/thumbnail_factory_mock.go -package=records_test github.com/ma-tf/meta1v/pkg/records ThumbnailFactory
+//go:generate mockgen -destination=./mocks/thumbnail_factory_mock.go -package=records_test github.com/ma-tf/meta1v/internal/records ThumbnailFactory
 package records
 
 import "image"

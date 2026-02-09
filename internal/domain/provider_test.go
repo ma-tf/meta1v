@@ -3,7 +3,7 @@ package domain_test
 import (
 	"testing"
 
-	"github.com/ma-tf/meta1v/pkg/domain"
+	"github.com/ma-tf/meta1v/internal/domain"
 )
 
 func Test_MapProvider(t *testing.T) {

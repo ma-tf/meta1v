@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
-	"github.com/ma-tf/meta1v/pkg/records"
 )
 
 var (

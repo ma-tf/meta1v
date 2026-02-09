@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/exif"
-	"github.com/ma-tf/meta1v/pkg/records"
 )
 
 //nolint:exhaustruct // only partial is needed

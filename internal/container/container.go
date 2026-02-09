@@ -7,13 +7,13 @@ package container
 import (
 	"log/slog"
 
+	"github.com/ma-tf/meta1v/internal/records"
 	"github.com/ma-tf/meta1v/internal/service/csv"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
 	"github.com/ma-tf/meta1v/internal/service/osexec"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
-	"github.com/ma-tf/meta1v/pkg/records"
 )
 
 // Container holds all application dependencies and services.

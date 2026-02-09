@@ -12,7 +12,7 @@ package exif_test
 import (
 	reflect "reflect"
 
-	records "github.com/ma-tf/meta1v/pkg/records"
+	records "github.com/ma-tf/meta1v/internal/records"
 	gomock "go.uber.org/mock/gomock"
 )
 

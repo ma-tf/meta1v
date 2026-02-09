@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/ma-tf/meta1v/pkg/domain"
+	"github.com/ma-tf/meta1v/internal/domain"
 )
 
 //nolint:exhaustruct // only partial needed

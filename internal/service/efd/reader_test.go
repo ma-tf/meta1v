@@ -7,9 +7,9 @@ import (
 	"image"
 	"testing"
 
+	"github.com/ma-tf/meta1v/internal/records"
+	records_test "github.com/ma-tf/meta1v/internal/records/mocks"
 	"github.com/ma-tf/meta1v/internal/service/efd"
-	"github.com/ma-tf/meta1v/pkg/records"
-	records_test "github.com/ma-tf/meta1v/pkg/records/mocks"
 	"go.uber.org/mock/gomock"
 )
 

@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli/exif"
+	"github.com/ma-tf/meta1v/internal/records"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
 	exif_test "github.com/ma-tf/meta1v/internal/service/exif/mocks"
-	"github.com/ma-tf/meta1v/pkg/records"
 	"go.uber.org/mock/gomock"
 )
 
