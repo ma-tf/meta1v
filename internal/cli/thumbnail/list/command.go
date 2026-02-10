@@ -40,6 +40,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Short: "Display embedded thumbnails as ASCII art",
 		Long: `Display embedded thumbnail images as ASCII art, including the file path and 
 rendered ASCII representation.`,
+		Example: `  # Display thumbnail information
+  meta1v thumbnail list data.efd
+
+  # Using the short alias
+  meta1v thumbnail ls data.efd
+
+  # With strict mode
+  meta1v t ls data.efd --strict`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -51,6 +51,11 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Short: "Write EXIF metadata from EFD file to target image file",
 		Long: `Extract exposure metadata (Tv, Av, ISO, exposure compensation) from a specific 
 frame in an EFD file and write it as EXIF data to a target image file.`,
+		Example: `  # Write EXIF from frame 1 to an image file
+  meta1v exif data.efd 1 image.jpg
+
+  # Write EXIF with strict mode enabled
+  meta1v exif data.efd 12 photo.jpg --strict`,
 		Args: cobra.ExactArgs(requiredArgsCount),
 		RunE: func(command *cobra.Command, args []string) error {
 			ctx := command.Context()

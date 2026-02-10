@@ -69,6 +69,14 @@ var (
 
 You can print out information to stdout about the film roll, including focus
 points, custom functions, roll information, thumbnail previews, and more.`,
+		Example: `  # View roll information
+  meta1v roll list data.efd
+
+  # Export frame data to CSV
+  meta1v frame export data.efd output.csv
+
+  # Write EXIF metadata to an image
+  meta1v exif data.efd 1 image.jpg`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			err := initialiseConfig(cmd)
 			if err != nil {

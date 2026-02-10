@@ -40,6 +40,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Short: "Display roll information in human-readable format",
 		Long: `Display film roll information including film ID, title, load date, frame count, 
 ISO, and user-provided remarks.`,
+		Example: `  # Display roll information
+  meta1v roll list data.efd
+
+  # Using the short alias
+  meta1v roll ls data.efd
+
+  # With strict mode
+  meta1v r ls data.efd --strict`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

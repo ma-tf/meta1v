@@ -41,6 +41,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Long: `Display rendered grids of autofocus points used when capturing each photograph.
 
 For setting autofocus points on the camera, refer to the Canon EOS-1V manual.`,
+		Example: `  # Display focusing points information
+  meta1v focusingpoints list data.efd
+
+  # Using the short alias
+  meta1v focusingpoints ls data.efd
+
+  # With strict mode
+  meta1v fp ls data.efd --strict`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

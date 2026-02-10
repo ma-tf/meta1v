@@ -46,6 +46,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 
 For the meaning of each custom function and its respective value, refer to the 
 Canon EOS-1V manual.`,
+		Example: `  # Display custom functions
+  meta1v customfunctions list data.efd
+
+  # Using the short alias
+  meta1v customfunctions ls data.efd
+
+  # With strict mode
+  meta1v cf ls data.efd --strict`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

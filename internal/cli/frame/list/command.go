@@ -40,6 +40,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Short: "Display frame information in human-readable format",
 		Long: `Display detailed information about frames including exposure settings (Tv, Av, ISO), 
 exposure compensation, focus points, custom functions, and user-provided remarks.`,
+		Example: `  # Display frame information
+  meta1v frame list data.efd
+
+  # Using the short alias
+  meta1v frame ls data.efd
+
+  # With strict mode
+  meta1v f ls data.efd --strict`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

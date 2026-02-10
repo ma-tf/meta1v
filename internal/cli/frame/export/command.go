@@ -54,6 +54,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Long: `Export detailed frame information to CSV format, including frame number, exposure 
 settings (Tv, Av, ISO), exposure compensation, and user-provided remarks. Output can be 
 directed to stdout or saved to a specified file.`,
+		Example: `  # Export frame data to stdout
+  meta1v frame export data.efd
+
+  # Export to a file
+  meta1v frame export data.efd output.csv
+
+  # Overwrite existing file
+  meta1v f export data.efd output.csv --force`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

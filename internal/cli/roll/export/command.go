@@ -54,6 +54,14 @@ func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 		Long: `Export film roll information to CSV format, including film ID, title, load date, 
 frame count, ISO, and user-provided remarks. Output can be directed to stdout or saved 
 to a specified file.`,
+		Example: `  # Export roll data to stdout
+  meta1v roll export data.efd
+
+  # Export to a file
+  meta1v roll export data.efd output.csv
+
+  # Overwrite existing file
+  meta1v r export data.efd output.csv --force`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
