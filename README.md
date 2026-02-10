@@ -1,8 +1,14 @@
 # meta1v
 
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ma-tf/meta1v)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ma-tf/meta1v)](https://goreportcard.com/report/github.com/ma-tf/meta1v)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ma-tf/meta1v/ci.yml)](https://github.com/ma-tf/meta1v/actions)
+[![GitHub License](https://img.shields.io/github/license/ma-tf/meta1v)](https://github.com/ma-tf/meta1v/blob/master/COPYING)
+
 meta1v is a command-line tool for viewing and manipulating metadata for Canon EOS-1V files of the EFD format.
 
 ## Licence
+
 Copyright (C) 2026  Matt F
 
 This program is free software: you can redistribute it and/or modify
@@ -23,5 +29,5 @@ To contribute to this project, you'll need:
 - Go 1.25.7 or later
 - [go-licenses](https://github.com/google/go-licenses) for dependency license tracking:
     go install github.com/google/go-licenses/v2@latest
-		
+
 The pre-commit hook automatically generates a NOTICE file with dependency licenses.
