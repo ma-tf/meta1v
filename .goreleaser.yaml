@@ -1,11 +1,3 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
-
-# The lines below are called `modelines`. See `:help modeline`
-# Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
-
 version: 2
 
 before:
@@ -16,38 +8,99 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: meta1v
+    main: .
+    binary: meta1v
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
 
 archives:
-  - formats: [tar.gz]
-    # this name template makes the OS and Arch compatible with the results of `uname`.
+  - id: default
     name_template: >-
       {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
     format_overrides:
       - goos: windows
         formats: [zip]
+    files:
+      - COPYING
+      - README.md
+      - docs/**/*
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+    documents:
+      - "{{ .ProjectName }}_{{ .Version }}_sbom.spdx.json"
 
 changelog:
   sort: asc
+  use: github
   filters:
     exclude:
-      - "^docs:"
-      - "^test:"
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - '^style:'
+      - 'typo'
+  groups:
+    - title: 'New Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 'Other Changes'
+      order: 999
 
 release:
-  footer: >-
+  github:
+    owner: ma-tf
+    name: meta1v
+  prerelease: auto
+  mode: append
+  footer: |
+    ## Installation
+
+    ### Binary Download
+    Download the appropriate binary for your system from the assets below.
+
+    ### Linux/macOS
+    ```bash
+    # Extract the archive
+    tar -xzf meta1v_*_linux_amd64.tar.gz
+    
+    # Move to a directory in your PATH
+    sudo mv meta1v /usr/local/bin/
+    ```
+
+    ### Windows
+    Extract the zip file and add `meta1v.exe` to your PATH.
 
     ---
 
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+    **Full Changelog**: https://github.com/ma-tf/meta1v/compare/{{ .PreviousTag }}...{{ .Tag }}
