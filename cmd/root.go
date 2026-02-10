@@ -59,6 +59,9 @@ var (
 	logger        *slog.Logger
 	logLevel      = new(slog.LevelVar)
 	cancelTimeout context.CancelFunc
+	buildVersion  string
+	buildCommit   string
+	buildDate     string
 	rootCmd       = &cobra.Command{
 		Use:   "meta1v",
 		Short: "Provides a way to interact with Canon's EFD files.",
@@ -72,10 +75,12 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 				return fmt.Errorf("failed to initialise configuration: %w", err)
 			}
 
-			level := slog.LevelInfo
+			level := slog.LevelWarn
 			switch strings.ToLower(config.Log.Level) {
 			case "debug":
 				level = slog.LevelDebug
+			case "info":
+				level = slog.LevelInfo
 			case "warn", "warning":
 				level = slog.LevelWarn
 			case "error":
@@ -109,7 +114,11 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 
 // Execute runs the root command and handles any errors.
 // This is called by main.main() and should only be called once.
-func Execute() {
+func Execute(version, commit, date string) {
+	buildVersion = version
+	buildCommit = commit
+	buildDate = date
+
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -147,6 +156,7 @@ func init() {
 	rootCmd.AddCommand(focusingpoints.NewCommand(logger, ctr))
 	rootCmd.AddCommand(frame.NewCommand(logger, ctr))
 	rootCmd.AddCommand(thumbnail.NewCommand(logger, ctr))
+	rootCmd.AddCommand(newVersionCommand())
 }
 
 func initialiseConfig(cmd *cobra.Command) error {
