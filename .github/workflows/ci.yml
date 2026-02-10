@@ -3,8 +3,18 @@ name: "ci"
 on:
   push:
     branches: ["master"]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: ["master"]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/ci.yml'
 
 jobs:
   build:
