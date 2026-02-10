@@ -3,3 +3,5 @@ node_modules/
 coverage.html
 coverage.out
 bin/meta1v
+# Added by goreleaser init:
+dist/
