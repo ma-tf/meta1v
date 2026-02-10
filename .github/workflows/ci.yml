@@ -44,7 +44,7 @@ jobs:
     - name: Test
       run: |
         PKGS=$(go list ./... 2>/dev/null | grep -Ev '(/test|/mocks|/cmd$$|/tools/|/osfs$$|/osexec$$|^github\.com/ma-tf/meta1v$$)')
-        go test -race -covermode=count -coverprofile=coverage.out $PKGS
+        go test -race -covermode=atomic -coverprofile=coverage.out $PKGS
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
