@@ -8,18 +8,22 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/cobra/doc"
-
 	"github.com/ma-tf/meta1v/cmd"
+	"github.com/spf13/cobra/doc"
 )
 
 func main() {
 	out := flag.String("out", "./docs/cli", "output directory")
 	format := flag.String("format", "markdown", "markdown|man|rest")
-	front := flag.Bool("frontmatter", false, "prepend simple YAML front matter to markdown")
+	front := flag.Bool(
+		"frontmatter",
+		false,
+		"prepend simple YAML front matter to markdown",
+	)
+
 	flag.Parse()
 
-	if err := os.MkdirAll(*out, 0o755); err != nil {
+	if err := os.MkdirAll(*out, 0o750); err != nil {
 		log.Fatal(err)
 	}
 
@@ -29,14 +33,13 @@ func main() {
 	switch *format {
 	case "markdown":
 		if *front {
-			prep := func(filename string) string {
-				base := filepath.Base(filename)
-				name := strings.TrimSuffix(base, filepath.Ext(base))
-				title := strings.ReplaceAll(name, "_", " ")
-				return fmt.Sprintf("---\ntitle: %q\nslug: %q\ndescription: \"CLI reference for %s\"\n---\n\n", title, name, title)
-			}
-			link := func(name string) string { return strings.ToLower(name) }
-			if err := doc.GenMarkdownTreeCustom(root, *out, prep, link); err != nil {
+			err := doc.GenMarkdownTreeCustom(
+				root,
+				*out,
+				prep,
+				link,
+			)
+			if err != nil {
 				log.Fatal(err)
 			}
 		} else {
@@ -45,7 +48,13 @@ func main() {
 			}
 		}
 	case "man":
-		hdr := &doc.GenManHeader{Title: strings.ToUpper(root.Name()), Section: "1"}
+		hdr := &doc.GenManHeader{
+			Title:   strings.ToUpper(root.Name()),
+			Section: "1",
+			Date:    nil,
+			Source:  "",
+			Manual:  "",
+		}
 		if err := doc.GenManTree(root, hdr, *out); err != nil {
 			log.Fatal(err)
 		}
@@ -57,3 +66,18 @@ func main() {
 		log.Fatalf("unknown format: %s", *format)
 	}
 }
+
+func prep(filename string) string {
+	base := filepath.Base(filename)
+	name := strings.TrimSuffix(base, filepath.Ext(base))
+	title := strings.ReplaceAll(name, "_", " ")
+
+	return fmt.Sprintf(
+		"---\ntitle: %q\nslug: %q\ndescription: \"CLI reference for %s\"\n---\n\n",
+		title,
+		name,
+		title,
+	)
+}
+
+func link(name string) string { return strings.ToLower(name) }
