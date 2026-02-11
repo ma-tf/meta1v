@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ma-tf/meta1v)](https://goreportcard.com/report/github.com/ma-tf/meta1v)
 ![Codecov](https://img.shields.io/codecov/c/github/ma-tf/meta1v)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ma-tf/meta1v/ci.yml)](https://github.com/ma-tf/meta1v/actions)
+![GitHub Releases](https://img.shields.io/github/v/release/ma-tf/meta1v)
 [![GitHub License](https://img.shields.io/github/license/ma-tf/meta1v)](https://github.com/ma-tf/meta1v/blob/master/COPYING)
 
 meta1v is a command-line tool for viewing and manipulating metadata for Canon EOS-1V files of the EFD format.
