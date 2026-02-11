@@ -2,6 +2,7 @@
 
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ma-tf/meta1v)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ma-tf/meta1v)](https://goreportcard.com/report/github.com/ma-tf/meta1v)
+![Codecov](https://img.shields.io/codecov/c/github/ma-tf/meta1v)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ma-tf/meta1v/ci.yml)](https://github.com/ma-tf/meta1v/actions)
 [![GitHub License](https://img.shields.io/github/license/ma-tf/meta1v)](https://github.com/ma-tf/meta1v/blob/master/COPYING)
 
