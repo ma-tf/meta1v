@@ -45,9 +45,6 @@ jobs:
     - name: Verify generated code is up-to-date
       run: go generate ./... && git diff --exit-code
 
-    - name: Verify documentation is up-to-date
-      run: go run internal/tools/docgen/main.go --out ./docs --format markdown && git diff --exit-code docs/
-
     - name: Verify NOTICE file is up-to-date
       run: go-licenses report . --template=notice.tpl --include_tests > NOTICE && git diff --exit-code NOTICE
 

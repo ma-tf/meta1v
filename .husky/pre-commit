@@ -26,7 +26,6 @@ if go-licenses report . --template=notice.tpl --include_tests > NOTICE.tmp 2> /d
     git add NOTICE
     
     echo "✅  NOTICE file updated and staged"
-    echo "✅  Finished pre-commit checks"
 else
     echo "❌  Failed to generate NOTICE file"
     cat << 'HELP'
@@ -37,5 +36,34 @@ else
     - Run 'go mod download' if modules are missing
 HELP
     rm -f NOTICE.tmp
+    exit 1
+fi
+
+# Generate CLI documentation
+echo "📚  Generating CLI documentation..."
+
+# Check if docs directory exists
+if [ ! -d "docs" ]; then
+    echo "❌  Error: docs directory not found."
+    exit 1
+fi
+
+# Generate markdown documentation
+if go run internal/tools/docgen/main.go --out ./docs --format markdown 2> /dev/null; then
+    # Stage documentation for commit
+    git add docs/
+    
+    echo "✅  CLI documentation updated and staged"
+    echo "✅  Finished pre-commit checks"
+else
+    echo "❌  Failed to generate CLI documentation"
+    cat << 'HELP'
+    
+    Common issues:
+    - Ensure you're in the project root directory
+    - Check that internal/tools/docgen/main.go exists
+    - Verify that exiftool is installed and in PATH
+    - Run 'go mod download' if modules are missing
+HELP
     exit 1
 fi
