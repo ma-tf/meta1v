@@ -21,7 +21,7 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli/frame/export"
-	"github.com/ma-tf/meta1v/internal/cli/frame/list"
+	"github.com/ma-tf/meta1v/internal/cli/frame/ls"
 	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +51,7 @@ and user-provided remarks.`,
 		ctr.FileSystem,
 	)
 
-	cmd.AddCommand(list.NewCommand(log, listUseCase))
+	cmd.AddCommand(ls.NewCommand(log, listUseCase))
 	cmd.AddCommand(export.NewCommand(log, exportUseCase))
 
 	return cmd

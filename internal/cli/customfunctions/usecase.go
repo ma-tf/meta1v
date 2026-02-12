@@ -25,8 +25,8 @@ import (
 
 	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions/export"
-	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
-	"github.com/ma-tf/meta1v/internal/service/csv"
+	"github.com/ma-tf/meta1v/internal/cli/customfunctions/ls"
+	"github.com/ma-tf/meta1v/internal/service/csvexport"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/osfs"
@@ -60,7 +60,7 @@ func NewListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) list.UseCase {
+) ls.UseCase {
 	return listUseCase{
 		log:                    log,
 		efdService:             efdService,
@@ -108,7 +108,7 @@ type exportUseCase struct {
 	log                    *slog.Logger
 	efdService             efd.Service
 	displayableRollFactory display.DisplayableRollFactory
-	csvService             csv.Service
+	csvService             csvexport.Service
 	fs                     osfs.FileSystem
 }
 
@@ -116,7 +116,7 @@ func NewExportUseCase(
 	log *slog.Logger,
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
-	csvService csv.Service,
+	csvService csvexport.Service,
 	fs osfs.FileSystem,
 ) export.UseCase {
 	return exportUseCase{

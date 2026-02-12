@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/focusingpoints/list UseCase
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=ls_test github.com/ma-tf/meta1v/internal/cli/focusingpoints/ls UseCase
 
-// Package list provides the CLI command for displaying focusing point grids from EFD files.
-package list
+// Package ls provides the CLI command for displaying focusing point grids from EFD files.
+package ls
 
 import (
 	"context"

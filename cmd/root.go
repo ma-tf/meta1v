@@ -84,6 +84,7 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 			}
 
 			level := slog.LevelWarn
+
 			switch strings.ToLower(config.Log.Level) {
 			case "debug":
 				level = slog.LevelDebug
@@ -106,6 +107,7 @@ points, custom functions, roll information, thumbnail previews, and more.`,
 
 			ctx, cancel := context.WithTimeout(cmd.Context(), config.Timeout)
 			cancelTimeout = cancel
+
 			cmd.SetContext(ctx)
 
 			return nil

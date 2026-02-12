@@ -21,7 +21,7 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/cli/customfunctions/export"
-	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
+	"github.com/ma-tf/meta1v/internal/cli/customfunctions/ls"
 	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
@@ -53,7 +53,7 @@ Canon EOS-1V manual.`,
 	)
 
 	cmd.AddCommand(export.NewCommand(log, exportUseCase))
-	cmd.AddCommand(list.NewCommand(log, listUseCase))
+	cmd.AddCommand(ls.NewCommand(log, listUseCase))
 
 	return cmd
 }

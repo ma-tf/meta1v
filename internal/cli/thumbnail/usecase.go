@@ -23,7 +23,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/ma-tf/meta1v/internal/cli/thumbnail/list"
+	"github.com/ma-tf/meta1v/internal/cli/thumbnail/ls"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 )
@@ -45,7 +45,7 @@ func NewThumbnailListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) list.UseCase {
+) ls.UseCase {
 	return usecase{
 		log:                    log,
 		efdService:             efdService,

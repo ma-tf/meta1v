@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//go:generate mockgen -destination=./mocks/usecase_mock.go -package=list_test github.com/ma-tf/meta1v/internal/cli/customfunctions/list UseCase
+//go:generate mockgen -destination=./mocks/usecase_mock.go -package=ls_test github.com/ma-tf/meta1v/internal/cli/thumbnail/ls UseCase
 
-// Package list provides the CLI command for listing custom function settings from EFD files.
-package list
+// Package ls provides the CLI command for displaying embedded thumbnails from EFD files.
+package ls
 
 import (
 	"context"
@@ -28,32 +28,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UseCase defines the business logic for listing custom function settings from EFD files.
+// UseCase defines the business logic for displaying embedded thumbnails from EFD files.
 type UseCase interface {
-	// List reads an EFD file and prints custom function settings used by the frames in a human-readable format.
-	List(
-		ctx context.Context,
-		filename string,
-		strict bool,
-	) error
+	// DisplayThumbnails reads an EFD file and displays embedded thumbnails as ASCII art to stdout.
+	DisplayThumbnails(ctx context.Context, filename string, strict bool) error
 }
 
 func NewCommand(log *slog.Logger, uc UseCase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <filename>",
-		Short: "Display custom function settings in human-readable format",
-		Long: `Display a table of custom function settings used by the frames.
-
-For the meaning of each custom function and its respective value, refer to the 
-Canon EOS-1V manual.`,
-		Example: `  # Display custom functions
-  meta1v customfunctions list data.efd
+		Short: "Display embedded thumbnails as ASCII art",
+		Long: `Display embedded thumbnail images as ASCII art, including the file path and 
+rendered ASCII representation.`,
+		Example: `  # Display thumbnail information
+  meta1v thumbnail list data.efd
 
   # Using the short alias
-  meta1v customfunctions ls data.efd
+  meta1v thumbnail ls data.efd
 
   # With strict mode
-  meta1v cf ls data.efd --strict`,
+  meta1v t ls data.efd --strict`,
 		Aliases: []string{"ls"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -65,11 +59,9 @@ Canon EOS-1V manual.`,
 			}
 
 			log.DebugContext(ctx, "arguments:",
-				slog.String("filename", args[0]),
-				slog.Bool("strict", strict),
-			)
+				slog.String("filename", args[0]))
 
-			return uc.List(ctx, args[0], strict)
+			return uc.DisplayThumbnails(ctx, args[0], strict)
 		},
 	}
 }

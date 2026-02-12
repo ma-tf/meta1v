@@ -26,7 +26,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/cli/roll"
 	"github.com/ma-tf/meta1v/internal/records"
-	csv_test "github.com/ma-tf/meta1v/internal/service/csv/mocks"
+	csvexport_test "github.com/ma-tf/meta1v/internal/service/csvexport/mocks"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
@@ -230,7 +230,7 @@ func Test_RollExportUseCase(t *testing.T) {
 			*efd_test.MockService,
 			*display_test.MockDisplayableRollFactory,
 			*osfs_test.MockFileSystem,
-			*csv_test.MockService,
+			*csvexport_test.MockService,
 			*osfs_test.MockFile,
 			testcase,
 		)
@@ -254,7 +254,7 @@ func Test_RollExportUseCase(t *testing.T) {
 				mockEFDService *efd_test.MockService,
 				_ *display_test.MockDisplayableRollFactory,
 				_ *osfs_test.MockFileSystem,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				_ *osfs_test.MockFile,
 				tt testcase,
 			) {
@@ -273,7 +273,7 @@ func Test_RollExportUseCase(t *testing.T) {
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
 				_ *osfs_test.MockFileSystem,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				_ *osfs_test.MockFile,
 				tt testcase,
 			) {
@@ -300,7 +300,7 @@ func Test_RollExportUseCase(t *testing.T) {
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
 				mockFileSystem *osfs_test.MockFileSystem,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				_ *osfs_test.MockFile,
 				tt testcase,
 			) {
@@ -329,7 +329,7 @@ func Test_RollExportUseCase(t *testing.T) {
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
 				mockFileSystem *osfs_test.MockFileSystem,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				_ *osfs_test.MockFile,
 				tt testcase,
 			) {
@@ -358,7 +358,7 @@ func Test_RollExportUseCase(t *testing.T) {
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
 				mockFileSystem *osfs_test.MockFileSystem,
-				mockCSVService *csv_test.MockService,
+				mockCSVService *csvexport_test.MockService,
 				mockFile *osfs_test.MockFile,
 				tt testcase,
 			) {
@@ -423,7 +423,7 @@ func Test_RollExportUseCase(t *testing.T) {
 			mockDisplayableRollFactory := display_test.NewMockDisplayableRollFactory(
 				mockCtrl,
 			)
-			mockCSVService := csv_test.NewMockService(mockCtrl)
+			mockCSVService := csvexport_test.NewMockService(mockCtrl)
 			mockFileSystem := osfs_test.NewMockFileSystem(mockCtrl)
 			mockFile := osfs_test.NewMockFile(mockCtrl)
 
@@ -474,7 +474,7 @@ func Test_RollExportUseCase_Success(t *testing.T) {
 			*efd_test.MockService,
 			*display_test.MockDisplayableRollFactory,
 			*osfs_test.MockFileSystem,
-			*csv_test.MockService,
+			*csvexport_test.MockService,
 			*osfs_test.MockFile,
 			testcase,
 		)
@@ -501,7 +501,7 @@ func Test_RollExportUseCase_Success(t *testing.T) {
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
 				mockFileSystem *osfs_test.MockFileSystem,
-				mockCSVService *csv_test.MockService,
+				mockCSVService *csvexport_test.MockService,
 				mockFile *osfs_test.MockFile,
 				tt testcase,
 			) {
@@ -566,7 +566,7 @@ func Test_RollExportUseCase_Success(t *testing.T) {
 			mockDisplayableRollFactory := display_test.NewMockDisplayableRollFactory(
 				mockCtrl,
 			)
-			mockCSVService := csv_test.NewMockService(mockCtrl)
+			mockCSVService := csvexport_test.NewMockService(mockCtrl)
 			mockFileSystem := osfs_test.NewMockFileSystem(mockCtrl)
 			mockFile := osfs_test.NewMockFile(mockCtrl)
 

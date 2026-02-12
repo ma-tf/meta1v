@@ -24,7 +24,7 @@ import (
 	"log/slog"
 
 	"github.com/ma-tf/meta1v/internal/records"
-	"github.com/ma-tf/meta1v/internal/service/csv"
+	"github.com/ma-tf/meta1v/internal/service/csvexport"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 	"github.com/ma-tf/meta1v/internal/service/exif"
@@ -41,7 +41,7 @@ type Container struct {
 	EFDService             efd.Service
 	DisplayService         display.Service
 	DisplayableRollFactory display.DisplayableRollFactory
-	CSVService             csv.Service
+	CSVService             csvexport.Service
 	ExifService            exif.Service
 }
 
@@ -63,7 +63,7 @@ func New(logger *slog.Logger, lookPath osexec.LookPath) *Container {
 		),
 		DisplayService:         display.NewService(logger),
 		DisplayableRollFactory: display.NewDisplayableRollFactory(frameBuilder),
-		CSVService:             csv.NewService(logger),
+		CSVService:             csvexport.NewService(logger),
 		ExifService: exif.NewService(
 			logger,
 			exif.NewExifToolRunner(

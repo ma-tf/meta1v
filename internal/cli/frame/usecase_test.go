@@ -26,7 +26,7 @@ import (
 	"github.com/ma-tf/meta1v/internal/cli"
 	"github.com/ma-tf/meta1v/internal/cli/frame"
 	"github.com/ma-tf/meta1v/internal/records"
-	csv_test "github.com/ma-tf/meta1v/internal/service/csv/mocks"
+	csvexport_test "github.com/ma-tf/meta1v/internal/service/csvexport/mocks"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	display_test "github.com/ma-tf/meta1v/internal/service/display/mocks"
 	efd_test "github.com/ma-tf/meta1v/internal/service/efd/mocks"
@@ -234,7 +234,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 		expect          func(
 			*efd_test.MockService,
 			*display_test.MockDisplayableRollFactory,
-			*csv_test.MockService,
+			*csvexport_test.MockService,
 			*osfs_test.MockFileSystem,
 			*osfs_test.MockFile,
 			testcase,
@@ -257,7 +257,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 			expect: func(
 				mockEFDService *efd_test.MockService,
 				_ *display_test.MockDisplayableRollFactory,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				_ *osfs_test.MockFileSystem,
 				_ *osfs_test.MockFile,
 				tt testcase,
@@ -274,7 +274,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 			expect: func(
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				_ *osfs_test.MockFileSystem,
 				_ *osfs_test.MockFile,
 				tt testcase,
@@ -303,7 +303,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 			expect: func(
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				mockFS *osfs_test.MockFileSystem,
 				_ *osfs_test.MockFile,
 				tt testcase,
@@ -336,7 +336,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 			expect: func(
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
-				_ *csv_test.MockService,
+				_ *csvexport_test.MockService,
 				mockFS *osfs_test.MockFileSystem,
 				_ *osfs_test.MockFile,
 				tt testcase,
@@ -377,7 +377,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 			expect: func(
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
-				mockCSVService *csv_test.MockService,
+				mockCSVService *csvexport_test.MockService,
 				mockFS *osfs_test.MockFileSystem,
 				mockFile *osfs_test.MockFile,
 				tt testcase,
@@ -443,7 +443,7 @@ func Test_FrameExportUseCase(t *testing.T) {
 			mockDisplayableRollFactory := display_test.NewMockDisplayableRollFactory(
 				ctrl,
 			)
-			mockCSVService := csv_test.NewMockService(ctrl)
+			mockCSVService := csvexport_test.NewMockService(ctrl)
 			mockFS := osfs_test.NewMockFileSystem(ctrl)
 			mockFile := osfs_test.NewMockFile(ctrl)
 
@@ -493,7 +493,7 @@ func Test_FrameExportUseCase_Success(t *testing.T) {
 		expect          func(
 			*efd_test.MockService,
 			*display_test.MockDisplayableRollFactory,
-			*csv_test.MockService,
+			*csvexport_test.MockService,
 			*osfs_test.MockFileSystem,
 			*osfs_test.MockFile,
 			testcase,
@@ -532,7 +532,7 @@ func Test_FrameExportUseCase_Success(t *testing.T) {
 			expect: func(
 				mockEFDService *efd_test.MockService,
 				mockDisplayableRollFactory *display_test.MockDisplayableRollFactory,
-				mockCSVService *csv_test.MockService,
+				mockCSVService *csvexport_test.MockService,
 				mockFS *osfs_test.MockFileSystem,
 				mockFile *osfs_test.MockFile,
 				tt testcase,
@@ -597,7 +597,7 @@ func Test_FrameExportUseCase_Success(t *testing.T) {
 			mockDisplayableRollFactory := display_test.NewMockDisplayableRollFactory(
 				ctrl,
 			)
-			mockCSVService := csv_test.NewMockService(ctrl)
+			mockCSVService := csvexport_test.NewMockService(ctrl)
 			mockFS := osfs_test.NewMockFileSystem(ctrl)
 			mockFile := osfs_test.NewMockFile(ctrl)
 

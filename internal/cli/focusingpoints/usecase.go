@@ -23,7 +23,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
+	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/ls"
 	"github.com/ma-tf/meta1v/internal/service/display"
 	"github.com/ma-tf/meta1v/internal/service/efd"
 )
@@ -47,7 +47,7 @@ func NewListUseCase(
 	efdService efd.Service,
 	displayableRollFactory display.DisplayableRollFactory,
 	displayService display.Service,
-) list.UseCase {
+) ls.UseCase {
 	return listUseCase{
 		log:                    log,
 		efdService:             efdService,

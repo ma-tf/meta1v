@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package list_test
+package ls_test
 
 import (
 	"bytes"
@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/cli"
-	"github.com/ma-tf/meta1v/internal/cli/customfunctions/list"
-	list_test "github.com/ma-tf/meta1v/internal/cli/customfunctions/list/mocks"
+	"github.com/ma-tf/meta1v/internal/cli/thumbnail/ls"
+	ls_test "github.com/ma-tf/meta1v/internal/cli/thumbnail/ls/mocks"
 	"go.uber.org/mock/gomock"
 )
 
@@ -47,7 +47,7 @@ func Test_CommandRun(t *testing.T) {
 		name           string
 		args           []string
 		registerStrict bool
-		expect         func(uc list_test.MockUseCase, tt testcase)
+		expect         func(uc ls_test.MockUseCase, tt testcase)
 		expectedError  error
 	}
 
@@ -62,9 +62,9 @@ func Test_CommandRun(t *testing.T) {
 			name:           "successful execution",
 			args:           []string{"file.efd"},
 			registerStrict: true,
-			expect: func(mockUseCase list_test.MockUseCase, tt testcase) {
+			expect: func(mockUseCase ls_test.MockUseCase, tt testcase) {
 				mockUseCase.EXPECT().
-					List(gomock.Any(), tt.args[0], gomock.Any()).
+					DisplayThumbnails(gomock.Any(), tt.args[0], gomock.Any()).
 					Return(nil)
 			},
 		},
@@ -101,13 +101,13 @@ func Test_CommandRun(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockUseCase := list_test.NewMockUseCase(ctrl)
+			mockUseCase := ls_test.NewMockUseCase(ctrl)
 
 			if tt.expect != nil {
 				tt.expect(*mockUseCase, tt)
 			}
 
-			cmd := list.NewCommand(logger, mockUseCase)
+			cmd := ls.NewCommand(logger, mockUseCase)
 			if tt.registerStrict {
 				cmd.Flags().Bool("strict", false, "enable strict mode")
 			}

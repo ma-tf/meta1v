@@ -20,7 +20,7 @@ package thumbnail
 import (
 	"log/slog"
 
-	"github.com/ma-tf/meta1v/internal/cli/thumbnail/list"
+	"github.com/ma-tf/meta1v/internal/cli/thumbnail/ls"
 	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
@@ -41,7 +41,7 @@ rendered ASCII representation.`,
 		ctr.DisplayService,
 	)
 
-	cmd.AddCommand(list.NewCommand(log, uc))
+	cmd.AddCommand(ls.NewCommand(log, uc))
 
 	return cmd
 }

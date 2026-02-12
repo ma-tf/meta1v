@@ -349,11 +349,26 @@ func (b *builder) withCustomFunctionsAndFocusPoints(
 	strict bool,
 ) error {
 	cfs := [20]byte{
-		efrm.CustomFunction0, efrm.CustomFunction1, efrm.CustomFunction2, efrm.CustomFunction3,
-		efrm.CustomFunction4, efrm.CustomFunction5, efrm.CustomFunction6, efrm.CustomFunction7,
-		efrm.CustomFunction8, efrm.CustomFunction9, efrm.CustomFunction10, efrm.CustomFunction11,
-		efrm.CustomFunction12, efrm.CustomFunction13, efrm.CustomFunction14, efrm.CustomFunction15,
-		efrm.CustomFunction16, efrm.CustomFunction17, efrm.CustomFunction18, efrm.CustomFunction19,
+		efrm.CustomFunction0,
+		efrm.CustomFunction1,
+		efrm.CustomFunction2,
+		efrm.CustomFunction3,
+		efrm.CustomFunction4,
+		efrm.CustomFunction5,
+		efrm.CustomFunction6,
+		efrm.CustomFunction7,
+		efrm.CustomFunction8,
+		efrm.CustomFunction9,
+		efrm.CustomFunction10,
+		efrm.CustomFunction11,
+		efrm.CustomFunction12,
+		efrm.CustomFunction13,
+		efrm.CustomFunction14,
+		efrm.CustomFunction15,
+		efrm.CustomFunction16,
+		efrm.CustomFunction17,
+		efrm.CustomFunction18,
+		efrm.CustomFunction19,
 	}
 
 	customFunctions, err := domain.NewCustomFunctions(cfs, strict)

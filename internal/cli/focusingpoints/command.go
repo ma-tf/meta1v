@@ -20,7 +20,7 @@ package focusingpoints
 import (
 	"log/slog"
 
-	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/list"
+	"github.com/ma-tf/meta1v/internal/cli/focusingpoints/ls"
 	"github.com/ma-tf/meta1v/internal/container"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +42,7 @@ For setting autofocus points on the camera, refer to the Canon EOS-1V manual.`,
 		ctr.DisplayService,
 	)
 
-	cmd.AddCommand(list.NewCommand(log, uc))
+	cmd.AddCommand(ls.NewCommand(log, uc))
 
 	return cmd
 }

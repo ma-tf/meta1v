@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package csv_test
+package csvexport_test
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/ma-tf/meta1v/internal/domain"
-	"github.com/ma-tf/meta1v/internal/service/csv"
+	"github.com/ma-tf/meta1v/internal/service/csvexport"
 	"github.com/ma-tf/meta1v/internal/service/display"
 )
 
@@ -56,11 +56,11 @@ func Test_ExportRoll_Error(t *testing.T) {
 
 	dr := display.DisplayableRoll{}
 	writer := &failWriter{}
-	expectedError := csv.ErrFailedToWriteRollHeader
+	expectedError := csvexport.ErrFailedToWriteRollHeader
 
 	ctx := t.Context()
 
-	err := csv.NewService(newTestLogger()).ExportRoll(ctx, writer, dr)
+	err := csvexport.NewService(newTestLogger()).ExportRoll(ctx, writer, dr)
 
 	if !errors.Is(err, expectedError) {
 		t.Errorf(
@@ -94,7 +94,7 @@ AAA-BB,2024-01-01,5,My Film Roll,2024-01-01T12:00:00Z,36,200,This is a test roll
 
 	ctx := t.Context()
 
-	svc := csv.NewService(newTestLogger())
+	svc := csvexport.NewService(newTestLogger())
 
 	err := svc.ExportRoll(ctx, writer, dr)
 	if err != nil {
@@ -120,11 +120,11 @@ func Test_ExportFrames_Error(t *testing.T) {
 		},
 	}
 	writer := &failWriter{}
-	expectedError := csv.ErrFailedToWriteFrames
+	expectedError := csvexport.ErrFailedToWriteFrames
 
 	ctx := t.Context()
 
-	err := csv.NewService(newTestLogger()).ExportFrames(ctx, writer, dr)
+	err := csvexport.NewService(newTestLogger()).ExportFrames(ctx, writer, dr)
 
 	if !errors.Is(err, expectedError) {
 		t.Errorf(
@@ -176,7 +176,7 @@ AAA-BB,2024-01-01T12:00:00Z,1,200,50mm,f/1.8,1/125,f/1.8,200,+0.3,+0.7,On,Evalua
 
 	ctx := t.Context()
 
-	svc := csv.NewService(newTestLogger())
+	svc := csvexport.NewService(newTestLogger())
 
 	err := svc.ExportFrames(ctx, writer, dr)
 	if err != nil {
@@ -202,11 +202,11 @@ func Test_ExportCustomFunctions_Error(t *testing.T) {
 		},
 	}
 	writer := &failWriter{}
-	expectedError := csv.ErrFailedToWriteCustomFunctions
+	expectedError := csvexport.ErrFailedToWriteCustomFunctions
 
 	ctx := t.Context()
 
-	svc := csv.NewService(newTestLogger())
+	svc := csvexport.NewService(newTestLogger())
 
 	err := svc.ExportCustomFunctions(ctx, writer, dr)
 
@@ -262,7 +262,7 @@ AAA-BB,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 
 	ctx := t.Context()
 
-	svc := csv.NewService(newTestLogger())
+	svc := csvexport.NewService(newTestLogger())
 
 	err := svc.ExportCustomFunctions(ctx, writer, dr)
 	if err != nil {

@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//go:generate mockgen -destination=./mocks/service_mock.go -package=csv_test github.com/ma-tf/meta1v/internal/service/csv Service
+//go:generate mockgen -destination=./mocks/service_mock.go -package=csvexport_test github.com/ma-tf/meta1v/internal/service/csvexport Service
 
-// Package csv provides CSV export functionality for Canon EFD metadata.
+// Package csvexport provides CSV export functionality for Canon EFD metadata.
 //
 // It converts displayable roll and frame data into CSV format suitable for
 // spreadsheet applications.
-package csv
+package csvexport
 
 import (
 	"context"
