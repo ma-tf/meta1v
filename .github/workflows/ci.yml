@@ -28,6 +28,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Cache apt packages
+      uses: actions/cache@v5
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-packages
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
@@ -39,6 +45,9 @@ jobs:
     - name: Install go-licenses
       run: go install github.com/google/go-licenses/v2@latest
 
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y libimage-exiftool-perl
+
     - name: Verify dependencies are tidy
       run: go mod tidy && git diff --exit-code go.mod go.sum
 
@@ -47,6 +56,9 @@ jobs:
 
     - name: Verify NOTICE file is up-to-date
       run: go-licenses report . --template=notice.tpl --include_tests > NOTICE && git diff --exit-code NOTICE
+
+    - name: Verify CLI documentation is up-to-date
+      run: go run internal/tools/docgen/main.go --out ./docs --format markdown && git diff --exit-code docs/
 
     - name: Verify GoReleaser config is valid
       uses: goreleaser/goreleaser-action@v6

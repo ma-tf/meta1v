@@ -17,6 +17,12 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Cache apt packages
+      uses: actions/cache@v5
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-packages
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
@@ -24,6 +30,9 @@ jobs:
 
     - name: Install mockgen
       run: go install go.uber.org/mock/mockgen@latest
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y libimage-exiftool-perl
 
     - name: Test
       run: go test ./...
