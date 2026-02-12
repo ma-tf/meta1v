@@ -2,10 +2,10 @@ version: 2
 
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
     - go generate ./...
+    - go run internal/tools/docgen/main.go --out ./docs --format markdown
+    - go run internal/tools/docgen/main.go --out ./man --format man
 
 builds:
   - id: meta1v
@@ -43,6 +43,7 @@ archives:
       - COPYING
       - README.md
       - docs/**/*
+      - man/*.1
 
 checksum:
   name_template: 'checksums.txt'
@@ -97,6 +98,10 @@ release:
     
     # Move to a directory in your PATH
     sudo mv meta1v /usr/local/bin/
+    
+    # Optional: Install man pages
+    sudo cp man/*.1 /usr/local/share/man/man1/
+    sudo mandb
     ```
 
     ### Windows

@@ -12,13 +12,13 @@ if ! command -v go-licenses >/dev/null 2>&1; then
 fi
 
 # Check if template file exists
-if [ ! -f ".husky/notice.tpl" ]; then
-    echo "❌  Error: .husky/notice.tpl template file not found."
+if [ ! -f "notice.tpl" ]; then
+    echo "❌  Error: notice.tpl template file not found."
     exit 1
 fi
 
 # Generate NOTICE file (replaces existing if present)
-if go-licenses report . --template=.husky/notice.tpl --include_tests > NOTICE.tmp 2> /dev/null; then
+if go-licenses report . --template=notice.tpl --include_tests > NOTICE.tmp 2> /dev/null; then
     # Replace NOTICE file
     mv NOTICE.tmp NOTICE
     

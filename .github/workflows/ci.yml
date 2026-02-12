@@ -7,14 +7,20 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/workflows/ci.yml'
+      - 'Makefile'
+      - 'docs/**'
+      - '.github/workflows/**'
+      - '.goreleaser.yaml'
   pull_request:
     branches: ["master"]
     paths:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/workflows/ci.yml'
+      - 'Makefile'
+      - 'docs/**'
+      - '.github/workflows/**'
+      - '.goreleaser.yaml'
 
 jobs:
   build:
@@ -30,11 +36,30 @@ jobs:
     - name: Install mockgen
       run: go install go.uber.org/mock/mockgen@latest
 
+    - name: Install go-licenses
+      run: go install github.com/google/go-licenses/v2@latest
+
     - name: Verify dependencies are tidy
       run: go mod tidy && git diff --exit-code go.mod go.sum
 
     - name: Verify generated code is up-to-date
       run: go generate ./... && git diff --exit-code
+
+    - name: Verify documentation is up-to-date
+      run: go run internal/tools/docgen/main.go --out ./docs --format markdown && git diff --exit-code docs/
+
+    - name: Verify NOTICE file is up-to-date
+      run: go-licenses report . --template=notice.tpl --include_tests > NOTICE && git diff --exit-code NOTICE
+
+    - name: Verify GoReleaser config is valid
+      uses: goreleaser/goreleaser-action@v6
+      with:
+        distribution: goreleaser
+        version: latest
+        args: check
+
+    - name: Build
+      run: go build ./...
 
     - name: Lint
       uses: golangci/golangci-lint-action@v9
@@ -50,6 +75,3 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-
-    - name: Build
-      run: go build ./...

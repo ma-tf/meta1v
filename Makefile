@@ -1,5 +1,5 @@
 .PHONY: all
-all: tidy generate lint build test
+all: tidy generate lint build test docs
 
 .PHONY: generate
 generate:
@@ -37,3 +37,21 @@ launch:
 update:
 	go get -u ./...
 	go mod tidy
+
+.PHONY: docs
+docs:
+	@echo "Generating CLI documentation..."
+	@go run internal/tools/docgen/main.go --out ./docs --format markdown
+	@echo "CLI documentation generated in ./docs"
+
+.PHONY: man
+man:
+	@echo "Generating man pages..."
+	@go run internal/tools/docgen/main.go --out ./man --format man
+	@echo "Man pages generated in ./man"
+
+.PHONY: notice
+notice:
+	@echo "Generating NOTICE file..."
+	@go-licenses report . --template=notice.tpl --include_tests > NOTICE
+	@echo "NOTICE file updated"
