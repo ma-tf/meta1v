@@ -234,9 +234,10 @@ linters:
     exhaustive:
       # Program elements to check for exhaustiveness.
       # Default: [ switch ]
+      # mapliteral is the v0.15 name for the former "map" check.
       check:
         - switch
-        - map
+        - mapliteral
 
     exhaustruct:
       # List of regular expressions to match type names that should be excluded from processing.
