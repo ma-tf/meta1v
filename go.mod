@@ -1,9 +1,9 @@
 module github.com/ma-tf/meta1v
 
-go 1.25.7
+go 1.27.2
 
 require (
-	github.com/lmittmann/tint v1.1.3
+	github.com/lmittmann/tint v1.2.1
 	github.com/qeesung/image2ascii v1.0.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
